@@ -1,0 +1,6 @@
+{
+  "name": "brackets-synapse-domain",
+  "dependencies": {
+    "ftp": "0.3.10"
+  }
+}
