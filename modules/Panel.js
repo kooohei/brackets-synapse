@@ -14,14 +14,14 @@ define(function (require, exports, module) {
 	//Methods
 	var init,
 		initMainUI,
-		initConfigUI,
+		initServerSettingUI,
 		closeProject,
 		showMain,
 		hideMain,
 		connect,
 		showSpinner,
 		hideSpinner,
-		_onAppend	
+		_onAppend
 		;
 	
 	// Private methods
@@ -30,7 +30,7 @@ define(function (require, exports, module) {
 			_hideServerSetting;
 	
 	var main_html = require("../text!ui/main.html");
-	var config_html = require("../text!ui/config.html");
+	var server_setting_html = require("../text!ui/serverSetting.html");
 	var $sidebar = $("#sidebar");
 	var $synapse = null;
 	
@@ -45,7 +45,7 @@ define(function (require, exports, module) {
 		_domain = domain;
 		var deferred = new $.Deferred();
 		initMainUI();
-		initConfigUI();
+		initServerSettingUI();
 		TreeView.init(_domain);
 		
 		//for Devel
@@ -67,14 +67,16 @@ define(function (require, exports, module) {
 		
 		$(".disconnect-btn", $synapse).on("click", closeProject);
 		$(".close-btn", $synapse).on("click", hideMain);
-		$(".add-btn", $synapse).on("click", _toggleServerSetting);
+		$(".add-btn", $synapse).on("click", _showServerSetting);
 	};
 	
-	initConfigUI = function () {
-		var html = Mustache.render(config_html);
-		var $config = $(html);
-		$("#synapse-header", $synapse).after($config);
-		$(".btn-add", $config).on("click", _onAppend);
+	initServerSettingUI = function () {
+		var html = Mustache.render(server_setting_html);
+		var $serverSetting = $(html);
+		$("#synapse-header", $synapse).after($serverSetting);
+		$(".btn-add", $serverSetting).on("click", _onAppend);
+		$(".btn-cancel", $serverSetting).on("click", _toggleServerSetting);
+		$("input", $serverSetting).on("blur", SettingManager.validateAll);
 	};
 	
 	showMain = function () {
@@ -132,10 +134,19 @@ define(function (require, exports, module) {
 	
 	_showServerSetting = function () {
 		var $container = $("#synapse-treeview-container");
-		var configHeight = $("#synapse-config").outerHeight() + "px";
-		$container.animate({"top": configHeight}, "fast", function () {
+		if ($container.hasClass("open")) {
+			return;
+		}
+		var serverSettingHeight = $("#synapse-server-setting").outerHeight() + "px";
+		$container.animate({"top": serverSettingHeight}, "fast", function () {
 			$(this).addClass("open");
 		});
+		
+		$("#synapse-server-host").val("s2.bitglobe.net");
+		$("#synapse-server-port").val("21");
+		$("#synapse-server-user").val("hayash");
+		$("#synapse-server-password").val("kohei0730");
+		
 		return new $.Deferred().resolve().promise();
 	};
 	
@@ -143,6 +154,7 @@ define(function (require, exports, module) {
 		var $container = $("#synapse-treeview-container");
 		$container.animate({"top": 0}, "fast", function () {
 			$(this).removeClass("open");
+			SettingManager.reset();
 		});
 		return new $.Deferred().resolve().promise();
 	};

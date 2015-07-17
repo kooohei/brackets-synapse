@@ -1,11 +1,13 @@
 
-/**
- * TreeView Blocks
- */
-#synapse * {
+#synapse *:not(button) {
 	box-sizing: border-box;
-	
+	margin: 0;
+	padding: 0;
+	border: 0;
+	line-height: 14px;
+	font-size: 13px;
 }
+
 #synapse {
 	box-sizing: border-box;
 	background-color: rgb(25, 25, 25);
@@ -16,6 +18,7 @@
 	right: 0;
 	padding: 0;
 	z-index: 2;
+	overflow: hidden;
 }
 #synapse-header {
 	display: -webkit-flex;
@@ -28,6 +31,14 @@
 	width: 100%;
 	z-index: 2;
 	background-color: rgb(25, 25, 25);
+	overflow: hidden;
+}
+#synapse-header > div.left > span {
+	text-shadow: 0 0 8px #1e86ff;
+	letter-spacing: 2px;
+	color: #fff;
+	line-height: 24px;
+	font-size: 1.1em;
 }
 #synapse-header span.fa.disabled,
 #synapse-header span.fa.disabled:hover {
@@ -51,7 +62,7 @@
 
 
 
-#synapse-config {
+#synapse-server-setting {
 	position: absolute;
 	width: 100%;
 	background-color: rgb(20, 20, 20);
@@ -61,63 +72,54 @@
 	padding: 7px;
 }
 
-#synapse-config *:not(button) {
-	margin: 0;
-	padding: 0;
-	border: 0;
-	line-height: 14px;
-	font-size: 13px;
-	text-shadow: none;
-}
 
-#synapse-config div.synapse-config-header {
-	
-	margin-bottom: 10px;
+#synapse-server-setting div.synapse-server-setting-header {
+	padding: 7px;
 }
-#synapse-config div.synapse-config-header .title {
+#synapse-server-setting div.synapse-server-setting-header .title {
 	color: #89929b;
 }
 
-#synapse-config table th i {
+#synapse-server-setting table th i {
 	color: #475564;
 	padding-top: 1px;
 }
-#synapse-config table th i.done {
+#synapse-server-setting table th i.done {
 	color: #c2d3e6;
 }
 
-#synapse-config table th, 
-#synapse-config table td {
+#synapse-server-setting table th, 
+#synapse-server-setting table td {
 	vertical-align:middle;
 	padding: 3px 5px;
 	box-sizing: padding-box;
 }
-#synapse-config table td input {
+#synapse-server-setting table td input {
 	box-sizing: padding-box;
 	padding: 3px;
 	border-radius: 2px;
 	height: auto;
 	background: #333;
 }
-#synapse-config table td input.invalid {
+#synapse-server-setting table td input.invalid {
 	box-shadow: 0 1px 1px #ad3737 inset, 0 -1px 1px #ad3737 inset;
 }
-#synapse-config table td input::-webkit-input-placeholder {
+#synapse-server-setting table td input::-webkit-input-placeholder {
 	padding: 3px;
 	opacity: 0.7;
 	font-size: 12px;
 	line-height: 12px;
 }
 
-#synapse-config div.synapse-config-footer {
+#synapse-server-setting div.synapse-server-setting-footer {
 	padding-top: 10px;
-	padding-bottom: 10px;
+	padding-bottom: 13px;
+	padding-left: 30px;
 	margin-bottom: 0;
 	margin-top: 10px;
-	text-align:right;
 	border-top: 1px solid rgba(255, 255, 255, 0.024);
 }
-#synapse-config button {
+#synapse-server-setting button {
 	padding:3px 8px;
 }
 
@@ -163,4 +165,35 @@ div#synapse-tree {
 }
 #synapse ul li:last-child {
 	margin-bottom: 3px;
+}
+
+
+
+
+
+
+
+
+
+
+#synapse .synapse-server-setting-alert {
+	position: absolute;
+	left: 0;
+	width: 100%;
+	background-color: rgba(39, 4, 4, 0.9);
+	border-top:		 1px solid rgba(255, 255, 255, 0.05);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+	opacity: 0;
+}
+#synapse p.synapse-server-setting-alert-title {
+	text-shadow: 0 0 10px #000;
+	color: #fff;
+	letter-spacing: 0.2em;
+	font-size: 1.2em;
+	padding: 15px 10px 10px 10px;
+}
+#synapse p.synapse-server-setting-alert-caption {
+	
+	color: #a3a3a3;
+	padding: 0 10px 15px 10px;
 }

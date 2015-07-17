@@ -1,4 +1,4 @@
-/*jslint node: true, vars: true, plusplus: true, white: true, devel: true, nomen: true, regexp: true, indent: 4, maxerr: 50 */
+/*jslint node: true, vars: true, plusplus: true, white: true, devel: true, nomen: true, regexp: true, indent: 2, maxerr: 50 */
 /*global define, brackets: true, $, window, navigator, Mustache, jQuery, console, moment */
 (function () {
 	"use strict";
@@ -13,6 +13,7 @@
 	var _domainManager = null;
 	var client = null,
 		init,
+		test,
 		connect,
 		getList,
 		rename,
@@ -20,19 +21,26 @@
 		removeDirectory,
 		logout;
 	
+	
+	
 	connect = function (server, remoteRoot, cb) {
-		client = new Client();
-		client.on("ready", function () {
-			client.list(remoteRoot, function (err, list) {
-				if (err) {
-					cb(err);
-				} else {
-					cb(null, list);
-				}
-				logout(client);
+		try {
+			client = new Client();
+			client.on("ready", function () {
+				client.list(remoteRoot, function (err, list) {
+					if (err) {
+						console.log(err);
+						cb(err);
+					} else {
+						cb(null, list);
+					}
+					logout(client);
+				});
 			});
-		});
-		client.connect(server);
+			client.connect(server);
+		} catch (e) {
+			
+		}
 	};
 	
 	logout = function (client) {

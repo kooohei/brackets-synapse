@@ -15,7 +15,9 @@ define(function (require, exports, module) {
 		var domain = new NodeDomain("synapse", ExtensionUtils.getModulePath(module, "node/SynapseDomain"));
 		
 		Panel.init(domain)
-		.then(SettingManager.init)
+		.then(function () {
+			SettingManager.init(domain);
+		})
 		.then(function () {
 			Menu.setRootMenu();
 		}, function (err) {

@@ -1,11 +1,12 @@
 /*jslint node: true, vars: true, plusplus: true, devel: true, nomen: true, white: true, regexp: true, indent: 2, maxerr: 50 */
-/*global define, brackets: true, $, window, navigator, Mustache, jQuery, console, moment */
+/*global define, brackets: true, window, navigator, Mustache, jQuery, console, moment */
 define(function (require, exports, module) {
 	"use strict";
-
-	//var jstree = require("modules/jstree");
-	var jquery = require("node_modules/jstree/node_modules/jquery/dist/jquery.min");
+	
+	/* jquery.jstree need below 2 line and jquery.js must be there on module directory. why? idk. */
+	var $ = jQuery.noConflict(true);
 	var jstree = require("node_modules/jstree/dist/jstree.min");
+
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
 	var FileUtils = brackets.getModule("file/FileUtils");
 	var treeview = require("text!ui/treeview.html");
@@ -14,9 +15,7 @@ define(function (require, exports, module) {
 	var DialogCollection = require("modules/DialogCollection");
 	var Project = require("modules/Project");
 	var _ = require("node_modules/lodash/index");
-
 	var Menu = require("modules/Menu");
-
 	var $treeview = null;
 	var Panel = require("modules/Panel");
 	var icon = {
@@ -62,6 +61,8 @@ define(function (require, exports, module) {
 	var contextMenuCurrentNode = null;
 
 
+
+
 	init = function (domain) {
 		_domain = domain;
 		var $container = $("#synapse-treeview-container");
@@ -85,6 +86,7 @@ define(function (require, exports, module) {
 		if ($("#synapse-tree ul").length) {
 			$("#synapse-tree").jstree("destroy");
 		}
+
 		$("#synapse-tree").jstree({
 			"core": {
 				"check_callback": true,
@@ -128,7 +130,6 @@ define(function (require, exports, module) {
 		$elem.off("select_node.jstree", onSelect);
 		$elem.off("rename_node.jstree", onRename);
 	};
-
 	setRootNodes = function (list) {
 		var deferred = new $.Deferred();
 		var obj = $("#synapse-tree").jstree(true);
@@ -333,7 +334,6 @@ define(function (require, exports, module) {
 
 	addFile = function () {
 		console.log("add new file");
-
 	};
 
 	addDirectory = function () {
