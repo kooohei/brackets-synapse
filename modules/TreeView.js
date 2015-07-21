@@ -25,6 +25,7 @@ define(function (require, exports, module) {
 		file: "fa fa-file-o"
 	};
 
+	
 	var _domain,
 		currentServer = null;
 
@@ -66,10 +67,9 @@ define(function (require, exports, module) {
 	init = function (domain) {
 		_domain = domain;
 		var $container = $("#synapse-treeview-container");
-		var $tree = Mustache.render(treeview, {});
-		$treeview = $($tree);
-		$container.append($treeview);
-
+		var tree = Mustache.render(treeview, {});
+		var $html = $(tree);
+		$container.append($html);
 		Menu.initTreeViewContextMenu();
 		Project.on(Project.MODE_CHANGED, onProjectModeChanged);
 	};

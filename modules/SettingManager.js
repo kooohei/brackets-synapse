@@ -5,28 +5,33 @@ define(function (require, exports, module) {
 	
 	var PreferencesManager = brackets.getModule("preferences/PreferencesManager");
 	var PathManager = require("modules/PathManager");
+	var Panel = require("modules/Panel");
+	var _ = brackets.getModule("thirdparty/lodash");
 	
 	// public methods
 	var init,
-			append,
+			edit,
 			validateAll,
 			validate,
-			reset
+			reset,
+			getServerList,
+			getServerSetting
 			;
 	
 	var _getServerSettings,
 			_rebuildIndex,
-			_addServerSetting,
+			_editServerSetting,
 			_saveServerSettings,
 			_connectTest,
 			_showSettingAlert,
-			_hideSettingAlert
+			_hideSettingAlert,
+			_appendServerBtnState,
+			_showConnectTestSpinner,
+			_hideConnectTestSpinner
 			;
 	
 	var domain,
-			preferences;
-	
-	// entity object
+			preferences = PreferencesManager.getExtensionPrefs("brackets-synapse");
 	var Server = function () {
 		this.host = null;
 		this.port = 21;
@@ -34,18 +39,18 @@ define(function (require, exports, module) {
 		this.password = null;
 		this.dir = null;
 	};
-	// jquery elems
 	var $serverSetting = null;
-	// regexps
 	var regexp = {
 		host: null,
 		port: null,
 		path: null
 	};
 	
+	
+	
 	init = function (_domain) {
 		domain = _domain;
-		preferences = PreferencesManager.getExtensionPrefs("brackets-synapse");
+		
 		$serverSetting = $("#synapse-server-setting");
 		regexp.host = new RegExp("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])$");
 		regexp.port = new RegExp("[1-65535]");
@@ -56,29 +61,32 @@ define(function (require, exports, module) {
 		return new $.Deferred().resolve().promise();
 	};
 	
-	append = function () {
+	edit = function (state) {
 		var deferred = new $.Deferred();
 		var setting = validateAll();
 		if (setting !== false) {
-			$("#synapse-server-setting-footer button.btn-add").prop("disabled", true);
-			$("#synapse-server-setting-footer button.btn-add").addClass("disabled");
+			_appendServerBtnState("disabled");
 			_connectTest(setting)
 				.done(function () {
-					$("#synapse-server-setting-footer button.btn-add").prop("disabled", false);
-					$("#synapse-server-setting-footer button.btn-add").removeClass("disabled");
-					_addServerSetting(setting);
+					_editServerSetting(state, setting)
+						.then(function () {
+							// reload list ui.
+						}, deferred.reject);
 				})
 				.fail(function (err) {
 					_showSettingAlert("Failed", "Could not connect to server");
-			});
+					deferred.reject(err);
+				}).always(function () {
+					_appendServerBtnState("enabled");
+					Panel.reloadServerSettingList();
+				});
 		}
+		return deferred.promise();
 	};
 	
 	validateAll = function () {
-		
 		var deferred = new $.Deferred();
 		var invalid = [];
-		
 		
 		var values = {
 			host 		: {form: $("#synapse-server-host", $serverSetting), icon: $("i.fa-desktop"), invalid: false},
@@ -113,18 +121,14 @@ define(function (require, exports, module) {
 		});
 		
 		if (invalidCnt === 0) {
-			$("button.btn-add").removeClass("disabled");
-			
 			var result = new Server();
 			keys.forEach(function(key) {
 				result[key] = values[key].form.val();
 			});
-			
+			_appendServerBtnState("enabled");
 			return result;
 		} else {
-			if (!$("button.btn-add", $serverSetting).hasClass("disabled")) {
-				$("button.btn-add").addClass("disabled");
-			}
+			_appendServerBtnState("disabled");
 			return false;
 		}
 	};
@@ -151,6 +155,31 @@ define(function (require, exports, module) {
 	reset = function () {
 		init();
 	};
+
+	_appendServerBtnState = function (state) {
+		var dev_null = null;
+		var _state = state;
+		if (state !== "enabled" && state !== "disabled") {
+			_state = "enabled";
+		}
+		var $btn = $(".synapse-server-setting-footer button.btn-add");
+		var prop = $btn.prop("disabled");
+		if (_state === "disabled") {
+			if ($btn.hasClass("disabled")) {
+				return;
+			} else {
+				dev_null = $btn.addClass("disabled");
+				dev_null = $btn.prop("disabled", true);
+			}
+		} else if (_state === "enabled") {
+			if (!$btn.hasClass("disabled")) {
+				return;
+			} else {
+				dev_null = $btn.removeClass("disabled");
+				dev_null = $btn.prop("disabled", false);
+			}
+		}
+	};
 	
 	_getServerSettings = function () {
 		var json = preferences.get("server-settings");
@@ -161,11 +190,37 @@ define(function (require, exports, module) {
 			return JSON.parse(json);
 		}
 	};
-			
-	_addServerSetting = function (setting) {
+	
+	getServerList = function () {
+		return _getServerSettings();
+	};
+	
+	getServerSetting = function (index) {
+		var list = _getServerSettings();
+		var res = null;
+		list.forEach(function (item) {
+			if (item.index === index) {
+				res = item;
+			}
+		});
+		return res;
+	};
+	
+	_editServerSetting = function (state, setting) {
 		var list = _getServerSettings(),
-				deferred = new $.Deferred();
-		list.push(setting);
+				deferred = new $.Deferred(),
+				index,
+				temp = [];
+		
+		if (state === "UPDATE") {
+			setting.index = $("#synapse-server-setting").data("index");
+			
+			temp = _.map(list, function (item, idx, ary) {
+				return (item.index === setting.index) ? setting : item;
+			});
+		} else {
+			list.push(setting);
+		}
 		_saveServerSettings(list)
 			.then(function () {
 				deferred.resolve(setting);
@@ -241,19 +296,28 @@ define(function (require, exports, module) {
 	_connectTest = function (server) {
 		var deferred = new $.Deferred();
 		var remotePath = server.dir === "" ? "./" : server.dir;
+		
+		Panel.showHeaderSpinner();
+		
 		domain.exec("Connect", server, remotePath)
 			.done(function (list) {
 				deferred.resolve();
 			})
 			.fail(function (err) {
-			console.log(err);
 				deferred.reject(err);
-		});
+			})
+			.always(function () {
+				Panel.hideHeaderSpinner();
+			});
 		return deferred.promise();
 	};
 	
+	
+	
 	exports.init = init;
-	exports.append = append;
+	exports.edit = edit;
 	exports.validateAll = validateAll;
 	exports.reset = reset;
+	exports.getServerList = getServerList;
+	exports.getServerSetting = getServerSetting;
 });

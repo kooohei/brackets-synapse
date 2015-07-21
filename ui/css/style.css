@@ -1,44 +1,41 @@
-
-#synapse *:not(button) {
-	box-sizing: border-box;
-	margin: 0;
-	padding: 0;
-	border: 0;
-	line-height: 14px;
-	font-size: 13px;
-}
-
 #synapse {
-	box-sizing: border-box;
-	background-color: rgb(25, 25, 25);
-	height: 100%;
+	-webkit-box-flex: 1;
+	-webkit-font-smoothing: antialiased;
+	box-sizing: : border-box;
+	display: none;
 	position: relative;
-	bottom: 0;
-	left: 0;
-	right: 0;
-	padding: 0;
-	z-index: 2;
+	top: 0;
+	height: 100%;
+	width: 100%;
 	overflow: hidden;
+	background-color: rgb(25, 25, 25);
+	min-height: 310px;
 }
 #synapse-header {
 	display: -webkit-flex;
 	box-sizing: border-box;
 	flex-direction: row;
 	justify-content: space-between;
+	background-color: rgb(25, 25, 25);
 	border-top: 1px solid rgba(255, 255, 255, 0.05);
 	color: #adb9bd;
-	position: relative;
+/*	position: relative;*/
 	width: 100%;
-	z-index: 2;
 	background-color: rgb(25, 25, 25);
 	overflow: hidden;
 }
-#synapse-header > div.left > span {
-	text-shadow: 0 0 8px #1e86ff;
-	letter-spacing: 2px;
-	color: #fff;
-	line-height: 24px;
-	font-size: 1.1em;
+
+#synapse-header-spinner-container {
+	display: -webkit-box;
+	padding: 6px;
+	line-height: 15px;
+	
+}
+#synapse-header .spinner {
+	display: inline-block;
+	vertical-align: middle;
+	padding: 0;
+	margin-left: 14px;
 }
 #synapse-header span.fa.disabled,
 #synapse-header span.fa.disabled:hover {
@@ -46,7 +43,18 @@
 }
 #synapse-header > div {
 	display: -webkit-box;
-	padding: 7px;
+	padding: 6px;
+	line-height: 15px;
+}
+#synapse-header > div.left,
+#synapse-header .synapse-header-spinner-container {
+	margin-top: 3px;
+}
+#synapse-header > div.left > span {
+	text-shadow: 0 0 8px #53a3ff;
+	color: #fff;
+	font-size: 15px;
+	letter-spacing: 2px;
 }
 #synapse-header > div .fa {
 	line-height: 24px;
@@ -59,11 +67,8 @@
 }
 
 
-
-
-
 #synapse-server-setting {
-	position: absolute;
+	box-sizing: border-box;
 	width: 100%;
 	background-color: rgb(20, 20, 20);
 	border-top: 1px solid rgba(255, 255, 255, 0.025);
@@ -71,15 +76,18 @@
 	box-shadow: 0 3px 6px -3px rgba(0, 0, 0, 0.8) inset, 0 -3px 6px -3px rgba(0, 0, 0, 0.7) inset;
 	padding: 7px;
 }
-
-
 #synapse-server-setting div.synapse-server-setting-header {
 	padding: 7px;
 }
 #synapse-server-setting div.synapse-server-setting-header .title {
 	color: #89929b;
 }
-
+#synapse-server-setting div.synapse-server-setting-header span.fa:hover {
+	color: rgb(143, 221, 255);
+}
+#synapse-server-setting div.synapse-server-setting-header div {
+	display: inline-block;
+}
 #synapse-server-setting table th i {
 	color: #475564;
 	padding-top: 1px;
@@ -87,7 +95,6 @@
 #synapse-server-setting table th i.done {
 	color: #c2d3e6;
 }
-
 #synapse-server-setting table th, 
 #synapse-server-setting table td {
 	vertical-align:middle;
@@ -100,6 +107,7 @@
 	border-radius: 2px;
 	height: auto;
 	background: #333;
+	margin: 0;
 }
 #synapse-server-setting table td input.invalid {
 	box-shadow: 0 1px 1px #ad3737 inset, 0 -1px 1px #ad3737 inset;
@@ -110,46 +118,126 @@
 	font-size: 12px;
 	line-height: 12px;
 }
-
 #synapse-server-setting div.synapse-server-setting-footer {
 	padding-top: 10px;
 	padding-bottom: 13px;
 	padding-left: 30px;
 	margin-bottom: 0;
 	margin-top: 10px;
-	border-top: 1px solid rgba(255, 255, 255, 0.024);
+	border-top: 1px solid rgba(255, 255, 255, 0.034);
 }
 #synapse-server-setting button {
 	padding:3px 8px;
 }
 
 
-
-
-
+#synapse-server-list {
+	box-sizing: border-box;
+	overflow-y: auto;
+	overflow-x: hidden;
+	height: 220px;
+	width: 100%;
+	background-color: #222222;
+	border-top: 1px solid #111111;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+	box-shadow: 0 3px 6px -3px rgba(0, 0, 0, 0.8) inset,
+							0 -3px 6px -3px rgba(0, 0, 0.7) inset;
+	box-shadow: 0 3px 6px -3px rgba(0, 0, 0, 0.8) inset;
+	text-shadow: none;
+}
+#synapse-server-list button:focus {
+	border: 1px solid #222222;
+}
+#synapse-server-list div.synapse-server-list-header {
+	padding: 14px;
+};
+#synapse-server-list div.synapse-server-list-header .title {
+	color: #89929b;
+}
+#synapse-server-list div.synapse-server-list-header span.fa:hover {
+	color: rgb(143, 221, 255);
+}
+#synapse-server-list div.synapse-server-list-header div {
+	display: inline-block;
+}
+#synapse-server-list div.list {
+	height: 100%;
+}
+#synapse-server-list div.list div.item {
+	border-bottom: 1px solid rgb(20, 20, 20);
+	border-top: 1px solid rgb(50, 50, 50);
+	padding: 7px 14px;
+}
+#synapse-server-list div.list div.item:first-child {
+	border-top: none;
+	
+}
+#synapse-server-list div.list div.item:last-child {
+	border-bottom: none;
+}
+#synapse-server-list div.list div.item:hover {
+	background-color: rgba(0, 0, 0, 0.1);
+}
+#synapse-server-list div.list div.item div i {
+	padding-right: 5px;
+	width: 13px;
+	opacity: 0.5;
+}
+#synapse-server-list div.list div.item div.synapse-server-list-host {
+	margin: 0;
+	padding-bottom: 5px;
+	border-bottom: 1px solid rgb(45, 45, 45);
+}
+#synapse-server-list div.list div.item div.synapse-server-list-user {
+	
+	padding-top: 5px;
+}
+#synapse-server-list div.list div.item div.synapse-server-list-host span {
+	font-size: 16px;
+	color: #18cae0;
+}
+#synapse-server-list div.list div.item div.synapse-server-list-user span {
+	max-width: 120px;
+}
+#synapse-server-list div.list div.item div.btn-group {
+	display: inline-block;
+	opacity: 0;
+}
+#synapse-server-list button {
+	padding: 2px 6px;
+	font-size: 11px;
+	border-radius: 0;
+}
+#synapse-server-list button.btn-connect:hover {
+	background-color: #016dc4;
+}
+#synapse-server-list button.btn-edit:hover {
+	background-color: #5cb85c;
+}
+#synapse-server-list button.btn-delete:hover {
+	background-color: #d9534f;
+}
 
 
 #synapse #synapse-treeview-container {
-	background-color: rgb(25, 25, 25);
-	position: relative;
-	top: 0;
-	height: 100%;
+	background-color: rgba(25, 25, 25, 0.9);
+	box-sizing: border-box;
+	position: absolute;
+	top: 37px;
+	height: auto;
+	width: 100%;
 }
-
 div#synapse-tree {
 	background-color: rgb(25, 25, 25);
 	padding-left: 7px;
 }
-
 #synapse i.jstree-icon {
 	font-size: 16px;
 	width: 20px;
 }
-
 #synapse ul {
 	padding-top: 8px;
 }
-
 #synapse ul li {
 	border: none;
 	line-height: 16px;
@@ -163,37 +251,27 @@ div#synapse-tree {
 #synapse ul li a:focus {
 	box-shadow: none;
 }
-#synapse ul li:last-child {
-	margin-bottom: 3px;
+
+#synapse .synapse-server-setting-alert * {
+	margin: 0;
+	padding: 0;
+	border: 0;
 }
-
-
-
-
-
-
-
-
-
-
 #synapse .synapse-server-setting-alert {
 	position: absolute;
 	left: 0;
 	width: 100%;
-	background-color: rgba(39, 4, 4, 0.9);
-	border-top:		 1px solid rgba(255, 255, 255, 0.05);
-	border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+	background-color: rgba(168, 35, 35, 0.95);
 	opacity: 0;
+	padding: 20px;
 }
 #synapse p.synapse-server-setting-alert-title {
-	text-shadow: 0 0 10px #000;
+	text-shadow: 0 0 5px #000;
 	color: #fff;
-	letter-spacing: 0.2em;
-	font-size: 1.2em;
-	padding: 15px 10px 10px 10px;
+	letter-spacing: 1px;
+	font-size: 16px;
+	font-weight: bold;
 }
 #synapse p.synapse-server-setting-alert-caption {
-	
 	color: #a3a3a3;
-	padding: 0 10px 15px 10px;
 }

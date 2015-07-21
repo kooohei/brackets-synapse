@@ -120,7 +120,10 @@ define(function (require, exports, module) {
 			"kohei.synapse.mainPanel",
 			Panel.showMain);
 		var topMenu = Menus.getMenu(Menus.AppMenuBar.VIEW_MENU);
-		topMenu.addMenuItem(menu);
+		topMenu.addMenuItem(menu, {
+			key: "Ctrl-Shift-Alt-Enter",
+			displayKey: "Ctrl-Shift-Alt-Enter"
+		});
 		
 		setDebugMenu();
 	};

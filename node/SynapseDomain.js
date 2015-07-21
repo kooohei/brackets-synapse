@@ -19,48 +19,59 @@
 		rename,
 		mkdir,
 		removeDirectory,
-		logout;
-	
+		logout
+		;
 	
 	
 	connect = function (server, remoteRoot, cb) {
-		try {
-			client = new Client();
-			client.on("ready", function () {
-				client.list(remoteRoot, function (err, list) {
-					if (err) {
-						console.log(err);
-						cb(err);
-					} else {
-						cb(null, list);
-					}
-					logout(client);
-				});
+		client = new Client();
+		
+		client.once("error", function (err) {
+			if (err) {
+				cb(err);
+			}
+		});
+		
+		client.once("ready", function () {
+			client.list(remoteRoot, function (err, list) {
+				if (err) {
+					cb(err);
+				} else {
+					cb(null, list);
+				}
+				logout(client);
 			});
-			client.connect(server);
-		} catch (e) {
-			
-		}
+		});
+
+		server.debug = true;
+		client.connect(server);
 	};
 	
 	logout = function (client) {
-		client.on("close", function () {
+		client.once("close", function () {
 		});
-		client.on("end", function () {
+		client.once("end", function () {
 		});
 
 		client.logout(function (err, res) {
 			if (err) {
 				console.log("unexpected error lv.666");
 			} else {
-				console.log(res);
+				client = null;
 			}
 		});
 	};
 	
 	getList = function (server, path, cb) {
 		client = new Client();
-		client.on("ready", function () {
+		
+		client.once("error", function (err) {
+			if (err) {
+				cb(err);
+			}
+		});
+		
+		client.once("ready", function () {
 			client.list(path, function (err, list) {
 				if (err) {
 					cb(err);
@@ -74,9 +85,15 @@
 	};
 	
 	rename = function (server, oldPath, newPath, cb) {
-		
 		client = new Client();
-		client.on("ready", function () {
+		
+		client.once("error", function (err) {
+			if (err) {
+				cb(err);
+			}
+		});
+		
+		client.once("ready", function () {
 			client.rename(oldPath , newPath , function (err) {
 				if (err) {
 					cb(err);
@@ -94,9 +111,14 @@
 	mkdir = function (server, path, cb) {
 		
 		client = new Client();
-		client.on("ready", function () {
-			
-			
+		
+		client.once("error", function (err) {
+			if (err) {
+				cb(err);
+			}
+		});
+		
+		client.once("ready", function () {
 			client.mkdir(path, false, function (err) {
 				
 				if (err) {
@@ -113,9 +135,15 @@
 	};
 	
 	removeDirectory = function (server, path, cb) {
-		
 		client = new Client();
-		client.on("ready", function () {
+		
+		client.once("error", function (err) {
+			if (err) {
+				cb(err);
+			}
+		});
+		
+		client.once("ready", function () {
 			client.rmdir(path, true, function (err) {
 				if (err) {
 					cb(err);

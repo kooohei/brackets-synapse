@@ -17,7 +17,6 @@ define(function (require, exports, module) {
 	 */
 	var showYesNoModal;
 	
-	
 	/**
 	 * This dialog will ask whether to yes or no.
 	 *

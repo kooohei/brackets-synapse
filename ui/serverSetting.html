@@ -1,7 +1,9 @@
 <div id="synapse-server-setting">
-	
 	<div class="synapse-server-setting-header">
 		<div class="title">Server Setting</div>
+		<div class="pull-right">
+			<span class="fa fa-times close-btn"></span>
+		</div>
 	</div>
 	<table>
 		<tr>
@@ -17,7 +19,7 @@
 				<i class="fa fa-plug"></i>
 			</th>
 			<td>
-				<input type="text" id="synapse-server-port" placeholder="PORT" style="width:70px;">
+				<input type="text" id="synapse-server-port" placeholder="PORT" style="width:70px;" value="21">
 			</td>
 		</tr>
 		<tr>
@@ -47,7 +49,7 @@
 	</table>
 	
 	<div class="synapse-server-setting-footer">
-		<button class="btn small primary btn-add" data-button-id="ok">APPEND</button>
+		<button class="btn small primary btn-add disabled" data-button-id="ok" disabled="true">APPEND</button>
 		<button class="btn small btn-cancel" data-button-id="cancel">CANCEL</button>
 	</div>
 	
