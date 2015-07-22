@@ -3,10 +3,11 @@
 define(function (require, exports, module) {
 	"use strict";
 	
-	/* jquery.jstree need below 2 line and jquery.js must be there on module directory. why? idk. */
-	var $ = jQuery.noConflict(true);
+console.log(module);	
+	/* jstree plugin need berow 2 lines and jquery.js must be there on root directory. */
+	//var $ = jQuery.noConflict(true);
 	var jstree = require("node_modules/jstree/dist/jstree.min");
-
+	
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
 	var FileUtils = brackets.getModule("file/FileUtils");
 	var treeview = require("text!ui/treeview.html");
@@ -14,7 +15,7 @@ define(function (require, exports, module) {
 	var Strings = require("strings");
 	var DialogCollection = require("modules/DialogCollection");
 	var Project = require("modules/Project");
-	var _ = require("node_modules/lodash/index");
+	var _ = brackets.getModule("lodash");
 	var Menu = require("modules/Menu");
 	var $treeview = null;
 	var Panel = require("modules/Panel");
@@ -25,7 +26,7 @@ define(function (require, exports, module) {
 		file: "fa fa-file-o"
 	};
 
-	
+
 	var _domain,
 		currentServer = null;
 
@@ -143,7 +144,6 @@ define(function (require, exports, module) {
 		/* online state property, that will be move to "Project" module. */
 		/* please use that instead of following code. */
 		// if (online) return;
-
 		currentServer = server;
 		PathManager.setRemoteRoot(server.dir);
 
@@ -158,7 +158,12 @@ define(function (require, exports, module) {
 			.then(setRootNodes)
 			.then(function () {
 				try {
-					Project.open(currentServer);
+					Project.open(currentServer)
+						.then(function (str) {
+							console.log(str);
+						}, function () {
+							console.log("error");
+						});
 				} catch (e) {
 					console.error(e);
 				}

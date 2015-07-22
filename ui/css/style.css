@@ -2,14 +2,13 @@
 	-webkit-box-flex: 1;
 	-webkit-font-smoothing: antialiased;
 	box-sizing: : border-box;
-	display: none;
 	position: relative;
 	top: 0;
 	height: 100%;
 	width: 100%;
 	overflow: hidden;
 	background-color: rgb(25, 25, 25);
-	min-height: 310px;
+	min-height: 200px;
 }
 #synapse-header {
 	display: -webkit-flex;
@@ -29,7 +28,7 @@
 	display: -webkit-box;
 	padding: 6px;
 	line-height: 15px;
-	
+
 }
 #synapse-header .spinner {
 	display: inline-block;
@@ -56,6 +55,10 @@
 	font-size: 15px;
 	letter-spacing: 2px;
 }
+#synapse-header > div.right {
+	z-index: 1;
+	background-color: rgb(25, 25, 25);
+}
 #synapse-header > div .fa {
 	line-height: 24px;
 	height: 24px;
@@ -68,8 +71,12 @@
 
 
 #synapse-server-setting {
+	position: absolute;
+	top: 37px;
+	left: 0;
 	box-sizing: border-box;
 	width: 100%;
+	height: auto;
 	background-color: rgb(20, 20, 20);
 	border-top: 1px solid rgba(255, 255, 255, 0.025);
 	border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -95,7 +102,7 @@
 #synapse-server-setting table th i.done {
 	color: #c2d3e6;
 }
-#synapse-server-setting table th, 
+#synapse-server-setting table th,
 #synapse-server-setting table td {
 	vertical-align:middle;
 	padding: 3px 5px;
@@ -132,10 +139,12 @@
 
 
 #synapse-server-list {
+	position: absolute;
+	top: 37px;
 	box-sizing: border-box;
 	overflow-y: auto;
 	overflow-x: hidden;
-	height: 220px;
+	height: auto;
 	width: 100%;
 	background-color: #222222;
 	border-top: 1px solid #111111;
@@ -170,7 +179,7 @@
 }
 #synapse-server-list div.list div.item:first-child {
 	border-top: none;
-	
+
 }
 #synapse-server-list div.list div.item:last-child {
 	border-bottom: none;
@@ -189,7 +198,7 @@
 	border-bottom: 1px solid rgb(45, 45, 45);
 }
 #synapse-server-list div.list div.item div.synapse-server-list-user {
-	
+
 	padding-top: 5px;
 }
 #synapse-server-list div.list div.item div.synapse-server-list-host span {
@@ -220,11 +229,10 @@
 
 
 #synapse #synapse-treeview-container {
-	background-color: rgba(25, 25, 25, 0.9);
+	background-color: rgba(25, 25, 25, 1);
 	box-sizing: border-box;
-	position: absolute;
-	top: 37px;
-	height: auto;
+	position: relative;
+	height: 100%;
 	width: 100%;
 }
 div#synapse-tree {

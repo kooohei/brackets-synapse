@@ -1,5 +1,5 @@
 /*jslint node: true, vars: true, plusplus: true, devel: true, nomen: true, regexp: true, indent: 2, maxerr: 50 */
-/*global define, $, brackets, Mustache, window, console, moment */
+/*global define, $, brackets, Mustache, window, console */
 define(function (require, exports, module) {
 	"use strict";
 	var PathManager = require("modules/PathManager");
@@ -50,7 +50,7 @@ define(function (require, exports, module) {
 	};
 
 
-	// Start function 
+	// Start function
 	open = function (server) {
 
 		if (State.mode === ONLINE) {
@@ -59,23 +59,22 @@ define(function (require, exports, module) {
 
 		var deferred = new $.Deferred();
 		_initProjectContext()
-			.then(function () {
-				return _directoryIsExists(_projectDir);
-			})
+			.then(_directoryIsExists)
 			.then(_getDirectoryContents)
 			.then(_removeDirectoryContents)
 			.then(function () {
 				_fallbackProjectRoot = ProjectManager.getProjectRoot().fullPath;
-				var promise = ProjectManager.openProject(_projectDir.fullPath);
-				return promise;
-			})
-			.done(function () {
-				State.mode = ONLINE;
-			})
-			.fail(function (err) {
-				console.error(err);
-				ProjectManager.openProject(_fallbackProjectRoot);
-			});
+				return ProjectManager.openProject(_projectDir.fullPath)
+				.then(function () {
+					console.log("promise is done when the called openProject")
+					State.mode = ONLINE;
+					return new $.Deferred().resolve().promise();
+				}, function (err) {
+					console.log("promise is fail when the called openProject")
+					State.mode = OFFLINE;
+					return new $.Deferred().reject(err).promise();
+				});
+			}).then(deferred.resolve, deferred.reject);
 		return deferred.promise();
 	};
 
@@ -91,7 +90,6 @@ define(function (require, exports, module) {
 			.fail(function (err) {
 				console.error(err);
 			});
-
 	};
 
 	_initProjectContext = function () {
@@ -109,7 +107,7 @@ define(function (require, exports, module) {
 						if (err) {
 							return deferred.reject(err).promise();
 						} else {
-							deferred.resolve(res);
+							deferred.resolve();
 						}
 					});
 				} else {
@@ -126,9 +124,9 @@ define(function (require, exports, module) {
 				if (!res) {
 					_transactionDir.create(function (err, res) {
 						if (err) {
-							deferred2.reject(err);
+							return deferred2.reject(err).promise();
 						} else {
-							deferred2.resolve(res);
+							deferred2.resolve();
 						}
 					});
 				} else {
@@ -136,6 +134,7 @@ define(function (require, exports, module) {
 				}
 			}
 		});
+
 		if (deferred.state() === "resolved" && deferred2.state() === "resolved") {
 			master.resolve();
 		} else {
@@ -147,8 +146,9 @@ define(function (require, exports, module) {
 	/**
 	 * Wrapped brackets api methods for Promise.
 	 */
-	_directoryIsExists = function (directory) {
+	_directoryIsExists = function () {
 		var deferred = new $.Deferred();
+		var directory = _projectDir;
 		directory.exists(function (err, exists) {
 			if (err) {
 				deferred.reject(err);

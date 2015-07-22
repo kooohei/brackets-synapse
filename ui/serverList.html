@@ -1,4 +1,4 @@
-<div id="synapse-server-list" data-state="close">
+<div id="synapse-server-list" class="hide">
 	<div class="synapse-server-list-header">
 		<div class="title">Server List</div>
 		<div class="pull-right">
@@ -7,7 +7,7 @@
 	</div>
 	<div class="list">
 	{{#serverList}}
-		<div class="item">
+		<div class="item" data-index="{{index}}">
 			<div class="synapse-server-list-host">
 				<i class="fa fa-cloud"></i>
 				<span>{{host}}</span>

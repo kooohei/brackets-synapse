@@ -2,12 +2,12 @@
 /*global define, $, brackets, Mustache, window, console, moment */
 define(function (require, exports, module) {
 	"use strict";
-	
+
 	var PreferencesManager = brackets.getModule("preferences/PreferencesManager");
 	var PathManager = require("modules/PathManager");
 	var Panel = require("modules/Panel");
 	var _ = brackets.getModule("thirdparty/lodash");
-	
+
 	// public methods
 	var init,
 			edit,
@@ -15,9 +15,10 @@ define(function (require, exports, module) {
 			validate,
 			reset,
 			getServerList,
-			getServerSetting
+			getServerSetting,
+			deleteServerSetting
 			;
-	
+
 	var _getServerSettings,
 			_rebuildIndex,
 			_editServerSetting,
@@ -29,7 +30,7 @@ define(function (require, exports, module) {
 			_showConnectTestSpinner,
 			_hideConnectTestSpinner
 			;
-	
+
 	var domain,
 			preferences = PreferencesManager.getExtensionPrefs("brackets-synapse");
 	var Server = function () {
@@ -45,22 +46,24 @@ define(function (require, exports, module) {
 		port: null,
 		path: null
 	};
-	
-	
-	
+
+
+
 	init = function (_domain) {
 		domain = _domain;
-		
+
 		$serverSetting = $("#synapse-server-setting");
 		regexp.host = new RegExp("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])$");
 		regexp.port = new RegExp("[1-65535]");
 		regexp.unix_path = new RegExp("^$|^\\.\\/.*?|^\\/.*?");
 		regexp.win_path = new RegExp("^[a-z]\\:\\\.*?");
-		$("input", $serverSetting).val("");
+		$("input", $serverSetting).val("").removeClass("invalid");
+		$("th > i", $serverSetting).removeClass("done");
 		$("button.btn-add").addClass("disabled");
+
 		return new $.Deferred().resolve().promise();
 	};
-	
+
 	edit = function (state) {
 		var deferred = new $.Deferred();
 		var setting = validateAll();
@@ -70,7 +73,7 @@ define(function (require, exports, module) {
 				.done(function () {
 					_editServerSetting(state, setting)
 						.then(function () {
-							// reload list ui.
+							Panel.showServerList();
 						}, deferred.reject);
 				})
 				.fail(function (err) {
@@ -78,16 +81,15 @@ define(function (require, exports, module) {
 					deferred.reject(err);
 				}).always(function () {
 					_appendServerBtnState("enabled");
-					Panel.reloadServerSettingList();
 				});
 		}
 		return deferred.promise();
 	};
-	
+
 	validateAll = function () {
 		var deferred = new $.Deferred();
 		var invalid = [];
-		
+
 		var values = {
 			host 		: {form: $("#synapse-server-host", $serverSetting), icon: $("i.fa-desktop"), invalid: false},
 			port 		: {form: $("#synapse-server-port", $serverSetting), icon: $("i.fa-plug"), invalid: false},
@@ -95,17 +97,17 @@ define(function (require, exports, module) {
 			password: {form: $("#synapse-server-password", $serverSetting),icon: $("i.fa-unlock-alt"), invalid: false},
 			dir	 		: {form: $("#synapse-server-dir", $serverSetting), icon: $("i.fa-sitemap"), invalid: false}
 		};
-		
+
 		var keys = Object.keys(values);
-		
+
 		keys.forEach(function (key) {
 			values[key].form.removeClass("invalid");
 			values[key].invalid = false;
 			values[key].icon.removeClass("done");
 		});
-		
+
 		var invalidCnt = 0;
-		
+
 		keys.forEach(function (key) {
 			var obj = values[key];
 			if (!validate(key, obj.form.val())) {
@@ -119,7 +121,7 @@ define(function (require, exports, module) {
 			}
 			invalid.push(obj);
 		});
-		
+
 		if (invalidCnt === 0) {
 			var result = new Server();
 			keys.forEach(function(key) {
@@ -132,7 +134,7 @@ define(function (require, exports, module) {
 			return false;
 		}
 	};
-	
+
 	validate = function (prop, value) {
 		if (prop === "host") {
 			return value !== "" && value.match(regexp.host);
@@ -149,11 +151,24 @@ define(function (require, exports, module) {
 		if (prop === "dir") {
 			return value === "" || (value.match(regexp.unix_path) || value.match(regexp.win_path));
 		}
-				
+
 	};
-	
+
 	reset = function () {
-		init();
+		return init(domain);
+	};
+
+	deleteServerSetting = function (index) {
+		var deferred = new $.Deferred();
+		var slist = getServerList();
+		var result = getServerSetting(index);
+		var list = _.filter(slist, function (item, idx, ary) {
+			return item.index !== index;
+		});
+		_saveServerSettings(list)
+		.then(deferred.resolve);
+
+		return deferred.promise();
 	};
 
 	_appendServerBtnState = function (state) {
@@ -180,7 +195,7 @@ define(function (require, exports, module) {
 			}
 		}
 	};
-	
+
 	_getServerSettings = function () {
 		var json = preferences.get("server-settings");
 		if (typeof (json) === "undefined") {
@@ -190,11 +205,11 @@ define(function (require, exports, module) {
 			return JSON.parse(json);
 		}
 	};
-	
+
 	getServerList = function () {
 		return _getServerSettings();
 	};
-	
+
 	getServerSetting = function (index) {
 		var list = _getServerSettings();
 		var res = null;
@@ -205,19 +220,20 @@ define(function (require, exports, module) {
 		});
 		return res;
 	};
-	
+
 	_editServerSetting = function (state, setting) {
 		var list = _getServerSettings(),
 				deferred = new $.Deferred(),
 				index,
 				temp = [];
-		
+
 		if (state === "UPDATE") {
 			setting.index = $("#synapse-server-setting").data("index");
-			
+
 			temp = _.map(list, function (item, idx, ary) {
 				return (item.index === setting.index) ? setting : item;
 			});
+			list = temp;
 		} else {
 			list.push(setting);
 		}
@@ -227,7 +243,7 @@ define(function (require, exports, module) {
 			}, deferred.reject);
 		return deferred.promise();
 	};
-	
+
 	_saveServerSettings = function (list) {
 		var deferred = new $.Deferred();
 		if (!preferences.set("server-settings", JSON.stringify(list))) {
@@ -242,14 +258,14 @@ define(function (require, exports, module) {
 		}
 		return deferred.promise();
 	};
-	
+
 	_showSettingAlert = function (title, caption) {
 		var $container = $("<div/>").addClass("synapse-server-setting-alert")
 				.html($("<p/>").html(title).addClass("synapse-server-setting-alert-title"))
 				.append($("<p/>").html(caption).addClass("synapse-server-setting-alert-caption"));
-		
+
 		$("#synapse-server-setting").append($container);
-		
+
 		var height = $container.outerHeight();
 		var left   = "-" + $container.outerWidth() + "px";
 		var settingHeight = $("#synapse-server-setting").height();
@@ -263,7 +279,7 @@ define(function (require, exports, module) {
 			$(this).on("click", _hideSettingAlert);
 		});
 	};
-	
+
 	_hideSettingAlert = function (e) {
 		var $container = $(e.currentTarget);
 		var left = "-" + $container.outerWidth() + "px";
@@ -276,12 +292,12 @@ define(function (require, exports, module) {
 			$container.remove();
 		});
 	};
-	
+
 	_rebuildIndex = function () {
 		var list = _getServerSettings();
 		var deferred = new $.Deferred();
 		var i;
-		
+
 		for (i = 0; i < list.length; i++) {
 			list[i].index = i + 1;
 		}
@@ -292,13 +308,13 @@ define(function (require, exports, module) {
 		}
 		return deferred.promise();
 	};
-	
+
 	_connectTest = function (server) {
 		var deferred = new $.Deferred();
 		var remotePath = server.dir === "" ? "./" : server.dir;
-		
+
 		Panel.showHeaderSpinner();
-		
+
 		domain.exec("Connect", server, remotePath)
 			.done(function (list) {
 				deferred.resolve();
@@ -311,13 +327,15 @@ define(function (require, exports, module) {
 			});
 		return deferred.promise();
 	};
-	
-	
-	
+
+
+
 	exports.init = init;
 	exports.edit = edit;
 	exports.validateAll = validateAll;
 	exports.reset = reset;
 	exports.getServerList = getServerList;
 	exports.getServerSetting = getServerSetting;
+	exports.deleteServerSetting = deleteServerSetting;
+
 });
