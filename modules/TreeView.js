@@ -3,19 +3,19 @@
 define(function (require, exports, module) {
 	"use strict";
 	
-console.log(module);	
 	/* jstree plugin need berow 2 lines and jquery.js must be there on root directory. */
-	//var $ = jQuery.noConflict(true);
+	var $ = jQuery.noConflict(true);
 	var jstree = require("node_modules/jstree/dist/jstree.min");
 	
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
 	var FileUtils = brackets.getModule("file/FileUtils");
+	var _ = brackets.getModule("thirdparty/lodash");
 	var treeview = require("text!ui/treeview.html");
 	var PathManager = require("modules/PathManager");
 	var Strings = require("strings");
 	var DialogCollection = require("modules/DialogCollection");
 	var Project = require("modules/Project");
-	var _ = brackets.getModule("lodash");
+	
 	var Menu = require("modules/Menu");
 	var $treeview = null;
 	var Panel = require("modules/Panel");
@@ -25,7 +25,6 @@ console.log(module);
 		folder_disable: "fa fa-folder-o",
 		file: "fa fa-file-o"
 	};
-
 
 	var _domain,
 		currentServer = null;
@@ -211,7 +210,6 @@ console.log(module);
 		var requestPath = PathManager.completion(pathAry);
 		var res = _domain.exec("List", currentServer, requestPath)
 			.done(function (list) {
-
 				if (list.length > 0) {
 					createNode(node, list, obj);
 				} else {
