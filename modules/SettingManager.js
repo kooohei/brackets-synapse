@@ -50,6 +50,7 @@ define(function (require, exports, module) {
 
 
 	init = function (_domain) {
+		var deferred = new $.Deferred();
 		domain = _domain;
 
 		$serverSetting = $("#synapse-server-setting");
@@ -60,8 +61,8 @@ define(function (require, exports, module) {
 		$("input", $serverSetting).val("").removeClass("invalid");
 		$("th > i", $serverSetting).removeClass("done");
 		$("button.btn-add").addClass("disabled");
-
-		return new $.Deferred().resolve().promise();
+		deferred.resolve(domain);
+		return deferred.promise();
 	};
 
 	edit = function (state) {

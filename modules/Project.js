@@ -66,11 +66,11 @@ define(function (require, exports, module) {
 				_fallbackProjectRoot = ProjectManager.getProjectRoot().fullPath;
 				return ProjectManager.openProject(_projectDir.fullPath)
 				.then(function () {
-					console.log("promise is done when the called openProject")
+					//console.log("promise is done when the called openProject");
 					State.mode = ONLINE;
 					return new $.Deferred().resolve().promise();
 				}, function (err) {
-					console.log("promise is fail when the called openProject")
+					//console.log("promise is fail when the called openProject");
 					State.mode = OFFLINE;
 					return new $.Deferred().reject(err).promise();
 				});
@@ -177,7 +177,6 @@ define(function (require, exports, module) {
 
 	_removeDirectoryContents = function (contents) {
 		if (contents.length === 0) {
-			console.log("4: _removeDirectoryContents");
 			return new $.Deferred().resolve().promise();
 		}
 		var funcs = [];

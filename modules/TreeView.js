@@ -71,7 +71,6 @@ define(function (require, exports, module) {
 		var $html = $(tree);
 		$container.append($html);
 		Menu.initTreeViewContextMenu();
-		Project.on(Project.MODE_CHANGED, onProjectModeChanged);
 	};
 
 	clearCurrentTree = function () {
@@ -160,8 +159,11 @@ define(function (require, exports, module) {
 					Project.open(currentServer)
 						.then(function (str) {
 							console.log(str);
+								Project.on(Project.MODE_CHANGED, onProjectModeChanged);
+
 						}, function () {
 							console.log("error");
+							Project.on(Project.MODE_CHANGED, onProjectModeChanged);
 						});
 				} catch (e) {
 					console.error(e);

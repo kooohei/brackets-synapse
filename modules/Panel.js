@@ -6,40 +6,44 @@ define(function (require, exports, module) {
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
 	var Resizer = brackets.getModule("utils/Resizer");
 	var Strings = require("strings");
-	var TreeView = require("modules/TreeView");
 	var Project = require("modules/Project");
-	var SettingManager = require("modules/SettingManager");
 	var DialogCollection = require("modules/DialogCollection");
-	var _domain = null;
 	var _ = brackets.getModule("thirdparty/lodash");
-
-	//Methods
+	var FileTreeView = require("modules/FileTreeView");
+	var SettingManager = require("modules/SettingManager");
+	
+	
+	var TreeView = require("modules/TreeView");
+	var RemoteManager = require("modules/RemoteManager");
+	
+	var _domain = null;
+	
 	var init,
-		_initMainUI,
 		_initServerSettingUI,
-		_initServerListUI,
 		closeProject,
-		showMain,
 		hideMain,
-		connect,
 		reloadServerSettingList,
-		showSpinner,
 		hideSpinner,
-		showHeaderSpinner,
 		hideHeaderSpinner,
-		_reloadServerSettingListWhenDelete,
 		_onEdit,
-		_onClickConnectBtn,
 		_onClickEditBtn,
-		_onClickDeleteBtn,
 		_onEnterListBtns,
-		_onLeaveListBtns;
-
-	// Private methods
-	var _showServerSetting,
+		//Methods
+		_initMainUI,
+		_initServerListUI,
+		showMain,
+		connect,
+		showSpinner,
+		showHeaderSpinner,
+		_reloadServerSettingListWhenDelete,
+		_onClickConnectBtn,
+		_onClickDeleteBtn,
+		_onLeaveListBtns,
+		// Private methods
 		_hideServerSetting,
-		showServerList,
 		_hideServerList,
+		_showServerSetting,
+		showServerList,
 		_removeServerSettingListRow;
 
 	var j = {
@@ -78,10 +82,11 @@ define(function (require, exports, module) {
 	var server_list_html = require("../text!ui/serverList.html");
 	var $sidebar = $("#sidebar");
 
-
+	
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/style.css");
+	ExtensionUtils.loadStyleSheet(module, "../ui/css/treeview.css");
 	ExtensionUtils.loadStyleSheet(module, "../node_modules/font-awesome/css/font-awesome.min.css");
-	ExtensionUtils.loadStyleSheet(module, "../node_modules/jstree/dist/themes/default-dark/style.min.css");
+	//ExtensionUtils.loadStyleSheet(module, "../node_modules/jstree/dist/themes/default-dark/style.min.css");
 
 	init = function (domain) {
 		_domain = domain;
@@ -90,12 +95,12 @@ define(function (require, exports, module) {
 			.then(_initServerSettingUI)
 			.then(_initServerListUI)
 			.then(function () {
-				TreeView.init(_domain);
 				//for Devel
-				//showMain();
+				showMain();
 				brackets.app.showDeveloperTools();
+				return new $.Deferred().resolve().promise();
 			});
-		return deferred.resolve().promise();
+		return deferred.resolve(domain).promise();
 	};
 
 	_initMainUI = function () {
@@ -208,15 +213,6 @@ define(function (require, exports, module) {
 	};
 
 	closeProject = function (e) {
-		var test = {
-			host: "s2.bitglobe.net",
-			port: 21,
-			user: "hayashi",
-			password: "kohei0730",
-			dir: "/home/hayashi"
-		};
-		TreeView.connect(test);
-
 		//
 		//		var $btn = $(e.currentTarget);
 		//		if ($btn.hasClass("disabled")) {
@@ -426,7 +422,7 @@ define(function (require, exports, module) {
 		var $btn = $(e.currentTarget);
 		var index = $btn.data("index");
 		var server = SettingManager.getServerSetting(index);
-		TreeView.connect(server);
+		RemoteManager.connect(server);
 	};
 
 	_onClickEditBtn = function (e) {
@@ -449,24 +445,24 @@ define(function (require, exports, module) {
 				"It will remove a server that has been selected",
 				"OK",
 				"CANCEL")
-		.then(function (res) {
-			if (res === "OK") {
-				SettingManager.deleteServerSetting(idx)
-				.then(function () {
-					return _removeServerSettingListRow(idx);
-				})
-				.then(_reloadServerSettingListWhenDelete)
-				.then(function () {
-					var list = SettingManager.getServerList();
-					if (list.length === 0) {
-						return _hideServerList();
-					}
-				})
-				.then(deferred.resolve);
-			} else {
-				deferred.resolve().promise();
-			}
-		});
+			.then(function (res) {
+				if (res === "OK") {
+					SettingManager.deleteServerSetting(idx)
+						.then(function () {
+							return _removeServerSettingListRow(idx);
+						})
+						.then(_reloadServerSettingListWhenDelete)
+						.then(function () {
+							var list = SettingManager.getServerList();
+							if (list.length === 0) {
+								return _hideServerList();
+							}
+						})
+						.then(deferred.resolve);
+				} else {
+					deferred.resolve().promise();
+				}
+			});
 		return deferred.promise();
 	};
 
@@ -486,13 +482,13 @@ define(function (require, exports, module) {
 			"position": "relative"
 		});
 		$elem.animate({
-			"left": $elem.outerWidth() + "px",
-			"opacity": 0
-		}, 400).promise()
-		.done(function () {
-			$(this).remove();
-			deferred.resolve();
-		});
+				"left": $elem.outerWidth() + "px",
+				"opacity": 0
+			}, 400).promise()
+			.done(function () {
+				$(this).remove();
+				deferred.resolve();
+			});
 		return deferred.promise();
 	};
 

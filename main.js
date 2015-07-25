@@ -9,14 +9,15 @@ define(function (require, exports, module) {
 	var Menu = require("modules/Menu");
 	var Panel = require("modules/Panel");
 	var SettingManager = require("modules/SettingManager");
-6	
+	
+	var RemoteManager = require("modules/RemoteManager");
+	
 	AppInit.appReady(function () {
 		var domain = new NodeDomain("synapse", ExtensionUtils.getModulePath(module, "node/SynapseDomain"));
 		
 		Panel.init(domain)
-		.then(function () {
-			SettingManager.init(domain);
-		})
+		.then(SettingManager.init)
+		.then(RemoteManager.init)
 		.then(function () {
 			Menu.setRootMenu();
 		}, function (err) {

@@ -6,6 +6,7 @@ define(function (require, exports, module) {
 	var FileUtils = brackets.getModule("file/FileUtils");
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
 	
+	
 	var remoteRoot = [];
 	var isRelative = false;
 	var modulePath = null;
@@ -23,8 +24,12 @@ define(function (require, exports, module) {
 	
 	
 	setRemoteRoot = function (_path) {
+		// '(^)./', '/.(.*n)/', '/./', '/..$', '/../$'
+		if (_path.match(/(^\.+\/|\/\.+\/|\/\.\/|\/\.\.\/?$)/g)) {
+			throw new Error("path is invalid");
+		}
 		isRelative = (_path.charAt(0) !== "/");
-		remoteRoot = _path.split('/').filter(function (item) { return (item !== "") && (item !== "."); });
+		remoteRoot = _path.split('/').filter(function (item) { return (item !== "") && (item !== ".") && (item !== ".."); });
 	};
 	
 	getRemoteRoot = function () {
