@@ -5,23 +5,32 @@ define(function (require, exports, module) {
 	
 	var FileUtils = brackets.getModule("file/FileUtils");
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
-	
+	var Project = require("modules/Project");
 	
 	var remoteRoot = [];
 	var isRelative = false;
 	var modulePath = null;
+	var _projectDir;
 	
-	var	setRemoteRoot,
-		completion,
-		getRemoteRoot,
-		getBaseDirectory,
-		getProjectDirectoryPath,
-		getTransactionDirectoryPath
-		;
+	var	init,
+			setRemoteRoot,
+			completionRemotePath,
+			completionLocalPath,
+			getRemoteRoot,
+			getBaseDirectory,
+			getProjectDirectoryPath,
+			getTransactionDirectoryPath,
+			_onProjectStateChanged
+			;
 	
 	var PROJECT_DIR = "__PROJ__";
-	var TRANSACTION_DIR  = "__TRANSACTION__";
 	
+	init = function (domain) {
+		var deferred = new $.Deferred();
+		Project.on(Project.PROJECT_STATE_CHANGED, _onProjectStateChanged);
+		
+		return deferred.resolve(domain).promise();
+	};
 	
 	setRemoteRoot = function (_path) {
 		// '(^)./', '/.(.*n)/', '/./', '/..$', '/../$'
@@ -29,24 +38,31 @@ define(function (require, exports, module) {
 			throw new Error("path is invalid");
 		}
 		isRelative = (_path.charAt(0) !== "/");
-		remoteRoot = _path.split('/').filter(function (item) { return (item !== "") && (item !== ".") && (item !== ".."); });
+		remoteRoot = _path.split('/').filter(function (item) {
+			return (item !== "") && (item !== ".") && (item !== "..");
+		});
 	};
 	
 	getRemoteRoot = function () {
 		var tmp = [].concat(remoteRoot);
-		return ((isRelative) ? "./" : "/") + tmp.join("/");
+		return ((isRelative) ? "" : "/") + tmp.join("/");
 	};
 	
-	completion = function (pathAry) {
-		
+	completionRemotePath = function (pathAry) {
 		var remotePath = getRemoteRoot();
-		if (pathAry === "#" || pathAry === false) {
-			return  remotePath;
+		if (pathAry === false || pathAry.length === 0) {
+			return remotePath;
 		}
-		if (pathAry.length === 0) {
-			return ((isRelative) ? "./" : "/");
+		if (remotePath === "") {
+			return pathAry.join("/");
+		} else if (remotePath === "/") {
+			return "/" + pathAry.join("/");
+		} else {
+			return remotePath + "/" + pathAry.join("/");
 		}
-		return remotePath + ((remotePath === "/" || remotePath === "./") ? "" : "/") + pathAry.join("/");
+	};
+	completionLocalPath = function (pathAry) {
+		return _projectDir.fullPath + pathAry.join("/");
 	};
 	
 	getProjectDirectoryPath = function (_path) {
@@ -55,25 +71,20 @@ define(function (require, exports, module) {
 		if (path === "#" || path === "") {
 			path = modulePath + PROJECT_DIR;
 		} else {
-			path = modulePath + path;
-		}
-		return path;
-	};
-	getTransactionDirectoryPath = function (_path) {
-		var path = _path || "";
-		var modulePath = FileUtils.getParentPath(ExtensionUtils.getModulePath(module));
-		if (path === "#" || path === "") {
-			path = modulePath + TRANSACTION_DIR;
-		} else {
-			path = modulePath + TRANSACTION_DIR;
+			path = modulePath + PROJECT_DIR + "/" + path;
 		}
 		return path;
 	};
 	
+	_onProjectStateChanged = function (e, obj) {
+		_projectDir = obj.directory;
+	};
 	
+	exports.init = init;
 	exports.setRemoteRoot = setRemoteRoot;
 	exports.getRemoteRoot = getRemoteRoot;
-	exports.completion = completion;
+	exports.completionRemotePath = completionRemotePath;
+	exports.completionLocalPath = completionLocalPath;
 	exports.getProjectDirectoryPath = getProjectDirectoryPath;
 	exports.getTransactionDirectoryPath = getTransactionDirectoryPath;
 });

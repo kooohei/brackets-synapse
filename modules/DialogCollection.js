@@ -5,21 +5,21 @@ define(function (require, exports, module) {
 
 	var Dialogs = brackets.getModule("widgets/Dialogs");
 
-// Defaultr Dialog Class Names
-//	DIALOG_ID_ERROR             = "error-dialog";
-//	DIALOG_ID_INFO              = "error-dialog";
-//	DIALOG_ID_SAVE_CLOSE        = "save-close-dialog";
-//	DIALOG_ID_EXT_CHANGED       = "ext-changed-dialog";
-//	DIALOG_ID_EXT_DELETED       = "ext-deleted-dialog";
-//	DIALOG_ID_LIVE_DEVELOPMENT  = "live-development-error-dialog";
-//	DIALOG_ID_CHANGE_EXTENSIONS = "change-marked-extensions";
+	// Defaultr Dialog Class Names
+	//	DIALOG_ID_ERROR             = "error-dialog";
+	//	DIALOG_ID_INFO              = "error-dialog";
+	//	DIALOG_ID_SAVE_CLOSE        = "save-close-dialog";
+	//	DIALOG_ID_EXT_CHANGED       = "ext-changed-dialog";
+	//	DIALOG_ID_EXT_DELETED       = "ext-deleted-dialog";
+	//	DIALOG_ID_LIVE_DEVELOPMENT  = "live-development-error-dialog";
+	//	DIALOG_ID_CHANGE_EXTENSIONS = "change-marked-extensions";
 
 
 	/**
 	 * Static Vars
 	 */
 	var Yes = "Confirm_Dialog_Button_Yes",
-		No = "Confirm_Dialog_Button_No";
+			No = "Confirm_Dialog_Button_No";
 
 	/**
 	 * Methods
@@ -62,6 +62,8 @@ define(function (require, exports, module) {
 			});
 		return deferred.promise();
 	};
+	
+	
 
 	exports.showYesNoModal = showYesNoModal;
 });

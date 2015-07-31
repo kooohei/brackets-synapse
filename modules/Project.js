@@ -9,101 +9,169 @@ define(function (require, exports, module) {
 	var FileUtils = brackets.getModule("file/FileUtils");
 	var PreferencesManager = brackets.getModule("preferences/PreferencesManager");
 	var ExtentionUtils = brackets.getModule("utils/ExtensionUtils");
-	var TreeView = require("modules/TreeView");
+	var FileTreeView = require("modules/FileTreeView");
 	var EventDispatcher = brackets.getModule("utils/EventDispatcher");
+	var moment = require("node_modules/moment/moment");
+	var _ = brackets.getModule("thirdparty/lodash");
 
 	// public methods
 	var open,
-		close;
+			close;
 	// private methods
-	var _initProjectDir,
-		_initProjectContext;
+	var
+			_initProjectContext,
+			_makeProjectDirIfIsNotExists,
+			_createDirectory;
 	// private vars
 	var _currentServer,
-		_projectDir,
-		_transactionDir,
-		_fallbackProjectRoot;
+			_hostDir,
+			_projectDir,
+			_projectBaseDir,
+			_fallbackProjectRoot;
 	// wrapper methods for promise
 	var _directoryIsExists,
-		_getDirectoryContents,
-		_removeDirectoryContents,
-		_removeContent,
-		_removeProjectDirectoryFromRecent;
-	// Static vars for State.mode
-	var ONLINE = true,
-		OFFLINE = false;
-	// Static vars for Event name
-	var MODE_CHANGED = "mode_changed";
-	// Project state
-	var State = {
-		_mode: OFFLINE,
-		task: "",
+			_getDirectoryContents,
+			_removeDirectoryContents,
+			_removeContent,
+			_removeProjectDirectoryFromRecent;
 
-		get mode() {
-			return this._mode;
-		},
+	var maxProjectHistory = 5;
 
-		set mode(val) {
-			this._mode = val;
-			exports.trigger(MODE_CHANGED, this._mode);
-		}
-	};
+	var OPEN = true,
+		CLOSE = false,
+		PROJECT_STATE_CHANGED = "PROJECT_STATE_CHANGED",
+			
+		Connection = {
+			_state: CLOSE,
 
+			get state() {
+				return this._state;
+			},
+			set state(val) {
+				this._state = val;
+				exports.trigger(PROJECT_STATE_CHANGED, {state: this._state, directory: _projectDir});
+			}
+		};
 
 	// Start function
 	open = function (server) {
-
-		if (State.mode === ONLINE) {
+		if (Connection.state === OPEN) {
 			throw new Error("Unexpected exception: Project mode should be OFFLINE before open project.");
 		}
-
+		_currentServer = server;
 		var deferred = new $.Deferred();
 		_initProjectContext()
 			.then(_directoryIsExists)
+			.then(function () {
+				return _makeProjectDirIfIsNotExists(_currentServer);
+			})
 			.then(_getDirectoryContents)
-			.then(_removeDirectoryContents)
+			.then(function (contents) {
+				var deferred = new $.Deferred();
+				var m = moment();
+				var now = m.format("YYYYMMDDHHmmss");
+				_projectDir =
+					FileSystem.getDirectoryForPath(PathManager.getProjectDirectoryPath(server.host + "-" + server.user + "/" + now));
+
+				_projectDir.create(function (err, res) {
+					if (err) {
+						deferred.reject("could not create current time directory").promise();
+					} else {
+						var tmp = [];
+						if ((contents.length + 1) > maxProjectHistory) {
+							_.forEach(contents, function (content) {
+								tmp.push(content.name);
+							});
+							var dirs = _.sortBy(tmp, function (num) {
+								return num;
+							});
+							var offset = (contents.length + 1) - maxProjectHistory;
+							var i = 0;
+							var moveToTrash = function (server, dir) {
+								FileSystem.getDirectoryForPath(PathManager.getProjectDirectoryPath(server.host + "-" + server.user + "/" + dir))
+									.moveToTrash(function (err) {
+										if (err) {
+											throw new Error("could not remove old project directries", err);
+										}
+									});
+							};
+							for (; i < offset; i++) {
+								var dir = dirs.shift();
+								moveToTrash(server, dir);
+							}
+						}
+						deferred.resolve();
+					}
+				});
+				return deferred.promise();
+			})
 			.then(function () {
 				_fallbackProjectRoot = ProjectManager.getProjectRoot().fullPath;
 				return ProjectManager.openProject(_projectDir.fullPath)
-				.then(function () {
-					//console.log("promise is done when the called openProject");
-					State.mode = ONLINE;
-					return new $.Deferred().resolve().promise();
-				}, function (err) {
-					//console.log("promise is fail when the called openProject");
-					State.mode = OFFLINE;
-					return new $.Deferred().reject(err).promise();
-				});
+					.then(function () {
+						//console.log("promise is done when the called openProject");
+						Connection.state = OPEN;
+						return new $.Deferred().resolve().promise();
+					}, function (err) {
+						//console.log("promise is fail when the called openProject");
+						Connection.state = CLOSE;
+						return new $.Deferred().reject(err).promise();
+					});
 			}).then(deferred.resolve, deferred.reject);
 		return deferred.promise();
 	};
 
 	close = function () {
+		var deferred = new $.Deferred();
 		ProjectManager.openProject(_fallbackProjectRoot)
 			.then(function () {
-				TreeView.clearCurrentTree()
+				FileTreeView.clearCurrentTree()
 					.then(_removeProjectDirectoryFromRecent)
 					.then(function () {
-						State.mode = OFFLINE;
+						Connection.state = CLOSE;
+						deferred.resolve();
 					});
 			})
 			.fail(function (err) {
 				console.error(err);
+				deferred.reject(err);
 			});
+		return deferred.promise();
+	};
+
+	_makeProjectDirIfIsNotExists = function (server) {
+		var deferred = new $.Deferred();
+		console.log(server);
+		_hostDir = FileSystem.getDirectoryForPath(PathManager.getProjectDirectoryPath(server.host + "-" + server.user));
+		_hostDir.exists(function (err, exists) {
+			if (err) {
+				return deferred.reject(err).promise();
+			} else {
+				if (!exists) {
+					_hostDir.create(function (err, res) {
+						if (err) {
+							return deferred.reject(err).promise();
+						} else {
+							deferred.resolve(_hostDir);
+						}
+					});
+				} else {
+					deferred.resolve(_hostDir);
+				}
+			}
+		});
+		return deferred.promise();
 	};
 
 	_initProjectContext = function () {
-		var master = new $.Deferred();
 		var deferred = new $.Deferred();
-		var deferred2 = new $.Deferred();
-
-		_projectDir = FileSystem.getDirectoryForPath(PathManager.getProjectDirectoryPath());
-		_projectDir.exists(function (err, res) {
+		_projectBaseDir = FileSystem.getDirectoryForPath(PathManager.getProjectDirectoryPath());
+		_projectBaseDir.exists(function (err, res) {
 			if (err) {
 				return deferred.reject(err).promise();
 			} else {
 				if (!res) {
-					_projectDir.create(function (err, res) {
+					_projectBaseDir.create(function (err, res) {
 						if (err) {
 							return deferred.reject(err).promise();
 						} else {
@@ -115,31 +183,6 @@ define(function (require, exports, module) {
 				}
 			}
 		});
-
-		_transactionDir = FileSystem.getDirectoryForPath(PathManager.getTransactionDirectoryPath());
-		_transactionDir.exists(function (err, res) {
-			if (err) {
-				deferred2.reject(err);
-			} else {
-				if (!res) {
-					_transactionDir.create(function (err, res) {
-						if (err) {
-							return deferred2.reject(err).promise();
-						} else {
-							deferred2.resolve();
-						}
-					});
-				} else {
-					deferred2.resolve();
-				}
-			}
-		});
-
-		if (deferred.state() === "resolved" && deferred2.state() === "resolved") {
-			master.resolve();
-		} else {
-			master.reject();
-		}
 		return deferred.promise();
 	};
 
@@ -148,7 +191,7 @@ define(function (require, exports, module) {
 	 */
 	_directoryIsExists = function () {
 		var deferred = new $.Deferred();
-		var directory = _projectDir;
+		var directory = _projectBaseDir;
 		directory.exists(function (err, exists) {
 			if (err) {
 				deferred.reject(err);
@@ -209,12 +252,11 @@ define(function (require, exports, module) {
 			}
 			return recents;
 		}
-		var projectPath = PathManager.getProjectDirectoryPath(),
-			recentProjects = getRecentProject(),
-			newAry = [];
+		var recentProjects = getRecentProject(),
+				newAry = [];
 
 		recentProjects.forEach(function (item, idx) {
-			if (item !== projectPath) {
+			if (item !== _projectDir.fullPath) {
 				newAry.push(item);
 			}
 		});
@@ -222,11 +264,12 @@ define(function (require, exports, module) {
 		return new $.Deferred().resolve().promise();
 	};
 
+	
 	EventDispatcher.makeEventDispatcher(exports);
 
 	exports.open = open;
 	exports.close = close;
-	exports.ONLINE = ONLINE;
-	exports.OFFLINE = OFFLINE;
-	exports.MODE_CHANGED = MODE_CHANGED;
+	exports.OPEN = OPEN;
+	exports.CLOSE = CLOSE;
+	exports.PROJECT_STATE_CHANGED = PROJECT_STATE_CHANGED;
 });

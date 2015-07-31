@@ -11,9 +11,6 @@ define(function (require, exports, module) {
 	var _ = brackets.getModule("thirdparty/lodash");
 	var FileTreeView = require("modules/FileTreeView");
 	var SettingManager = require("modules/SettingManager");
-	
-	
-	var TreeView = require("modules/TreeView");
 	var RemoteManager = require("modules/RemoteManager");
 	
 	var _domain = null;
@@ -73,6 +70,9 @@ define(function (require, exports, module) {
 		},
 		get tvc() {
 			return $("#synapse-treeview-container");
+		},
+		get t() {
+			return $("#synapse-tree");
 		}
 	};
 
@@ -81,12 +81,10 @@ define(function (require, exports, module) {
 	var server_setting_html = require("../text!ui/serverSetting.html");
 	var server_list_html = require("../text!ui/serverList.html");
 	var $sidebar = $("#sidebar");
-
 	
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/style.css");
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/treeview.css");
 	ExtensionUtils.loadStyleSheet(module, "../node_modules/font-awesome/css/font-awesome.min.css");
-	//ExtensionUtils.loadStyleSheet(module, "../node_modules/jstree/dist/themes/default-dark/style.min.css");
 
 	init = function (domain) {
 		_domain = domain;
@@ -145,7 +143,6 @@ define(function (require, exports, module) {
 		var $main = j.m;
 		var $ph_pcChild = $("#project-files-header, #project-files-container > *");
 		var $ph_pc = $("#project-files-header, #project-files-container");
-
 		$ph_pcChild.animate({
 			"opacity": 0
 		}, "fast", function () {
@@ -156,7 +153,7 @@ define(function (require, exports, module) {
 			$main.css({
 				"opacity": 0,
 			});
-
+			j.tvc.css({"top": j.h.outerHeight() + "px"});
 			$main.animate({
 				"opacity": 1
 			}, "fast");
@@ -213,12 +210,15 @@ define(function (require, exports, module) {
 	};
 
 	closeProject = function (e) {
-		//
-		//		var $btn = $(e.currentTarget);
-		//		if ($btn.hasClass("disabled")) {
-		//			//return;
-		//		}
-		//		Project.close();
+		j.tvc.toggleClass("flip").on("webkitTransitionEnd", function () {
+				j.tvc.off("webkitTransitionEnd");
+				Project.close()
+				.then(function () {
+					j.tvc.toggleClass("flip").on("webkitTransitionEnd", function () {
+						j.t.animate({"background-color": "rgb(25, 25, 25)"}, "fast");
+					});
+				});
+			});
 	};
 
 	reloadServerSettingList = function () {
@@ -332,10 +332,12 @@ define(function (require, exports, module) {
 					return new $.Deferred().resolve().promise();
 				})
 				.then(function () {
+					var destHeight = j.m.outerHeight() - j.h.outerHeight() - (j.s.outerHeight() + 10);
 					j.s.removeClass("hide");
+					j.tvc.css({"border-top": "1px solid rgba(255, 255, 255, 0.05)"});
 					j.tvc.animate({
-						"top": (j.s.outerHeight() + 10) + "px",
-						"height": "100%"
+						"top": (j.s.outerHeight() + 10) + j.h.outerHeight() + "px",
+						//"height": destHeight + "px"
 					}, "fast").promise().done(deferred.resolve);
 				});
 			return deferred.promise();
@@ -357,12 +359,14 @@ define(function (require, exports, module) {
 		if (j.s.hasClass("hide")) {
 			return deferred.resolve().promise();
 		}
+		var destHeight = j.m.outerHeight() - j.h.outerHeight();
 		j.tvc.animate({
-				"top": 0,
-				"height": "100%"
+				"top": j.h.outerHeight() + "px",
+				//"height": destHeight + "px"
 			}, "fast").promise()
 			.done(function () {
 				j.s.addClass("hide");
+				j.tvc.css({"border-top": "none"});
 				deferred.resolve();
 			});
 		return deferred.promise();
@@ -375,18 +379,18 @@ define(function (require, exports, module) {
 		}
 
 		function open() {
-
 			reloadServerSettingList()
 				.then(function () {
+					var destHeight = j.m.outerHeight() - j.h.outerHeight() - (j.l.outerHeight() + 10);
 					j.l.removeClass("hide");
+					j.tvc.css({"border-top": "1px solid rgba(255, 255, 255, 0.05)"});
 					j.tvc.animate({
-						"top": (j.l.outerHeight() + 10) + "px",
-						"height": "100%"
+						"top": (j.l.outerHeight() + 10) + j.h.outerHeight() + "px",
+						//"height": destHeight + "px"
 					}, "fast").promise().done(deferred.resolve);
 				});
 			return deferred.promise();
 		}
-
 		if (!j.s.hasClass("hide")) {
 			_hideServerSetting()
 				.then(open)
@@ -403,11 +407,14 @@ define(function (require, exports, module) {
 		if (j.l.hasClass("hide")) {
 			return deferred.reject("unexpected error").promise();
 		}
+		var destHeight = j.m.outerHeight() - j.h.outerHeight();
 		j.tvc.animate({
-				"top": 0
+				"top": j.h.outerHeight() + "px",
+				//"height": destHeight + "px"
 			}, "fast").promise()
 			.done(function () {
 				j.l.addClass("hide");
+				j.tvc.css({"border-top": "none"});
 				deferred.resolve();
 			});
 		return deferred.promise();

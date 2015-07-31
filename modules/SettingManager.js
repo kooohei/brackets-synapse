@@ -227,10 +227,15 @@ define(function (require, exports, module) {
 				deferred = new $.Deferred(),
 				index,
 				temp = [];
-
+		
+		if (setting.dir.length > 1) {
+			if (setting.dir.slice(-1) === "/") {
+				setting.dir = setting.dir.slice(0, -1);
+			}
+		}
+		
 		if (state === "UPDATE") {
 			setting.index = $("#synapse-server-setting").data("index");
-
 			temp = _.map(list, function (item, idx, ary) {
 				return (item.index === setting.index) ? setting : item;
 			});
@@ -272,7 +277,7 @@ define(function (require, exports, module) {
 		var settingHeight = $("#synapse-server-setting").height();
 		var top = (settingHeight - height) / 2;
 		$container.css({"top": top + "px", "left": left});
-		$container.animate({"left": 0, "opacity": 1}, 100, function () {
+		$container.animate({"left": left, "opacity": 1}, 100, function () {
 			$("#synapse-server-setting input").addClass("disabled");
 			$("#synapse-server-setting input").prop("disabled", true);
 			$("#synapse-server-setting button").addClass("disabled");

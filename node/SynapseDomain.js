@@ -2,7 +2,7 @@
 /*global define, brackets: true, $, window, navigator, Mustache, jQuery, console, moment */
 (function () {
 	"use strict";
-	
+
 	/**
 	 * App path policy
 	 * 
@@ -10,28 +10,31 @@
 	 * however that character is "/" then this is absolute path.
 	 */
 	var Client = require("ftp");
+	var fs = require("fs");
 	var _domainManager = null;
 	var client = null,
-		init,
-		test,
-		connect,
-		getList,
-		rename,
-		mkdir,
-		removeDirectory,
-		logout
-		;
-	
-	
+			init,
+			test,
+			connect,
+			getList,
+			rename,
+			upload,
+			mkdir,
+			removeDirectory,
+			deleteFile,
+			download,
+			logout;
+
+
 	connect = function (server, remoteRoot, cb) {
 		client = new Client();
-		
+
 		client.once("error", function (err) {
 			if (err) {
 				cb(err);
 			}
 		});
-		
+
 		client.once("ready", function () {
 			client.list(remoteRoot, function (err, list) {
 				if (err) {
@@ -46,12 +49,10 @@
 		server.debug = true;
 		client.connect(server);
 	};
-	
+
 	logout = function (client) {
-		client.once("close", function () {
-		});
-		client.once("end", function () {
-		});
+		client.once("close", function () {});
+		client.once("end", function () {});
 
 		client.logout(function (err, res) {
 			if (err) {
@@ -61,16 +62,37 @@
 			}
 		});
 	};
-	
-	getList = function (server, path, cb) {
+
+	upload = function (server, localPath, remotePath, cb) {
 		client = new Client();
-		
 		client.once("error", function (err) {
 			if (err) {
 				cb(err);
 			}
 		});
-		
+
+		client.once("ready", function () {
+			client.put(localPath, remotePath, function (err) {
+				if (err) {
+					cb(err);
+				} else {
+					cb(null, true);
+				}
+				logout(client);
+			});
+		});
+		client.connect(server);
+	};
+
+	getList = function (server, path, cb) {
+		client = new Client();
+
+		client.once("error", function (err) {
+			if (err) {
+				cb(err);
+			}
+		});
+
 		client.once("ready", function () {
 			client.list(path, function (err, list) {
 				if (err) {
@@ -83,18 +105,17 @@
 		});
 		client.connect(server);
 	};
-	
+
 	rename = function (server, oldPath, newPath, cb) {
 		client = new Client();
-		
 		client.once("error", function (err) {
 			if (err) {
 				cb(err);
 			}
 		});
-		
+
 		client.once("ready", function () {
-			client.rename(oldPath , newPath , function (err) {
+			client.rename(oldPath, newPath, function (err) {
 				if (err) {
 					cb(err);
 				} else {
@@ -106,21 +127,17 @@
 		});
 		client.connect(server);
 	};
-	
-	
+
 	mkdir = function (server, path, cb) {
-		
 		client = new Client();
-		
 		client.once("error", function (err) {
 			if (err) {
 				cb(err);
 			}
 		});
-		
 		client.once("ready", function () {
 			client.mkdir(path, false, function (err) {
-				
+
 				if (err) {
 					cb(err);
 				} else {
@@ -129,22 +146,22 @@
 				}
 				logout(client);
 			});
-			
 		});
 		client.connect(server);
 	};
-	
-	removeDirectory = function (server, path, cb) {
+
+	removeDirectory = function (serverSetting, remotePath, cb) {
+		console.log("ok");
 		client = new Client();
-		
+
 		client.once("error", function (err) {
 			if (err) {
 				cb(err);
 			}
 		});
-		
+
 		client.once("ready", function () {
-			client.rmdir(path, true, function (err) {
+			client.rmdir(remotePath, true, function (err) {
 				if (err) {
 					cb(err);
 				} else {
@@ -153,10 +170,58 @@
 				logout(client);
 			});
 		});
-		client.connect(server);
+		client.connect(serverSetting);
 	};
-	
-	
+
+	deleteFile = function (serverSetting, remotePath, cb) {
+		client = new Client();
+		client.once("error", function (err) {
+			console.log("error", err);
+			if (err) {
+				cb(err);
+			}
+		});
+
+		console.log("remotePath: " + remotePath);
+
+		client.once("ready", function () {
+			client.delete(remotePath, function (err) {
+				if (err) {
+					cb(err);
+				} else {
+					cb(null, true);
+				}
+				logout(client);
+			});
+		});
+		client.connect(serverSetting);
+	};
+
+	download = function (serverSetting, localPath, remotePath, cb) {
+		client = new Client();
+		client.once("error", function (err) {
+			if (err) {
+				cb(err);
+			}
+		});
+		client.once("ready", function () {
+			client.get(remotePath, function (err, stream) {
+				if (err) {
+					cb(err);
+					logout(client);
+				} else {
+					stream.once("close", function () {
+						client.end();
+						logout(client);
+						cb(null, true);
+					});
+					stream.pipe(fs.createWriteStream(localPath));
+				}
+				
+			});
+		});
+		client.connect(serverSetting);
+	};
 	
 	/**
 	 * initialize
@@ -174,20 +239,19 @@
 		/**
 		 * register commands
 		 */
+
 		domainManager.registerCommand(
 			"synapse",
 			"Connect",
 			connect,
 			true,
-			"",
-			[{
-				name: "server",
+			"", [{
+				name: "serverSetting",
 				type: "object"
 			}, {
 				name: "remoteRoot",
 				type: "string"
-			}],
-			[{
+			}], [{
 				name: "list",
 				type: "object"
 			}]
@@ -198,28 +262,25 @@
 			"List",
 			getList,
 			true,
-			"",
-			[{
-				name: "server",
+			"", [{
+				name: "serverSetting",
 				type: "object"
 			}, {
 				name: "path",
 				type: "string"
-			}],
-			[{
+			}], [{
 				name: "list",
 				type: "object"
 			}]
 		);
-		
+
 		domainManager.registerCommand(
 			"synapse",
 			"Rename",
 			rename,
 			true,
-			"",
-			[{
-				name: "server",
+			"", [{
+				name: "serverSetting",
 				type: "object"
 			}, {
 				name: "oldPath",
@@ -227,27 +288,78 @@
 			}, {
 				name: "newPath",
 				type: "string"
-			}],
-			[{
+			}], [{
 				name: "res",
 				type: "boolean"
 			}]
 		);
-		
+
 		domainManager.registerCommand(
 			"synapse",
 			"Mkdir",
 			mkdir,
 			true,
-			"",
-			[{
-				name: "server",
+			"", [{
+				name: "serverSetting",
 				type: "object"
 			}, {
 				name: "path",
 				type: "string"
-			}],
-			[{
+			}], [{
+				name: "res",
+				type: "boolean"
+			}]
+		);
+
+		domainManager.registerCommand(
+			"synapse",
+			"UploadFile",
+			upload,
+			true,
+			"", [{
+				name: "serverSetting",
+				type: "object"
+			}, {
+				name: "localPath",
+				type: "string"
+			}, {
+				name: "remotePath",
+				type: "string"
+			}], [{
+				name: "res",
+				type: "boolean"
+			}]
+		);
+
+		domainManager.registerCommand(
+			"synapse",
+			"RemoveDirectory",
+			removeDirectory,
+			true,
+			"", [{
+				name: "serverSetting",
+				type: "object",
+			}, {
+				name: "remotePath",
+				type: "string"
+			}], [{
+				name: "res",
+				type: "boolean"
+			}]
+		);
+
+		domainManager.registerCommand(
+			"synapse",
+			"DeleteFile",
+			deleteFile,
+			true,
+			"", [{
+				name: "serverSetting",
+				type: "object"
+			}, {
+				name: "remotePath",
+				type: "string"
+			}], [{
 				name: "res",
 				type: "boolean"
 			}]
@@ -255,18 +367,19 @@
 		
 		domainManager.registerCommand(
 			"synapse",
-			"RemoveDirectory",
-			removeDirectory,
+			"Download",
+			download,
 			true,
-			"",
-			[{
-				name: "server",
-				type: "object",
+			"", [{
+				name: "serverSetting",
+				type: "object"
 			}, {
-				name: "path",
+				name: "localPath",
 				type: "string"
-			}],
-			[{
+			}, {
+				name: "remotePath",
+				type: "string"
+			}], [{
 				name: "res",
 				type: "boolean"
 			}]
@@ -288,5 +401,5 @@
 	};
 
 	exports.init = init;
-	
+
 }());
