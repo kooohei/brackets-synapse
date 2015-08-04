@@ -1,17 +1,25 @@
-/*jslint node: true, vars: true, plusplus: true, devel: true, nomen: true, regexp: true, indent: 4, maxerr: 50 */
+/*jslint node: true, vars: true, plusplus: true, devel: true, white: true, nomen: true, regexp: true, indent: 2, maxerr: 50 */
 /*global define, $, brackets, Mustache, window, console, moment */
 define(function (require, exports, module) {
 	"use strict";
 	
+	/* region Modules */
 	var FileUtils = brackets.getModule("file/FileUtils");
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
 	var Project = require("modules/Project");
+	/* endregion */
 	
+	/* region Public vars */
 	var remoteRoot = [];
 	var isRelative = false;
 	var modulePath = null;
-	var _projectDir;
+	/* endregion */
 	
+	/* region Private vars */
+	var _projectDir;
+	/* endregion */
+	
+	/* region Public Methods */
 	var	init,
 			setRemoteRoot,
 			completionRemotePath,
@@ -21,10 +29,15 @@ define(function (require, exports, module) {
 			getProjectDirectoryPath,
 			getTransactionDirectoryPath,
 			getLocalRelativePath,
-			_onProjectStateChanged
-			;
+			_onProjectStateChanged;
+	/* endregion */
 	
+	/* region Static vars */
 	var PROJECT_DIR = "__PROJ__";
+	/* endregion */
+	
+	
+	/* Public Methods */
 	
 	init = function (domain) {
 		var deferred = new $.Deferred();
@@ -91,6 +104,9 @@ define(function (require, exports, module) {
 		}
 		return path;
 	};
+	
+	
+	/* Private Methods */
 	
 	_onProjectStateChanged = function (e, obj) {
 		_projectDir = obj.directory;

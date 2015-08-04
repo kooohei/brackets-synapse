@@ -2,24 +2,26 @@
 /*global define, $, brackets, Mustache, window, appshell*/
 define(function (require, exports, module) {
 	"use strict";
-	/* region define modules */
+	
+	/* region Modules */
 	var NodeConnection = brackets.getModule("utils/NodeConnection");
 	var Menus = brackets.getModule("command/Menus");
 	var CommandManager = brackets.getModule("command/CommandManager");
 	var Commands = brackets.getModule("command/Commands");
 	var KeyBindingManager = brackets.getModule("command/KeyBindingManager");
+	var _ = brackets.getModule("thirdparty/lodash");
 	var Panel = require("modules/Panel");
 	var FileTreeView = require("modules/FileTreeView");
-	var _ = brackets.getModule("thirdparty/lodash");
 	/* endregion */
 	
 	/* region Public vars */
 	var treeViewContextMenu = null;
 	/* endregion */
+	
 	/* region Private vars */
 	var _nodeConnection = null;
-
 	/* endregion */
+	
 	/* region Public methods */
 	var initTreeViewContextMenu,
 			setRootMenu,
@@ -27,11 +29,12 @@ define(function (require, exports, module) {
 			reloadBrackets,
 			treeViewContextMenuState;
 	/* endregion */
+	
 	/* region Private methods */
 	var _disableTreeViewContextMenuAllItem;
 	/* endregion */
 	
-	/* region Static vars objects */
+	/* region Static objects */
 	var ContextMenuIds = {
 		TREEVIEW_CTX_MENU: "kohei-synapse-treeview-context-menu"
 	};
@@ -52,7 +55,8 @@ define(function (require, exports, module) {
 		SYNAPSE_FILE_DELETE: "Delete File"
 	};
 	/* endregion */
-	/* region enable flag array */
+	
+	/* region enable flags */
 	var Open_TreeView_Context_Menu_On_Directory_State = [
 			ContextMenuCommandIds.SYNAPSE_FILE_NEW,
 			ContextMenuCommandIds.SYNAPSE_DIRECTORY_NEW,
@@ -71,6 +75,8 @@ define(function (require, exports, module) {
 		];
 	/* endregion */
 	
+	
+	/* Public Methods */
 	
 	treeViewContextMenuState = function (entity) {
 		_disableTreeViewContextMenuAllItem();
@@ -92,22 +98,6 @@ define(function (require, exports, module) {
 			});
 			return;
 		}
-	};
-
-	_disableTreeViewContextMenuAllItem = function () {
-		if (treeViewContextMenu === null) {
-			return;
-		}
-		/*
-		var keys = Object.keys(ContextMenuCommandIds);
-		keys.forEach(function (key) {
-			CommandManager.get(ContextMenuCommandIds[key]).setEnabled(false);
-		});
-		*/
-		_.forIn(ContextMenuCommandIds, function (val, key) {
-			CommandManager.get(val).setEnabled(false);
-		});
-
 	};
 
 	setRootMenu = function () {
@@ -173,6 +163,25 @@ define(function (require, exports, module) {
 		$("#synapse-treeview-container").contextmenu(function (e) {
 			FileTreeView.onTreeViewContextMenu(e, treeViewContextMenu);
 		});
+	};
+	
+	
+	/* Private Methods */
+	
+	_disableTreeViewContextMenuAllItem = function () {
+		if (treeViewContextMenu === null) {
+			return;
+		}
+		/*
+		var keys = Object.keys(ContextMenuCommandIds);
+		keys.forEach(function (key) {
+			CommandManager.get(ContextMenuCommandIds[key]).setEnabled(false);
+		});
+		*/
+		_.forIn(ContextMenuCommandIds, function (val, key) {
+			CommandManager.get(val).setEnabled(false);
+		});
+
 	};
 	
 	// for reload brackets

@@ -98,7 +98,8 @@ define(function (require, exports, module) {
 									.moveToTrash(function (err) {
 										if (err) {
 											dd.reject(err);
-											//throw new Error("could not remove old project directries", err);
+											throw new Error("could not remove old project directries", err);
+											
 										} else {
 											dd.resolve();
 										}
@@ -110,7 +111,7 @@ define(function (require, exports, module) {
 								var dir = dirs.shift();
 								promises.push(_moveToTrash(server, dir));
 							}
-							Async.waitForAll(promises, false, 3000)
+							Async.waitForAll(promises, true, 3000)
 							.then(d.resolve, d.reject);
 						} else {
 							d.resolve();
