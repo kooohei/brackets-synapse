@@ -5,17 +5,17 @@ define(function (require, exports, module) {
 
 	/* region Modules */
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
-	var DocumentManager = brackets.getModule("document/DocumentManager");
-	var Strings = require("strings");
 	var Resizer = brackets.getModule("utils/Resizer");
-	var Project = require("modules/Project");
+	var DocumentManager = brackets.getModule("document/DocumentManager");
 	var CommandManager = brackets.getModule("command/CommandManager");
 	var Commands = brackets.getModule("command/Commands");
-	var DialogCollection = require("modules/DialogCollection");
 	var _ = brackets.getModule("thirdparty/lodash");
+	var Project = require("modules/Project");
+	var DialogCollection = require("modules/DialogCollection");
 	var FileTreeView = require("modules/FileTreeView");
 	var SettingManager = require("modules/SettingManager");
 	var RemoteManager = require("modules/RemoteManager");
+	var Strings = require("strings");
 	/* endregion */
 	
 	/* region Private vars */
@@ -55,12 +55,12 @@ define(function (require, exports, module) {
 	/* endregion */
 			
 	/* region Event handler */
-			_onClickConnectBtn,
-			_onClickDeleteBtn,
-			_onLeaveListBtns,
-			_onEdit,
-			_onEnterListBtns,
-			_onClickEditBtn,
+			onClickConnectBtn,
+			onClickDeleteBtn,
+			onLeaveListBtns,
+			onEdit,
+			onEnterListBtns,
+			onClickEditBtn,
 			onProjectStateChanged;
 	/* endregion */
 	
@@ -110,6 +110,9 @@ define(function (require, exports, module) {
 	ExtensionUtils.loadStyleSheet(module, "../node_modules/font-awesome/css/font-awesome.min.css");
 	/* endregion */
 	
+	
+	/* Public Methods */
+	
 	init = function (domain) {
 		_domain = domain;
 		var deferred = new $.Deferred();
@@ -119,49 +122,11 @@ define(function (require, exports, module) {
 			.then(function () {
 				Project.on(Project.PROJECT_STATE_CHANGED, onProjectStateChanged);
 				//for Devel
-				showMain();
-				brackets.app.showDeveloperTools();
+				//showMain();
+				//brackets.app.showDeveloperTools();
 				return new $.Deferred().resolve().promise();
 			});
 		return deferred.resolve(domain).promise();
-	};
-	
-	_initMainUI = function () {
-		var html = Mustache.render(main_html, {
-			Strings: Strings
-		});
-		var $main = $(html);
-		var $pc = j.pc;
-
-		if ($pc.length) {
-			$pc.after($main);
-		} else {
-			j.sb.append($main);
-		}
-		$("span.disconnect-btn", $main).on("click", closeProject);
-		$("span.list-btn", $main).on("click", showServerList);
-		$("span.close-btn", $main).on("click", hideMain);
-		$("span.add-btn", $main).on("click", function (e) {
-			_showServerSetting(e, "insert", null);
-		});
-		return new $.Deferred().resolve().promise();
-	};
-	
-	_initServerSettingUI = function () {
-		var html = Mustache.render(server_setting_html);
-		var $serverSetting = $(html);
-		j.h.after($serverSetting);
-
-		$(".btn-add", $serverSetting).on("click", _onEdit);
-		$(".btn-cancel", $serverSetting).on("click", _hideServerSetting);
-		$(".close-btn", $serverSetting).on("click", _hideServerSetting);
-		$("input", $serverSetting).on("blur", SettingManager.validateAll);
-		return new $.Deferred().resolve().promise();
-	};
-	
-	_initServerListUI = function () {
-		reloadServerSettingList();
-		return new $.Deferred().resolve().promise();
 	};
 	
 	showMain = function () {
@@ -214,23 +179,34 @@ define(function (require, exports, module) {
 		$("#synapse-header .spinner").addClass("hide").removeClass("spin");
 	};
 	
-	_closeAllDocuments = function () {
-		
-	};
+	showServerList = function () {
+		var deferred = new $.Deferred();
+		if (!j.l.hasClass("hide")) {
+			return deferred.resolve().promise();
+		}
 
-	_fadeOutMain = function () {
-		var $main = j.m;
-		var $ph_pcChild = $("#project-files-header, #project-files-container > *");
-		var $ph_pc = $("#project-files-header, #project-files-container");
-		
-		$main.animate({
-			"opacity": 0,
-		}, "slow").promise()
-		.done(function () {
-			$(this).addClass("hide");
-			$ph_pc.css({"display": "block"});
-			$ph_pcChild.animate({"opacity": 1}, "slow");
-		});
+		function open() {
+			reloadServerSettingList()
+				.then(function () {
+					var destHeight = j.m.outerHeight() - j.h.outerHeight() - (j.l.outerHeight() + 10);
+					j.l.removeClass("hide");
+					j.tvc.css({"border-top": "1px solid rgba(255, 255, 255, 0.05)"});
+					j.tvc.animate({
+						"top": (j.l.outerHeight() + 10) + j.h.outerHeight() + "px",
+						//"height": destHeight + "px"
+					}, "fast").promise().done(deferred.resolve);
+				});
+			return deferred.promise();
+		}
+		if (!j.s.hasClass("hide")) {
+			_hideServerSetting()
+				.then(open)
+				.then(deferred.resolve, deferred.reject);
+		} else {
+			open()
+				.then(deferred.resolve, deferred.reject);
+		}
+		return deferred.promise();
 	};
 	
 	hideMain = function () {
@@ -277,13 +253,13 @@ define(function (require, exports, module) {
 	reloadServerSettingList = function () {
 
 		if (j.l.length) {
-			$("button.btn-connect", j.l).off("click", _onClickConnectBtn);
-			$("button.btn-edit", j.l).off("click", _onClickEditBtn);
-			$("button.btn-delete", j.l).off("click", _onClickDeleteBtn);
+			$("button.btn-connect", j.l).off("click", onClickConnectBtn);
+			$("button.btn-edit", j.l).off("click", onClickEditBtn);
+			$("button.btn-delete", j.l).off("click", onClickDeleteBtn);
 			$(".close-btn", j.l).off("click", _hideServerList);
 			$("div.item", j.l).off({
-				"mouseenter": _onEnterListBtns,
-				"mouseleave": _onLeaveListBtns
+				"mouseenter": onEnterListBtns,
+				"mouseleave": onLeaveListBtns
 			});
 			j.l.remove();
 		}
@@ -294,16 +270,75 @@ define(function (require, exports, module) {
 		var $html = $(html);
 		j.s.after($html);
 
-		$("button.btn-connect", j.l).on("click", _onClickConnectBtn);
-		$("button.btn-edit", j.l).on("click", _onClickEditBtn);
-		$("button.btn-delete", j.l).on("click", _onClickDeleteBtn);
+		$("button.btn-connect", j.l).on("click", onClickConnectBtn);
+		$("button.btn-edit", j.l).on("click", onClickEditBtn);
+		$("button.btn-delete", j.l).on("click", onClickDeleteBtn);
 		$(".close-btn", j.l).on("click", _hideServerList);
 		$("div.item", j.l).on({
-			"mouseenter": _onEnterListBtns,
-			"mouseleave": _onLeaveListBtns
+			"mouseenter": onEnterListBtns,
+			"mouseleave": onLeaveListBtns
 		});
 		$("#synapse-server-list div.list").addClass("quiet-scrollbars");
 
+		return new $.Deferred().resolve().promise();
+	};
+	
+	/* Private Methods */
+	
+	_closeAllDocuments = function () {
+		
+	};
+
+	_fadeOutMain = function () {
+		var $main = j.m;
+		var $ph_pcChild = $("#project-files-header, #project-files-container > *");
+		var $ph_pc = $("#project-files-header, #project-files-container");
+		
+		$main.animate({
+			"opacity": 0,
+		}, "slow").promise()
+		.done(function () {
+			$(this).addClass("hide");
+			$ph_pc.css({"display": "block"});
+			$ph_pcChild.animate({"opacity": 1}, "slow");
+		});
+	};
+	
+	_initMainUI = function () {
+		var html = Mustache.render(main_html, {
+			Strings: Strings
+		});
+		var $main = $(html);
+		var $pc = j.pc;
+
+		if ($pc.length) {
+			$pc.after($main);
+		} else {
+			j.sb.append($main);
+		}
+		$("span.disconnect-btn", $main).on("click", closeProject);
+		$("span.list-btn", $main).on("click", showServerList);
+		$("span.close-btn", $main).on("click", hideMain);
+		$("span.add-btn", $main).on("click", function (e) {
+			_showServerSetting(e, "insert", null);
+		});
+		return new $.Deferred().resolve().promise();
+	};
+	
+	_initServerSettingUI = function () {
+		var html = Mustache.render(server_setting_html);
+		var $serverSetting = $(html);
+		j.h.after($serverSetting);
+
+		$(".btn-add", $serverSetting).on("click", onEdit);
+		$(".btn-cancel", $serverSetting).on("click", _hideServerSetting);
+		$(".close-btn", $serverSetting).on("click", _hideServerSetting);
+		$("input", $serverSetting).on("blur", SettingManager.validateAll);
+		return new $.Deferred().resolve().promise();
+	};
+	
+	_initServerListUI = function () {
+		reloadServerSettingList();
 		return new $.Deferred().resolve().promise();
 	};
 	
@@ -313,13 +348,13 @@ define(function (require, exports, module) {
 		if (!j.l.length) {
 			return deferred.reject().promise();
 		} else {
-			$("button.btn-connect", j.l).off("click", _onClickConnectBtn);
-			$("button.btn-edit", j.l).off("click", _onClickEditBtn);
-			$("button.btn-delete", j.l).off("click", _onClickDeleteBtn);
+			$("button.btn-connect", j.l).off("click", onClickConnectBtn);
+			$("button.btn-edit", j.l).off("click", onClickEditBtn);
+			$("button.btn-delete", j.l).off("click", onClickDeleteBtn);
 			$(".close-btn", j.l).off("click", _hideServerList);
 			$("div.item", j.l).off({
-				"mouseenter": _onEnterListBtns,
-				"mouseleave": _onLeaveListBtns
+				"mouseenter": onEnterListBtns,
+				"mouseleave": onLeaveListBtns
 			});
 		}
 		var list = SettingManager.getServerList();
@@ -331,13 +366,13 @@ define(function (require, exports, module) {
 		j.l.remove();
 		j.s.after($html);
 		j.l.removeClass("hide");
-		$("button.btn-connect", j.l).on("click", _onClickConnectBtn);
-		$("button.btn-edit", j.l).on("click", _onClickEditBtn);
-		$("button.btn-delete", j.l).on("click", _onClickDeleteBtn);
+		$("button.btn-connect", j.l).on("click", onClickConnectBtn);
+		$("button.btn-edit", j.l).on("click", onClickEditBtn);
+		$("button.btn-delete", j.l).on("click", onClickDeleteBtn);
 		$(".close-btn", j.l).on("click", _hideServerList);
 		$("div.item", j.l).on({
-			"mouseenter": _onEnterListBtns,
-			"mouseleave": _onLeaveListBtns
+			"mouseenter": onEnterListBtns,
+			"mouseleave": onLeaveListBtns
 		});
 		$("#synapse-server-list div.list").addClass("quiet-scrollbars");
 		deferred.resolve();
@@ -425,36 +460,6 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 	
-	showServerList = function () {
-		var deferred = new $.Deferred();
-		if (!j.l.hasClass("hide")) {
-			return deferred.resolve().promise();
-		}
-
-		function open() {
-			reloadServerSettingList()
-				.then(function () {
-					var destHeight = j.m.outerHeight() - j.h.outerHeight() - (j.l.outerHeight() + 10);
-					j.l.removeClass("hide");
-					j.tvc.css({"border-top": "1px solid rgba(255, 255, 255, 0.05)"});
-					j.tvc.animate({
-						"top": (j.l.outerHeight() + 10) + j.h.outerHeight() + "px",
-						//"height": destHeight + "px"
-					}, "fast").promise().done(deferred.resolve);
-				});
-			return deferred.promise();
-		}
-		if (!j.s.hasClass("hide")) {
-			_hideServerSetting()
-				.then(open)
-				.then(deferred.resolve, deferred.reject);
-		} else {
-			open()
-				.then(deferred.resolve, deferred.reject);
-		}
-		return deferred.promise();
-	};
-	
 	_hideServerList = function () {
 		var deferred = new $.Deferred();
 		if (j.l.hasClass("hide")) {
@@ -469,59 +474,6 @@ define(function (require, exports, module) {
 				j.l.addClass("hide");
 				j.tvc.css({"border-top": "none"});
 				deferred.resolve();
-			});
-		return deferred.promise();
-	};
-	
-	_onEdit = function (e) {
-		var $btn = $(e.currentTarget);
-		SettingManager.edit($btn.html());
-	};
-	
-	_onClickConnectBtn = function (e) {
-		var $btn = $(e.currentTarget);
-		var index = $btn.data("index");
-		var server = SettingManager.getServerSetting(index);
-		RemoteManager.connect(server);
-	};
-	
-	_onClickEditBtn = function (e) {
-		var idx = $(this).data("index");
-		var setting = SettingManager.getServerSetting(idx);
-		if (setting === null) {
-			console.error("could not read server setting for index: " + idx);
-			return;
-		}
-		_showServerSetting(null, "update", setting);
-	};
-	
-	_onClickDeleteBtn = function (e) {
-		var idx = $(this).data("index");
-		var deferred = new $.Deferred();
-		//show confirm dialog
-		DialogCollection.showYesNoModal(
-				"error-dialog",
-				"I will ask you.",
-				"It will remove a server that has been selected",
-				"OK",
-				"CANCEL")
-			.then(function (res) {
-				if (res === "OK") {
-					SettingManager.deleteServerSetting(idx)
-						.then(function () {
-							return _removeServerSettingListRow(idx);
-						})
-						.then(_reloadServerSettingListWhenDelete)
-						.then(function () {
-							var list = SettingManager.getServerList();
-							if (list.length === 0) {
-								return _hideServerList();
-							}
-						})
-						.then(deferred.resolve);
-				} else {
-					deferred.resolve().promise();
-				}
 			});
 		return deferred.promise();
 	};
@@ -552,13 +504,69 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 	
-	_onEnterListBtns = function (e) {
+	
+	/* Handlers */
+	
+	onEdit = function (e) {
+		var $btn = $(e.currentTarget);
+		SettingManager.edit($btn.html());
+	};
+	
+	onClickConnectBtn = function (e) {
+		var $btn = $(e.currentTarget);
+		var index = $btn.data("index");
+		var server = SettingManager.getServerSetting(index);
+		RemoteManager.connect(server);
+	};
+	
+	onClickEditBtn = function (e) {
+		var idx = $(this).data("index");
+		var setting = SettingManager.getServerSetting(idx);
+		if (setting === null) {
+			console.error("could not read server setting for index: " + idx);
+			return;
+		}
+		_showServerSetting(null, "update", setting);
+	};
+	
+	onClickDeleteBtn = function (e) {
+		var idx = $(this).data("index");
+		var deferred = new $.Deferred();
+		//show confirm dialog
+		DialogCollection.showYesNoModal(
+				"error-dialog",
+				"I will ask you.",
+				"It will remove a server that has been selected",
+				"OK",
+				"CANCEL")
+			.then(function (res) {
+				if (res === "OK") {
+					SettingManager.deleteServerSetting(idx)
+						.then(function () {
+							return _removeServerSettingListRow(idx);
+						})
+						.then(_reloadServerSettingListWhenDelete)
+						.then(function () {
+							var list = SettingManager.getServerList();
+							if (list.length === 0) {
+								return _hideServerList();
+							}
+						})
+						.then(deferred.resolve);
+				} else {
+					deferred.resolve().promise();
+				}
+			});
+		return deferred.promise();
+	};
+	
+	onEnterListBtns = function (e) {
 		$(this).find(".btn-group").animate({
 			"opacity": 1
 		}, 200);
 	};
 	
-	_onLeaveListBtns = function (e) {
+	onLeaveListBtns = function (e) {
 		$(this).find(".btn-group").animate({
 			"opacity": 0
 		}, 200);

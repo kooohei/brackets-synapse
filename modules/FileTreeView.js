@@ -1,4 +1,4 @@
-/*jslint node: true, vars: true, plusplus: true, devel: true, nomen: true, regexp: true, indent: 2, maxerr: 50 */
+/*jslint node: true, vars: true, plusplus: true, devel: true, nomen: true, white: true, regexp: true, indent: 2, maxerr: 50 */
 /*global define, $, brackets, Mustache, window, console, moment */
 define(function (require, exports, module) {
 	"use strict";
@@ -884,7 +884,6 @@ define(function (require, exports, module) {
 		}
 	};
 	
-	/* region exports */
 	exports.init = init;
 	exports.setEntities = setEntities;
 	exports.rootEntity = rootEntity;
@@ -898,5 +897,4 @@ define(function (require, exports, module) {
 	exports.removeDirectory = removeDirectory;
 	exports.onTreeViewContextMenu = onTreeViewContextMenu;
 	exports.clearCurrentTree = clearCurrentTree;
-	/* endregion */
 });

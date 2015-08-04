@@ -72,17 +72,22 @@ define(function (require, exports, module) {
 		_domain.exec("Connect", serverSetting, remoteRoot)
 		.then(function (list) {
 			return FileTreeView.setEntities(list, _rootEntity);
+		}, function (err) {
+			console.error(err);
+			throw new Error(err);
 		})
 		.then(function (list) {
 			return Project.open(serverSetting);
+		}, function (err) {
+			console.error(err);
+			throw new Error(err);
 		})
 		.then(function () {
 			_currentServerSetting = serverSetting;
 			State.mode = ONLINE;
 			deferred.resolve(result);
-		})
-		.fail(function (err) {
-			Panel.hideSpinner();
+		}, function (err) {
+			console.error(err);
 			throw new Error(err);
 		})
 		.always(function () {

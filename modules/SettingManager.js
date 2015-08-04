@@ -3,12 +3,14 @@
 define(function (require, exports, module) {
 	"use strict";
 
+	/* region Modules */
 	var PreferencesManager = brackets.getModule("preferences/PreferencesManager");
+	var _ = brackets.getModule("thirdparty/lodash");
 	var PathManager = require("modules/PathManager");
 	var Panel = require("modules/Panel");
-	var _ = brackets.getModule("thirdparty/lodash");
-
-	// public methods
+	/* endregion */
+	
+	/* region Public Methods */
 	var init,
 			edit,
 			validateAll,
@@ -16,9 +18,10 @@ define(function (require, exports, module) {
 			reset,
 			getServerList,
 			getServerSetting,
-			deleteServerSetting
-			;
+			deleteServerSetting;
+	/* endregion */
 
+	/* region Private Methods */
 	var _getServerSettings,
 			_rebuildIndex,
 			_editServerSetting,
@@ -28,11 +31,12 @@ define(function (require, exports, module) {
 			_hideSettingAlert,
 			_appendServerBtnState,
 			_showConnectTestSpinner,
-			_hideConnectTestSpinner
-			;
+			_hideConnectTestSpinner;
+	/* endregion */
 
+	
 	var domain,
-			preferences = PreferencesManager.getExtensionPrefs("brackets-synapse");
+			preference = PreferencesManager.getExtensionPrefs("brackets-synapse");
 	var Server = function () {
 		this.host = null;
 		this.port = 21;
@@ -198,9 +202,9 @@ define(function (require, exports, module) {
 	};
 
 	_getServerSettings = function () {
-		var json = preferences.get("server-settings");
+		var json = preference.get("server-settings");
 		if (typeof (json) === "undefined") {
-			preferences.definePreference("server-settings", "string", JSON.stringify([]));
+			preference.definePreference("server-settings", "string", JSON.stringify([]));
 			return [];
 		} else {
 			return JSON.parse(json);
@@ -252,10 +256,10 @@ define(function (require, exports, module) {
 
 	_saveServerSettings = function (list) {
 		var deferred = new $.Deferred();
-		if (!preferences.set("server-settings", JSON.stringify(list))) {
+		if (!preference.set("server-settings", JSON.stringify(list))) {
 			deferred.reject("could not set server configuration to preference.");
 		} else {
-			preferences.save()
+			preference.save()
 				.then(_rebuildIndex)
 				.then(deferred.resolve)
 				.fail(function () {
@@ -307,8 +311,8 @@ define(function (require, exports, module) {
 		for (i = 0; i < list.length; i++) {
 			list[i].index = i + 1;
 		}
-		if (preferences.set("server-settings", JSON.stringify(list))) {
-			preferences.save().then(deferred.resolve, deferred.reject);
+		if (preference.set("server-settings", JSON.stringify(list))) {
+			preference.save().then(deferred.resolve, deferred.reject);
 		} else {
 			deferred.reject("could not reset server configuration unique id");
 		}
