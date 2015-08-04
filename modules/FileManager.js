@@ -6,6 +6,7 @@ define(function (require, exports, module) {
 	var EditorManager = brackets.getModule("editor/EditorManager");
 	var CommandManager = brackets.getModule("command/CommandManager");
 	var Commands = brackets.getModule("command/Commands");
+	var ProjectManager = brackets.getModule("project/ProjectManager");
 	var DocumentManager = brackets.getModule("document/DocumentManager");
 	var PathManager = require("modules/PathManager");
 	var Project = require("modules/Project");
@@ -14,6 +15,7 @@ define(function (require, exports, module) {
 	var _attachEvent;
 	var onSaved;
 	var onDirtyFlagChange;
+	var onBeforeProjectClose;
 	var init;
 	var _projectState = Project.CLOSE;
 	
@@ -27,6 +29,7 @@ define(function (require, exports, module) {
 		Project.on(Project.PROJECT_STATE_CHANGED, function (evt, obj) {
 			_projectState = obj.state;
 			if (obj.state === Project.OPEN) {
+				ProjectManager.on("beforeProjectClose", onBeforeProjectClose");
 				DocumentManager.on("dirtyFlagChange", onDirtyFlagChange);
 				DocumentManager.on("documentSaved", onSaved);
 			} else {
