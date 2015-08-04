@@ -10,13 +10,19 @@ define(function (require, exports, module) {
 	var PreferencesManager = brackets.getModule("preferences/PreferencesManager");
 	var ExtentionUtils = brackets.getModule("utils/ExtensionUtils");
 	var FileTreeView = require("modules/FileTreeView");
+	var MainViewManager = brackets.getModule("view/MainViewManager");
 	var EventDispatcher = brackets.getModule("utils/EventDispatcher");
 	var moment = require("node_modules/moment/moment");
 	var _ = brackets.getModule("thirdparty/lodash");
+	var DocumentManager = brackets.getModule("document/DocumentManager");
 
 	// public methods
 	var open,
-			close;
+			close,
+			isOpen,
+			getOpenProjectDocuments,
+			getServerSetting
+			;
 	// private methods
 	var
 			_initProjectContext,
@@ -35,23 +41,21 @@ define(function (require, exports, module) {
 			_removeContent,
 			_removeProjectDirectoryFromRecent;
 
-	var maxProjectHistory = 5;
+	var maxProjectHistory = 3;
 
 	var OPEN = true,
-		CLOSE = false,
-		PROJECT_STATE_CHANGED = "PROJECT_STATE_CHANGED",
-			
-		Connection = {
-			_state: CLOSE,
-
-			get state() {
-				return this._state;
-			},
-			set state(val) {
-				this._state = val;
-				exports.trigger(PROJECT_STATE_CHANGED, {state: this._state, directory: _projectDir});
-			}
-		};
+			CLOSE = false,
+			PROJECT_STATE_CHANGED = "PROJECT_STATE_CHANGED",
+			Connection = {
+				_state: CLOSE,
+				get state() {
+					return this._state;
+				},
+				set state(val) {
+					this._state = val;
+					exports.trigger(PROJECT_STATE_CHANGED, {state: this._state, directory: _projectDir});
+				}
+			};
 
 	// Start function
 	open = function (server) {
@@ -67,15 +71,16 @@ define(function (require, exports, module) {
 			})
 			.then(_getDirectoryContents)
 			.then(function (contents) {
-				var deferred = new $.Deferred();
+				var d = new $.Deferred();
 				var m = moment();
 				var now = m.format("YYYYMMDDHHmmss");
 				_projectDir =
-					FileSystem.getDirectoryForPath(PathManager.getProjectDirectoryPath(server.host + "-" + server.user + "/" + now));
+					FileSystem.getDirectoryForPath(
+						PathManager.getProjectDirectoryPath(server.host + "-" + server.user + "/" + now));
 
 				_projectDir.create(function (err, res) {
 					if (err) {
-						deferred.reject("could not create current time directory").promise();
+						d.reject("could not create current time directory");
 					} else {
 						var tmp = [];
 						if ((contents.length + 1) > maxProjectHistory) {
@@ -87,23 +92,32 @@ define(function (require, exports, module) {
 							});
 							var offset = (contents.length + 1) - maxProjectHistory;
 							var i = 0;
-							var moveToTrash = function (server, dir) {
+							var _moveToTrash = function (server, dir) {
+								var dd = new $.Deferred();
 								FileSystem.getDirectoryForPath(PathManager.getProjectDirectoryPath(server.host + "-" + server.user + "/" + dir))
 									.moveToTrash(function (err) {
 										if (err) {
-											throw new Error("could not remove old project directries", err);
+											dd.reject(err);
+											//throw new Error("could not remove old project directries", err);
+										} else {
+											dd.resolve();
 										}
 									});
+								return dd.promise();
 							};
+							var promises = [];
 							for (; i < offset; i++) {
 								var dir = dirs.shift();
-								moveToTrash(server, dir);
+								promises.push(_moveToTrash(server, dir));
 							}
+							Async.waitForAll(promises, false, 3000)
+							.then(d.resolve, d.reject);
+						} else {
+							d.resolve();
 						}
-						deferred.resolve();
 					}
 				});
-				return deferred.promise();
+				return d.promise();
 			})
 			.then(function () {
 				_fallbackProjectRoot = ProjectManager.getProjectRoot().fullPath;
@@ -117,7 +131,8 @@ define(function (require, exports, module) {
 						Connection.state = CLOSE;
 						return new $.Deferred().reject(err).promise();
 					});
-			}).then(deferred.resolve, deferred.reject);
+			})
+			.then(deferred.resolve, deferred.reject);
 		return deferred.promise();
 	};
 
@@ -132,9 +147,8 @@ define(function (require, exports, module) {
 						deferred.resolve();
 					});
 			})
-			.fail(function (err) {
-				console.error(err);
-				deferred.reject(err);
+			.fail(function () {
+				deferred.reject();
 			});
 		return deferred.promise();
 	};
@@ -264,6 +278,30 @@ define(function (require, exports, module) {
 		return new $.Deferred().resolve().promise();
 	};
 
+	isOpen = function () {
+		return Connection.state;
+	};
+	
+	getOpenProjectDocuments = function () {
+		var deferred = new $.Deferred();
+		
+		if (Connection.state) {
+			var files = MainViewManager.getAllOpenFiles();
+			_.forEach(files, function (file) {
+				var doc = DocumentManager.getOpenDocumentForPath(file.fullPath);
+			});
+		} else {
+			return [];
+		}
+	};
+	
+	getServerSetting = function () {
+		if (Connection.state === OPEN) {
+			return _currentServer;
+		} else {
+			return false;
+		}
+	};
 	
 	EventDispatcher.makeEventDispatcher(exports);
 
@@ -272,4 +310,6 @@ define(function (require, exports, module) {
 	exports.OPEN = OPEN;
 	exports.CLOSE = CLOSE;
 	exports.PROJECT_STATE_CHANGED = PROJECT_STATE_CHANGED;
+	exports.getOpenProjectDocuments = getOpenProjectDocuments;
+	exports.getServerSetting = getServerSetting;
 });

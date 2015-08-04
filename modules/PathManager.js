@@ -20,6 +20,7 @@ define(function (require, exports, module) {
 			getBaseDirectory,
 			getProjectDirectoryPath,
 			getTransactionDirectoryPath,
+			getLocalRelativePath,
 			_onProjectStateChanged
 			;
 	
@@ -61,8 +62,23 @@ define(function (require, exports, module) {
 			return remotePath + "/" + pathAry.join("/");
 		}
 	};
+	
 	completionLocalPath = function (pathAry) {
 		return _projectDir.fullPath + pathAry.join("/");
+	};
+	
+	getLocalRelativePath = function (path) {
+		
+		if (!path || path.substr(0, _projectDir.fullPath.length) !== _projectDir.fullPath) {
+			return;
+		}
+		
+		var result = path.substr(_projectDir.fullPath.length);
+		if (result && result[result.length -1 ] === "/") {
+			return result.slice(0, -1);
+		} else {
+			return result;
+		}
 	};
 	
 	getProjectDirectoryPath = function (_path) {
@@ -87,4 +103,5 @@ define(function (require, exports, module) {
 	exports.completionLocalPath = completionLocalPath;
 	exports.getProjectDirectoryPath = getProjectDirectoryPath;
 	exports.getTransactionDirectoryPath = getTransactionDirectoryPath;
+	exports.getLocalRelativePath = getLocalRelativePath;
 });

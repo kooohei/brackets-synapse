@@ -101,7 +101,14 @@ define(function (require, exports, module) {
 	uploadFile = function (serverSetting, localPath, remotePath) {
 		var deferred = new $.Deferred();
 		_domain.exec("UploadFile", serverSetting, localPath, remotePath)
-		.then(deferred.resolve, deferred.reject);
+		.then(deferred.resolve, function (err) {
+			if (err.code === 553) {
+				err = "Permission denied";
+			} else {
+				err = "";
+			}
+			deferred.reject(err);
+		});
 		return deferred.promise();
 	};
 	

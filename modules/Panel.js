@@ -3,89 +3,113 @@
 define(function (require, exports, module) {
 	"use strict";
 
+	/* region Modules */
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
-	var Resizer = brackets.getModule("utils/Resizer");
+	var DocumentManager = brackets.getModule("document/DocumentManager");
 	var Strings = require("strings");
+	var Resizer = brackets.getModule("utils/Resizer");
 	var Project = require("modules/Project");
+	var CommandManager = brackets.getModule("command/CommandManager");
+	var Commands = brackets.getModule("command/Commands");
 	var DialogCollection = require("modules/DialogCollection");
 	var _ = brackets.getModule("thirdparty/lodash");
 	var FileTreeView = require("modules/FileTreeView");
 	var SettingManager = require("modules/SettingManager");
 	var RemoteManager = require("modules/RemoteManager");
+	/* endregion */
 	
-	var _domain = null;
+	/* region Private vars */
+	var 
+			_projectState = Project.CLOSE,
+			_projectDir = null,
+			_domain = null;
+	/* endregion */
 	
-	var init,
-		_initServerSettingUI,
-		closeProject,
-		hideMain,
-		reloadServerSettingList,
-		hideSpinner,
-		hideHeaderSpinner,
-		_onEdit,
-		_onClickEditBtn,
-		_onEnterListBtns,
-		//Methods
-		_initMainUI,
-		_initServerListUI,
-		showMain,
-		connect,
-		showSpinner,
-		showHeaderSpinner,
-		_reloadServerSettingListWhenDelete,
-		_onClickConnectBtn,
-		_onClickDeleteBtn,
-		_onLeaveListBtns,
-		// Private methods
-		_hideServerSetting,
-		_hideServerList,
-		_showServerSetting,
-		showServerList,
-		_removeServerSettingListRow;
-
+	/* region Public methods */
+	var 
+			init,
+			closeProject,
+			reloadServerSettingList,
+			hideMain,
+			hideSpinner,
+			hideHeaderSpinner,
+			showMain,
+			showSpinner,
+			connect,
+			showHeaderSpinner,
+			showServerList,
+	/* endregion */
+			
+	/* region Private methods */
+			_initServerSettingUI,
+			_initMainUI,
+			_initServerListUI,
+			_reloadServerSettingListWhenDelete,
+			_hideServerSetting,
+			_hideServerList,
+			_showServerSetting,
+			_flipAnimation,
+			_fadeOutMain,
+			_closeAllDocuments,
+			_removeServerSettingListRow,
+	/* endregion */
+			
+	/* region Event handler */
+			_onClickConnectBtn,
+			_onClickDeleteBtn,
+			_onLeaveListBtns,
+			_onEdit,
+			_onEnterListBtns,
+			_onClickEditBtn,
+			onProjectStateChanged;
+	/* endregion */
+	
+	/* region UI Parts */
 	var j = {
-		get sb() {
-			return $("#sidebar");
-		},
-		get w() {
-			return $("#working-set-list-container");
-		},
-		get ph() {
-			return $("#project-files-header");
-		},
-		get pc() {
-			return $("#project-files-container");
-		},
-		get m() {
-			return $("#synapse");
-		},
-		get h() {
-			return $("#synapse-header");
-		},
-		get s() {
-			return $("#synapse-server-setting");
-		},
-		get l() {
-			return $("#synapse-server-list");
-		},
-		get tvc() {
-			return $("#synapse-treeview-container");
-		},
-		get t() {
-			return $("#synapse-tree");
-		}
-	};
-
-
-	var main_html = require("../text!ui/main.html");
-	var server_setting_html = require("../text!ui/serverSetting.html");
-	var server_list_html = require("../text!ui/serverList.html");
-	var $sidebar = $("#sidebar");
+				get sb() {
+					return $("#sidebar");
+				},
+				get w() {
+					return $("#working-set-list-container");
+				},
+				get ph() {
+					return $("#project-files-header");
+				},
+				get pc() {
+					return $("#project-files-container");
+				},
+				get m() {
+					return $("#synapse");
+				},
+				get h() {
+					return $("#synapse-header");
+				},
+				get s() {
+					return $("#synapse-server-setting");
+				},
+				get l() {
+					return $("#synapse-server-list");
+				},
+				get tvc() {
+					return $("#synapse-treeview-container");
+				},
+				get t() {
+					return $("#synapse-tree");
+				},
+				get tb() {
+					return $("#synapse-tree-back");
+				}
+			},
+	main_html = require("../text!ui/main.html"),
+	server_setting_html = require("../text!ui/serverSetting.html"),
+	server_list_html = require("../text!ui/serverList.html"),
+	$sidebar = $("#sidebar");
 	
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/style.css");
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/treeview.css");
 	ExtensionUtils.loadStyleSheet(module, "../node_modules/font-awesome/css/font-awesome.min.css");
-
+	/* endregion */
+	
 	init = function (domain) {
 		_domain = domain;
 		var deferred = new $.Deferred();
@@ -93,6 +117,7 @@ define(function (require, exports, module) {
 			.then(_initServerSettingUI)
 			.then(_initServerListUI)
 			.then(function () {
+				Project.on(Project.PROJECT_STATE_CHANGED, onProjectStateChanged);
 				//for Devel
 				showMain();
 				brackets.app.showDeveloperTools();
@@ -100,7 +125,7 @@ define(function (require, exports, module) {
 			});
 		return deferred.resolve(domain).promise();
 	};
-
+	
 	_initMainUI = function () {
 		var html = Mustache.render(main_html, {
 			Strings: Strings
@@ -121,7 +146,7 @@ define(function (require, exports, module) {
 		});
 		return new $.Deferred().resolve().promise();
 	};
-
+	
 	_initServerSettingUI = function () {
 		var html = Mustache.render(server_setting_html);
 		var $serverSetting = $(html);
@@ -133,12 +158,12 @@ define(function (require, exports, module) {
 		$("input", $serverSetting).on("blur", SettingManager.validateAll);
 		return new $.Deferred().resolve().promise();
 	};
-
+	
 	_initServerListUI = function () {
 		reloadServerSettingList();
 		return new $.Deferred().resolve().promise();
 	};
-
+	
 	showMain = function () {
 		var $main = j.m;
 		var $ph_pcChild = $("#project-files-header, #project-files-container > *");
@@ -153,32 +178,12 @@ define(function (require, exports, module) {
 			$main.css({
 				"opacity": 0,
 			});
-			j.tvc.css({"top": j.h.outerHeight() + "px"});
 			$main.animate({
 				"opacity": 1
 			}, "fast");
 		});
 	};
-
-	hideMain = function () {
-		var $main = j.m;
-		var $ph_pcChild = $("#project-files-header, #project-files-container > *");
-		var $ph_pc = $("#project-files-header, #project-files-container");
-
-		$main.animate({
-			"opacity": 0,
-		}, "fast", function () {
-			$(this).addClass("hide");
-			$ph_pc.css({
-				display: "block"
-			});
-			$ph_pcChild.animate({
-				"opacity": 1
-			}, "fast");
-
-		});
-	};
-
+	
 	showSpinner = function () {
 		var $spinnerContainer = $("#synapse .spinnerContainer");
 		var $spinner = $("#synapse .spinner");
@@ -189,7 +194,7 @@ define(function (require, exports, module) {
 			}
 		}
 	};
-
+	
 	hideSpinner = function () {
 		var $spinnerContainer = $("#synapse .spinnerContainer");
 		var $spinner = $("#synapse .spinner");
@@ -200,27 +205,75 @@ define(function (require, exports, module) {
 			}
 		}
 	};
-
+	
 	showHeaderSpinner = function () {
 		$("#synapse-header .spinner").addClass("spin").removeClass("hide");
 	};
-
+	
 	hideHeaderSpinner = function () {
 		$("#synapse-header .spinner").addClass("hide").removeClass("spin");
 	};
+	
+	_closeAllDocuments = function () {
+		
+	};
 
-	closeProject = function (e) {
-		j.tvc.toggleClass("flip").on("webkitTransitionEnd", function () {
+	_fadeOutMain = function () {
+		var $main = j.m;
+		var $ph_pcChild = $("#project-files-header, #project-files-container > *");
+		var $ph_pc = $("#project-files-header, #project-files-container");
+		
+		$main.animate({
+			"opacity": 0,
+		}, "slow").promise()
+		.done(function () {
+			$(this).addClass("hide");
+			$ph_pc.css({"display": "block"});
+			$ph_pcChild.animate({"opacity": 1}, "slow");
+		});
+	};
+	
+	hideMain = function () {
+		if (_projectState === Project.OPEN) {
+			closeProject()
+				.then(function () {
+					console.log("close project complete");
+					_fadeOutMain();
+					return;
+				});
+		} else {
+			_fadeOutMain();
+		}
+	};
+	
+	closeProject = function () {
+		var deferred = new $.Deferred();
+		CommandManager.execute(Commands.FILE_CLOSE_ALL)
+		.fail(function () {
+			console.log("closeProject > FILE_CLOSE_ALL > rejected");
+			deferred.reject();
+		})
+		.done(function () {
+
+			j.t.css({"border": "1px solid rgba(255, 255, 255, 0.15)"});
+			j.tvc.toggleClass("flip").on("webkitTransitionEnd", function () {
 				j.tvc.off("webkitTransitionEnd");
+				j.t.css({"border": 0});
+
 				Project.close()
 				.then(function () {
+					j.tb.css({"border": "1px solid rgba(255, 255, 255, 0.15)"});
 					j.tvc.toggleClass("flip").on("webkitTransitionEnd", function () {
-						j.t.animate({"background-color": "rgb(25, 25, 25)"}, "fast");
+						j.tb.css({"border": 0});
+						deferred.resolve();
 					});
 				});
 			});
+		});
+				
+		return deferred.promise();
 	};
-
+	
 	reloadServerSettingList = function () {
 
 		if (j.l.length) {
@@ -253,7 +306,7 @@ define(function (require, exports, module) {
 
 		return new $.Deferred().resolve().promise();
 	};
-
+	
 	_reloadServerSettingListWhenDelete = function () {
 
 		var deferred = new $.Deferred();
@@ -291,7 +344,7 @@ define(function (require, exports, module) {
 		return deferred.promise();
 
 	};
-
+	
 	_showServerSetting = function (e, state, setting) {
 		var deferred = new $.Deferred();
 		// when the setting form is already opened
@@ -353,7 +406,7 @@ define(function (require, exports, module) {
 		}
 		return deferred.promise();
 	};
-
+	
 	_hideServerSetting = function () {
 		var deferred = new $.Deferred();
 		if (j.s.hasClass("hide")) {
@@ -371,7 +424,7 @@ define(function (require, exports, module) {
 			});
 		return deferred.promise();
 	};
-
+	
 	showServerList = function () {
 		var deferred = new $.Deferred();
 		if (!j.l.hasClass("hide")) {
@@ -401,7 +454,7 @@ define(function (require, exports, module) {
 		}
 		return deferred.promise();
 	};
-
+	
 	_hideServerList = function () {
 		var deferred = new $.Deferred();
 		if (j.l.hasClass("hide")) {
@@ -419,19 +472,19 @@ define(function (require, exports, module) {
 			});
 		return deferred.promise();
 	};
-
+	
 	_onEdit = function (e) {
 		var $btn = $(e.currentTarget);
 		SettingManager.edit($btn.html());
 	};
-
+	
 	_onClickConnectBtn = function (e) {
 		var $btn = $(e.currentTarget);
 		var index = $btn.data("index");
 		var server = SettingManager.getServerSetting(index);
 		RemoteManager.connect(server);
 	};
-
+	
 	_onClickEditBtn = function (e) {
 		var idx = $(this).data("index");
 		var setting = SettingManager.getServerSetting(idx);
@@ -441,7 +494,7 @@ define(function (require, exports, module) {
 		}
 		_showServerSetting(null, "update", setting);
 	};
-
+	
 	_onClickDeleteBtn = function (e) {
 		var idx = $(this).data("index");
 		var deferred = new $.Deferred();
@@ -472,7 +525,7 @@ define(function (require, exports, module) {
 			});
 		return deferred.promise();
 	};
-
+	
 	_removeServerSettingListRow = function (index) {
 		var deferred = new $.Deferred();
 		var list = $("div.list > div.item", j.l);
@@ -498,20 +551,23 @@ define(function (require, exports, module) {
 			});
 		return deferred.promise();
 	};
-
+	
 	_onEnterListBtns = function (e) {
 		$(this).find(".btn-group").animate({
 			"opacity": 1
 		}, 200);
 	};
-
+	
 	_onLeaveListBtns = function (e) {
 		$(this).find(".btn-group").animate({
 			"opacity": 0
 		}, 200);
 	};
-
-
+	
+	onProjectStateChanged = function (evt, obj) {
+		_projectState = obj.state;
+		_projectDir = obj.directory;
+	};
 
 	exports.init = init;
 	exports.showMain = showMain;

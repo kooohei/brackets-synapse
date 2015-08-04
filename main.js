@@ -11,6 +11,7 @@ define(function (require, exports, module) {
 	var SettingManager = require("modules/SettingManager");
 	var FileTreeView = require("modules/FileTreeView");
 	var RemoteManager = require("modules/RemoteManager");
+	var FileManager = require("modules/FileManager");
 	
 	AppInit.appReady(function () {
 		var domain = new NodeDomain("synapse", ExtensionUtils.getModulePath(module, "node/SynapseDomain"));
@@ -20,6 +21,7 @@ define(function (require, exports, module) {
 		.then(SettingManager.init)
 		.then(RemoteManager.init)
 		.then(FileTreeView.init)
+		.then(FileManager.init)
 		.then(function () {
 			Menu.setRootMenu();
 		}, function (err) {
