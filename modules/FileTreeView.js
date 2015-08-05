@@ -60,7 +60,7 @@ define(function (require, exports, module) {
 			_getPathArray,
 			_getElementWithEntity,
 			_toggleDir,
-			_showAlert,
+			showAlert,
 			_newFile,
 	/* endregion */
 			
@@ -260,7 +260,7 @@ define(function (require, exports, module) {
 							//DocumentManager.notifyPathNameChanged(oldLocalPath, newLocalPath);
 							deferred.resolve();
 						}, function (err) {
-							_showAlert("Could not rename to remote file<br>" + err);
+							showAlert("Could not rename to remote file<br>" + err);
 							deferred.reject(err);
 						});
 				}
@@ -285,7 +285,7 @@ define(function (require, exports, module) {
 						.then(function () {
 							_deleteEntity(_ctxMenuCurrentEntity);
 						}, function (err) {
-							_showAlert("ERROR", "Could not remove directory from server");
+							showAlert("ERROR", "Could not remove directory from server");
 							deferred.reject(err);
 						});
 				} else {
@@ -358,7 +358,7 @@ define(function (require, exports, module) {
 							_deleteEntity(_ctxMenuCurrentEntity);
 							deferred.resolve();
 						}, function (err) {
-							_showAlert("ERROR", "Could not delete file from server");
+							showAlert("ERROR", "Could not delete file from server");
 							deferred.reject(err);
 						});
 				} else {
@@ -656,7 +656,7 @@ define(function (require, exports, module) {
 							}, function (err) {
 								console.log(err);
 								_deleteEntity(ent);
-								_showAlert("ERROR", "New file could not upload to server.<br>" + err);
+								showAlert("ERROR", "New file could not upload to server.<br>" + err);
 								deferred.reject();
 							});
 					});
@@ -669,7 +669,7 @@ define(function (require, exports, module) {
 							}, function (err) {
 							console.log(err);
 								_deleteEntity(ent);
-								_showAlert("ERROR", "New directory could not upload to server.<br>" + err);
+								showAlert("ERROR", "New directory could not upload to server.<br>" + err);
 								deferred.reject();
 							});
 					});
@@ -711,7 +711,7 @@ define(function (require, exports, module) {
 		return _setElement(parent);
 	};
 	
-	_showAlert = function (title, message) {
+	showAlert = function (title, message) {
 		var $container = $("<div/>").addClass("synapse-treeview-alert")
 			.html($("<p/>").addClass("title").html(title))
 			.append($("<p/>").addClass("caption").html(message)).hide();
@@ -897,6 +897,7 @@ define(function (require, exports, module) {
 	exports.loadTreeView = loadTreeView;
 	exports.refresh = refresh;
 	exports.rename = rename;
+	exports.showAlert = showAlert;
 	exports.newFile = newFile;
 	exports.deleteFile = deleteFile;
 	exports.newDirectory = newDirectory;

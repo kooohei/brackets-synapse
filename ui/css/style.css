@@ -220,6 +220,9 @@
 #synapse-server-list button.btn-connect:hover {
 	background-color: #016dc4;
 }
+#synapse-server-list button.btn-disconnect:hover {
+	background-color: #800;
+}
 #synapse-server-list button.btn-edit:hover {
 	background-color: #5cb85c;
 }

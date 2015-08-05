@@ -79,9 +79,11 @@ define(function (require, exports, module) {
 	 * @returns {$.Promise} 
 	 */
 	open = function (server) {
+		/*
 		if (Connection.state === OPEN) {
 			throw new Error("Unexpected exception: Project mode should be OFFLINE before open project.");
 		}
+		*/
 		_currentServer = server;
 		var deferred = new $.Deferred();
 		_initProjectContext()

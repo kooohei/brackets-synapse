@@ -106,12 +106,14 @@ define(function (require, exports, module) {
 			"kohei.synapse.mainPanel",
 			Panel.showMain);
 		var topMenu = Menus.getMenu(Menus.AppMenuBar.VIEW_MENU);
+		topMenu.addMenuDivider();
 		topMenu.addMenuItem(menu, {
 			key: "Ctrl-Shift-Alt-Enter",
 			displayKey: "Ctrl-Shift-Alt-Enter"
 		});
+		topMenu.addMenuDivider();
 
-		setDebugMenu();
+//		setDebugMenu();
 	};
 
 	setDebugMenu = function () {
@@ -172,12 +174,6 @@ define(function (require, exports, module) {
 		if (treeViewContextMenu === null) {
 			return;
 		}
-		/*
-		var keys = Object.keys(ContextMenuCommandIds);
-		keys.forEach(function (key) {
-			CommandManager.get(ContextMenuCommandIds[key]).setEnabled(false);
-		});
-		*/
 		_.forIn(ContextMenuCommandIds, function (val, key) {
 			CommandManager.get(val).setEnabled(false);
 		});

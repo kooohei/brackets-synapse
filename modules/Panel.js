@@ -22,6 +22,7 @@ define(function (require, exports, module) {
 	/* region Private vars */
 	var 
 			_projectState = Project.CLOSE,
+			_currentServerIndex = null,
 			_projectDir = null,
 			_domain = null;
 	/* endregion */
@@ -51,6 +52,7 @@ define(function (require, exports, module) {
 			_showServerSetting,
 			_flipAnimation,
 			_fadeOutMain,
+			_closeProject,
 			_removeServerSettingListRow,
 	/* endregion */
 			
@@ -212,16 +214,18 @@ define(function (require, exports, module) {
 		}
 
 		function open() {
-			reloadServerSettingList()
-				.then(function () {
-					var destHeight = j.m.outerHeight() - j.h.outerHeight() - (j.l.outerHeight() + 10);
-					j.l.removeClass("hide");
-					j.tvc.css({"border-top": "1px solid rgba(255, 255, 255, 0.05)"});
-					j.tvc.animate({
-						"top": (j.l.outerHeight() + 10) + j.h.outerHeight() + "px",
-						//"height": destHeight + "px"
-					}, "fast").promise().done(deferred.resolve);
-				});
+			if (_projectState === Project.CLOSE) {
+				reloadServerSettingList()
+					.then(function () {
+						var destHeight = j.m.outerHeight() - j.h.outerHeight() - (j.l.outerHeight() + 10);
+						j.l.removeClass("hide");
+						j.tvc.css({"border-top": "1px solid rgba(255, 255, 255, 0.05)"});
+						j.tvc.animate({
+							"top": (j.l.outerHeight() + 10) + j.h.outerHeight() + "px",
+							//"height": destHeight + "px"
+						}, "fast").promise().done(deferred.resolve);
+					});
+			}
 			return deferred.promise();
 		}
 		if (!j.s.hasClass("hide")) {
@@ -267,24 +271,21 @@ define(function (require, exports, module) {
 			.then(function() {
 				j.t.css({"border": "1px solid rgba(255, 255, 255, 0.15)"});
 				j.tvc.toggleClass("flip").on("webkitTransitionEnd", function () {
-				j.tvc.off("webkitTransitionEnd");
-				j.t.css({"border": 0});
-
-				Project.close()
-				.then(function () {
-					j.tb.css({"border": "1px solid rgba(255, 255, 255, 0.15)"});
-					j.tvc.toggleClass("flip").on("webkitTransitionEnd", function () {
-						j.tb.css({"border": 0});
-						deferred.resolve();
+					j.tvc.off("webkitTransitionEnd");
+					j.t.css({"border": 0});
+					Project.close()
+					.then(function () {
+						j.tb.css({"border": "1px solid rgba(255, 255, 255, 0.15)"});
+						j.tvc.toggleClass("flip").on("webkitTransitionEnd", function () {
+							j.tb.css({"border": 0});
+							deferred.resolve();
+						});
 					});
 				});
 			});
-			});
 		});
-				
 		return deferred.promise();
 	};
-	
 	/**
 	 * Reload server setting list in the server list panel from preference file.
 	 * 
@@ -323,7 +324,6 @@ define(function (require, exports, module) {
 		return new $.Deferred().resolve().promise();
 	};
 	
-	
 	/* Private Methods */
 	
 	/**
@@ -361,7 +361,6 @@ define(function (require, exports, module) {
 		} else {
 			j.sb.append($main);
 		}
-		$("span.disconnect-btn", $main).on("click", closeProject);
 		$("span.list-btn", $main).on("click", showServerList);
 		$("span.close-btn", $main).on("click", hideMain);
 		$("span.add-btn", $main).on("click", function (e) {
@@ -588,19 +587,41 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 	
-	
 	/* Handlers */
 	
 	onEdit = function (e) {
 		var $btn = $(e.currentTarget);
 		SettingManager.edit($btn.html());
 	};
-	
+
 	onClickConnectBtn = function (e) {
+		
 		var $btn = $(e.currentTarget);
 		var index = $btn.data("index");
 		var server = SettingManager.getServerSetting(index);
-		RemoteManager.connect(server);
+		
+		if (_projectState === Project.OPEN) {
+			if ($(this).data("index") === _currentServerIndex) {
+				closeProject()
+				.then(function () {
+					$btn.removeClass("btn-disconnect");
+					$btn.addClass("btn-connect");
+					$btn.html("CONNECT");
+					_currentServerIndex = null;
+				});
+				return;
+			}
+			FileTreeView.showAlert("Project is already opened.", "Please close current project before open other project.");
+			return;
+		}
+		
+		RemoteManager.connect(server)
+		.then(function () {
+			$btn.removeClass("btn-connect");
+			$btn.addClass("btn-disconnect");
+			$btn.html("DISCONNECT");
+			_currentServerIndex = index;
+		});
 	};
 	
 	onClickEditBtn = function (e) {
@@ -614,8 +635,15 @@ define(function (require, exports, module) {
 	};
 	
 	onClickDeleteBtn = function (e) {
+		
 		var idx = $(this).data("index");
 		var deferred = new $.Deferred();
+		
+		if (_projectState === Project.OPEN) {
+			FileTreeView.showAlert("Failed.", "Could not delete setting because project is open");
+			return deferred.reject().promise();
+		}
+		
 		//show confirm dialog
 		DialogCollection.showYesNoModal(
 				"error-dialog",
@@ -645,6 +673,11 @@ define(function (require, exports, module) {
 	};
 	
 	onEnterListBtns = function (e) {
+		if (_projectState === Project.OPEN) {
+			if ($(this).data("index") !== _currentServerIndex) {
+				return;
+			}
+		}
 		$(this).find(".btn-group").animate({
 			"opacity": 1
 		}, 200);
