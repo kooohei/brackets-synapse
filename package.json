@@ -1,16 +1,22 @@
 {
-  "name": "kooohei.brackets-synapse",
+  "name": "brackets-synapse",
 	"title": "Adobe Brackets extension for edit to server files",
   "version": "1.0.0",
   "description": "Brackets extension for file sync between local and remote via FTP.",
-  "main": "main.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "author": "Kohei Hayashi (https://github.com/kooohei/)",
+	"homepage": "https://github.com/kooohei/brackets-synapse",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kooohei/brackets-synapse.git"
   },
+	"engines": {
+		"brackets": ">=1.3.0"
+	},
+	"scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+	"i18n": ["en", "jp"],
+	"main": "main.js",
   "keywords": [
     "brackets",
     "ftp",
@@ -20,7 +26,7 @@
 		"adobe",
 		"edit"
   ],
-  "author": "Kohei Hayashi (https://github.com/kooohei/)",
+  
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/kooohei/brackets-synapse/issues"
