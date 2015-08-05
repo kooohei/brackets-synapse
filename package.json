@@ -1,6 +1,7 @@
 {
-  "name": "brackets-synapse",
-  "version": "0.0.1",
+  "name": "kooohei.brackets-synapse",
+	"title": "Adobe Brackets extension for edit to server files",
+  "version": "1.0.0",
   "description": "Brackets extension for file sync between local and remote via FTP.",
   "main": "main.js",
   "scripts": {
