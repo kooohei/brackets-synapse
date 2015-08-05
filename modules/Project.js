@@ -2,6 +2,8 @@
 /*global define, $, brackets, Mustache, window, console */
 define(function (require, exports, module) {
 	"use strict";
+	
+	
 	var PathManager = require("modules/PathManager");
 	var FileSystem = brackets.getModule("filesystem/FileSystem");
 	var ProjectManager = brackets.getModule("project/ProjectManager");

@@ -12,8 +12,9 @@ define(function (require, exports, module) {
 	var PathManager = require("modules/PathManager");
 	var Project = require("modules/Project");
 	var RemoteManager = require("modules/RemoteManager");
+	/* endregion */
 	
-	/* Public vars */
+	/* region Public vars */
 	var init;
 	var openFile;
 	var onSaved;
@@ -21,7 +22,7 @@ define(function (require, exports, module) {
 	var onBeforeProjectClose;
 	/* endregion */
 	
-	/* Private vars */
+	/* region Private vars */
 	var _attachEvent;
 	var _projectState = Project.CLOSE;
 	/* endregion */
@@ -32,20 +33,6 @@ define(function (require, exports, module) {
 		var deferred = new $.Deferred();
 		_attachEvent();
 		return deferred.resolve(domain).promise();
-	};
-	
-	_attachEvent = function attachEvent() {
-		Project.on(Project.PROJECT_STATE_CHANGED, function (evt, obj) {
-			_projectState = obj.state;
-			if (obj.state === Project.OPEN) {
-				ProjectManager.on("beforeProjectClose", onBeforeProjectClose);
-				DocumentManager.on("dirtyFlagChange", onDirtyFlagChange);
-				DocumentManager.on("documentSaved", onSaved);
-			} else {
-				DocumentManager.off("dirtyFlagChanage", onDirtyFlagChange);
-				DocumentManager.off("documentSaved", onSaved);
-			}
-		});
 	};
 	
 	onDirtyFlagChange = function (evt, document) {

@@ -82,9 +82,8 @@ define(function (require, exports, module) {
 			onTreeViewContextMenu,
 			onProjectStateChanged;
 	/* endregion */
-	
-	
-	
+
+	/* regionn objects */
 	var jq = {
 				get container() {
 					return $("#synapse-tree");
@@ -119,9 +118,12 @@ define(function (require, exports, module) {
 				this.downloaded = false;
 				this.children = {};
 			};
-	
 	/* endregion */
 
+	
+	
+	/* Public Methods */
+	
 	init = function (domain) {
 		var deferred = new $.Deferred();
 		_domain = domain;
@@ -203,6 +205,171 @@ define(function (require, exports, module) {
 			.fail(deferred.reject);
 		return deferred.promise();
 	};
+	
+	refresh = function () {
+		var deferred = new $.Deferred();
+		if (_ctxMenuCurrentEntity === null) {
+			return;
+		}
+		$("#tv-" + _ctxMenuCurrentEntity.id + " > ul.treeview-contents").remove();
+
+		_loadDirectory(_ctxMenuCurrentEntity)
+			.then(deferred.resolve, deferred.reject);
+		return deferred.promise();
+	};
+	
+	rename = function () {
+		var deferred = new $.Deferred();
+		if (_ctxMenuCurrentEntity === null) {
+			return deferred.reject().promise();
+		}
+		
+		var oldLocalPath = PathManager.completionLocalPath(_getPathArray(_ctxMenuCurrentEntity));
+		var oldRemotePath = PathManager.completionRemotePath(_getPathArray(_ctxMenuCurrentEntity));
+		
+		var entry = null;
+		if (_ctxMenuCurrentEntity.type === "file") {
+			entry = FileSystem.getFileForPath(oldLocalPath);
+		} else if (_ctxMenuCurrentEntity.type === "directory") {
+			entry = FileSystem.getDirectoryForPath(oldLocalPath);
+		}
+		
+		_rename(_ctxMenuCurrentEntity, function (entity) {
+			
+			var newLocalPath = PathManager.completionLocalPath(_getPathArray(entity));
+			var newRemotePath = PathManager.completionRemotePath(_getPathArray(entity));
+			
+			if (entity) {
+				if (newLocalPath === oldLocalPath) {
+					return;
+				} else {
+					
+					RemoteManager.rename(_currentServerSetting, oldRemotePath, newRemotePath)
+						.then(function (res) {
+							if (_ctxMenuCurrentEntity.downloaded) {
+								entry.exits(function (err, exists) {
+									if (err) {
+										throw new Error(err);
+									}
+									if (exists) {
+										DocumentManager.notifyPathNameChanged(oldLocalPath, newLocalPath);
+									}
+								});
+							}
+						
+							//DocumentManager.notifyPathNameChanged(oldLocalPath, newLocalPath);
+							deferred.resolve();
+						}, function (err) {
+							_showAlert("Could not rename to remote file<br>" + err);
+							deferred.reject(err);
+						});
+				}
+			}
+			return deferred.promise();
+		});
+	};
+	
+	removeDirectory = function () {
+		var deferred = new $.Deferred();
+		if (_ctxMenuCurrentEntity === null) {
+			return deferred.reject().promise();
+		}
+		var remotePath = PathManager.completionRemotePath(_getPathArray(_ctxMenuCurrentEntity));
+		DialogCollection.showYesNoModal(
+				"removeDirectoryDialog",
+				"Confirm",
+				"Are you sure you want to delete the selected directory and all child contents ?")
+			.done(function (res) {
+				if (res === "Yes") {
+					RemoteManager.removeDirectory(_currentServerSetting, remotePath)
+						.then(function () {
+							_deleteEntity(_ctxMenuCurrentEntity);
+						}, function (err) {
+							_showAlert("ERROR", "Could not remove directory from server");
+							deferred.reject(err);
+						});
+				} else {
+					deferred.resolve();
+				}
+			});
+		return deferred.promise();
+	};
+	
+	newDirectory = function () {
+		var deferred = new $.Deferred();
+		if (_ctxMenuCurrentEntity === null) {
+			return deferred.reject().promise();
+		}
+		
+		if (_ctxMenuCurrentEntity.type === "directory") {
+			if (!_getElementWithEntity(_ctxMenuCurrentEntity).hasClass("loaded")) {
+				_loadDirectory(_ctxMenuCurrentEntity)
+					.then(function () {
+						newDirectory();
+						return;
+					});
+			}
+		}
+		_newFile("directory")
+			.then(deferred.resolve, deferred.reject);
+		return deferred.promise();
+	};
+	
+	newFile = function () {
+		var deferred = new $.Deferred();
+		if (_ctxMenuCurrentEntity === null || _ctxMenuCurrentEntity.type !== "directory") {
+			deferred.reject();
+			return deferred.promise();
+		}
+		
+		var $elem = _getElementWithEntity(_ctxMenuCurrentEntity);
+		
+		if (_ctxMenuCurrentEntity.type === "directory") {
+			if (!$elem.hasClass("loaded")) {
+				_loadDirectory(_ctxMenuCurrentEntity)
+					.then(function () {
+						newFile();
+						return deferred.resolve().promise();
+					}, function (err) {
+						console.error(err);
+						throw new Error("error");
+					});
+			} else {
+				_newFile("file").then(deferred.resolve, deferred.reject);
+			}
+		}
+		return deferred.promise();
+	};
+	
+	deleteFile = function () {
+		var deferred = new $.Deferred();
+		var remotePath = PathManager.completionRemotePath(_getPathArray(_ctxMenuCurrentEntity));
+		if (_ctxMenuCurrentEntity === null) {
+			return deferred.reject().promise();
+		}
+		DialogCollection.showYesNoModal(
+				"deleteFileDialog",
+				"Confirm",
+				"Are you sure you want to delete the selected file ?")
+			.done(function (res) {
+				if (res === "Yes") {
+					RemoteManager.deleteFile(_currentServerSetting, remotePath)
+						.then(function () {
+							_deleteEntity(_ctxMenuCurrentEntity);
+							deferred.resolve();
+						}, function (err) {
+							_showAlert("ERROR", "Could not delete file from server");
+							deferred.reject(err);
+						});
+				} else {
+					deferred.resolve();
+				}
+			});
+		return deferred.promise();
+	};
+	
+	
+	/* Private Methods */
 	
 	_setElement = function (entity) {
 		var deferred = new $.Deferred();
@@ -375,69 +542,6 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 	
-	refresh = function () {
-		var deferred = new $.Deferred();
-		if (_ctxMenuCurrentEntity === null) {
-			return;
-		}
-		$("#tv-" + _ctxMenuCurrentEntity.id + " > ul.treeview-contents").remove();
-
-		_loadDirectory(_ctxMenuCurrentEntity)
-			.then(deferred.resolve, deferred.reject);
-		return deferred.promise();
-	};
-	
-	rename = function () {
-		var deferred = new $.Deferred();
-		if (_ctxMenuCurrentEntity === null) {
-			return deferred.reject().promise();
-		}
-		
-		var oldLocalPath = PathManager.completionLocalPath(_getPathArray(_ctxMenuCurrentEntity));
-		var oldRemotePath = PathManager.completionRemotePath(_getPathArray(_ctxMenuCurrentEntity));
-		
-		var entry = null;
-		if (_ctxMenuCurrentEntity.type === "file") {
-			entry = FileSystem.getFileForPath(oldLocalPath);
-		} else if (_ctxMenuCurrentEntity.type === "directory") {
-			entry = FileSystem.getDirectoryForPath(oldLocalPath);
-		}
-		
-		_rename(_ctxMenuCurrentEntity, function (entity) {
-			
-			var newLocalPath = PathManager.completionLocalPath(_getPathArray(entity));
-			var newRemotePath = PathManager.completionRemotePath(_getPathArray(entity));
-			
-			if (entity) {
-				if (newLocalPath === oldLocalPath) {
-					return;
-				} else {
-					
-					RemoteManager.rename(_currentServerSetting, oldRemotePath, newRemotePath)
-						.then(function (res) {
-							if (_ctxMenuCurrentEntity.downloaded) {
-								entry.exits(function (err, exists) {
-									if (err) {
-										throw new Error(err);
-									}
-									if (exists) {
-										DocumentManager.notifyPathNameChanged(oldLocalPath, newLocalPath);
-									}
-								});
-							}
-						
-							//DocumentManager.notifyPathNameChanged(oldLocalPath, newLocalPath);
-							deferred.resolve();
-						}, function (err) {
-							_showAlert("Could not rename to remote file<br>" + err);
-							deferred.reject(err);
-						});
-				}
-			}
-			return deferred.promise();
-		});
-	};
-	
 	_rename = function (entity, cb) {
 		var $input = null;
 		var showInput = function (entity) {
@@ -492,52 +596,6 @@ define(function (require, exports, module) {
 			.then(function () {
 				validate(entity, cb);
 			});
-	};
-	
-	newDirectory = function () {
-		var deferred = new $.Deferred();
-		if (_ctxMenuCurrentEntity === null) {
-			return deferred.reject().promise();
-		}
-		
-		if (_ctxMenuCurrentEntity.type === "directory") {
-			if (!_getElementWithEntity(_ctxMenuCurrentEntity).hasClass("loaded")) {
-				_loadDirectory(_ctxMenuCurrentEntity)
-					.then(function () {
-						newDirectory();
-						return;
-					});
-			}
-		}
-		_newFile("directory")
-			.then(deferred.resolve, deferred.reject);
-		return deferred.promise();
-	};
-	
-	newFile = function () {
-		var deferred = new $.Deferred();
-		if (_ctxMenuCurrentEntity === null || _ctxMenuCurrentEntity.type !== "directory") {
-			deferred.reject();
-			return deferred.promise();
-		}
-		
-		var $elem = _getElementWithEntity(_ctxMenuCurrentEntity);
-		
-		if (_ctxMenuCurrentEntity.type === "directory") {
-			if (!$elem.hasClass("loaded")) {
-				_loadDirectory(_ctxMenuCurrentEntity)
-					.then(function () {
-						newFile();
-						return deferred.resolve().promise();
-					}, function (err) {
-						console.error(err);
-						throw new Error("error");
-					});
-			} else {
-				_newFile("file").then(deferred.resolve, deferred.reject);
-			}
-		}
-		return deferred.promise();
 	};
 	
 	_newFile = function (type) {
@@ -622,33 +680,6 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 	
-	deleteFile = function () {
-		var deferred = new $.Deferred();
-		var remotePath = PathManager.completionRemotePath(_getPathArray(_ctxMenuCurrentEntity));
-		if (_ctxMenuCurrentEntity === null) {
-			return deferred.reject().promise();
-		}
-		DialogCollection.showYesNoModal(
-				"deleteFileDialog",
-				"Confirm",
-				"Are you sure you want to delete the selected file ?")
-			.done(function (res) {
-				if (res === "Yes") {
-					RemoteManager.deleteFile(_currentServerSetting, remotePath)
-						.then(function () {
-							_deleteEntity(_ctxMenuCurrentEntity);
-							deferred.resolve();
-						}, function (err) {
-							_showAlert("ERROR", "Could not delete file from server");
-							deferred.reject(err);
-						});
-				} else {
-					deferred.resolve();
-				}
-			});
-		return deferred.promise();
-	};
-	
 	_deleteEntity = function (entity) {
 		var deferred = new $.Deferred();
 		var $elem = _getElementWithEntity(entity);
@@ -678,32 +709,6 @@ define(function (require, exports, module) {
 	
 	_resetElement = function (parent) {
 		return _setElement(parent);
-	};
-	
-	removeDirectory = function () {
-		var deferred = new $.Deferred();
-		if (_ctxMenuCurrentEntity === null) {
-			return deferred.reject().promise();
-		}
-		var remotePath = PathManager.completionRemotePath(_getPathArray(_ctxMenuCurrentEntity));
-		DialogCollection.showYesNoModal(
-				"removeDirectoryDialog",
-				"Confirm",
-				"Are you sure you want to delete the selected directory and all child contents ?")
-			.done(function (res) {
-				if (res === "Yes") {
-					RemoteManager.removeDirectory(_currentServerSetting, remotePath)
-						.then(function () {
-							_deleteEntity(_ctxMenuCurrentEntity);
-						}, function (err) {
-							_showAlert("ERROR", "Could not remove directory from server");
-							deferred.reject(err);
-						});
-				} else {
-					deferred.resolve();
-				}
-			});
-		return deferred.promise();
 	};
 	
 	_showAlert = function (title, message) {
@@ -803,6 +808,8 @@ define(function (require, exports, module) {
 	};
 	
 	
+	
+	/* Handlers */
 	
 	onTreeViewContextMenu = function (e, menu) {
 		if ($("#synapse-tree").hasClass("disabled")) {
