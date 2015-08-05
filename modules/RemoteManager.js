@@ -2,19 +2,20 @@
 /*global define, $, brackets, Mustache, window, console, moment */
 define(function (require, exports, module) {
 	
-	// modules
-	var PathManager = require("modules/PathManager");
-	var FileTreeView = require("modules/FileTreeView");
+	/* region Modules */
 	var EventDispatcher = brackets.getModule("utils/EventDispatcher");
+	var FileTreeView = require("modules/FileTreeView");
+	var PathManager = require("modules/PathManager");
 	var Panel = require("modules/Panel");
 	var Project = require("modules/Project");
+	/* endregion */
 	
-	
-	// private vars
+	/* region Private vars */
 	var _domain,
 			_currentServerSetting;
+	/* endregion */
 	
-	// public methods
+	/* region Public vars */
 	var init,
 			clear,
 			connect,
@@ -25,32 +26,32 @@ define(function (require, exports, module) {
 			mkdir,
 			removeDirectory,
 			deleteFile;
+	/* endregion */
 	
+	/* region Static vars */
 	var ONLINE = true,
-		OFFLINE = false,
-			
-		CONNECTION_CHANGED = "CONNECTION_CHAGNED", 
-		State = {
-			_mode: OFFLINE,
-			task: "",
+			OFFLINE = false,
+			CONNECTION_CHANGED = "CONNECTION_CHAGNED", 
+			State = {
+				_mode: OFFLINE,
+				task: "",
 
-			get mode() {
-				return this._mode;
+				get mode() {
+					return this._mode;
+				},
+
+				set mode(val) {
+					this._mode = val;
+					exports.trigger(CONNECTION_CHANGED, this._mode);
+				}
 			},
-
-			set mode(val) {
-				this._mode = val;
-				exports.trigger(CONNECTION_CHANGED, this._mode);
-			}
-		};
-	
-	// event handler
-	var _onProjectModeChanged;
+			jq = {
+				tv : $("#synapse-tree")
+			};
+	/* endregion */
 	
 	
-	var jq = {
-		tv : $("#synapse-tree")
-	};
+	/* Public Methods */
 	
 	init = function (domain) {
 		_domain = domain;
@@ -157,10 +158,6 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 	
-	_onProjectModeChanged = function () {
-		
-	};
-	
 	download = function (serverSetting, localPath, remotePath) {
 		var deferred = new $.Deferred();
 		_domain.exec("Download", serverSetting, localPath, remotePath)
@@ -169,6 +166,7 @@ define(function (require, exports, module) {
 			}, deferred.reject);
 		return deferred.promise();
 	};
+	
 	
 	EventDispatcher.makeEventDispatcher(exports);
 	

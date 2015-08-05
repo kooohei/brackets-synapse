@@ -10,6 +10,7 @@ define(function (require, exports, module) {
 	var CommandManager = brackets.getModule("command/CommandManager");
 	var Commands = brackets.getModule("command/Commands");
 	var _ = brackets.getModule("thirdparty/lodash");
+	
 	var Project = require("modules/Project");
 	var DialogCollection = require("modules/DialogCollection");
 	var FileTreeView = require("modules/FileTreeView");
@@ -50,7 +51,6 @@ define(function (require, exports, module) {
 			_showServerSetting,
 			_flipAnimation,
 			_fadeOutMain,
-			_closeAllDocuments,
 			_removeServerSettingListRow,
 	/* endregion */
 			
@@ -113,6 +113,12 @@ define(function (require, exports, module) {
 	
 	/* Public Methods */
 	
+	/**
+	 * Inittialize Panel UI and register listener.
+	 * 
+	 * @param   {DomainManager} domain 
+	 * @returns {$.Promise} 
+	 */
 	init = function (domain) {
 		_domain = domain;
 		var deferred = new $.Deferred();
@@ -129,6 +135,9 @@ define(function (require, exports, module) {
 		return deferred.resolve(domain).promise();
 	};
 	
+	/**
+	 * Show Main Panel to side view.
+	 */
 	showMain = function () {
 		var $main = j.m;
 		var $ph_pcChild = $("#project-files-header, #project-files-container > *");
@@ -149,6 +158,9 @@ define(function (require, exports, module) {
 		});
 	};
 	
+	/**
+	 * Show progress spinner on the tree view when connected to server.
+	 */
 	showSpinner = function () {
 		var $spinnerContainer = $("#synapse .spinnerContainer");
 		var $spinner = $("#synapse .spinner");
@@ -160,6 +172,9 @@ define(function (require, exports, module) {
 		}
 	};
 	
+	/**
+	 * Hide progress spinner on the tree view when disconnected from server.
+	 */
 	hideSpinner = function () {
 		var $spinnerContainer = $("#synapse .spinnerContainer");
 		var $spinner = $("#synapse .spinner");
@@ -171,14 +186,25 @@ define(function (require, exports, module) {
 		}
 	};
 	
+	/**
+	 * Show progress spinner on the header when connected to server.
+	 */
 	showHeaderSpinner = function () {
 		$("#synapse-header .spinner").addClass("spin").removeClass("hide");
 	};
 	
+	/**
+	 * Hide Progress spinner on header when the disconnected from server.
+	 */
 	hideHeaderSpinner = function () {
 		$("#synapse-header .spinner").addClass("hide").removeClass("spin");
 	};
 	
+	/**
+	 * Show server list on top of the main panel.
+	 * 
+	 * @returns {$.Promise} 
+	 */
 	showServerList = function () {
 		var deferred = new $.Deferred();
 		if (!j.l.hasClass("hide")) {
@@ -209,11 +235,13 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 	
+	/**
+	 * Close main panel
+	 */
 	hideMain = function () {
 		if (_projectState === Project.OPEN) {
 			closeProject()
 				.then(function () {
-					console.log("close project complete");
 					_fadeOutMain();
 					return;
 				});
@@ -222,6 +250,11 @@ define(function (require, exports, module) {
 		}
 	};
 	
+	/**
+	 * check unsaved files and project closed then fadeout panel.
+	 * 
+	 * @returns {$.Promise}
+	 */
 	closeProject = function () {
 		var deferred = new $.Deferred();
 		CommandManager.execute(Commands.FILE_CLOSE_ALL)
@@ -230,9 +263,10 @@ define(function (require, exports, module) {
 			deferred.reject();
 		})
 		.done(function () {
-
-			j.t.css({"border": "1px solid rgba(255, 255, 255, 0.15)"});
-			j.tvc.toggleClass("flip").on("webkitTransitionEnd", function () {
+			Project.closeProject()
+			.then(function() {
+				j.t.css({"border": "1px solid rgba(255, 255, 255, 0.15)"});
+				j.tvc.toggleClass("flip").on("webkitTransitionEnd", function () {
 				j.tvc.off("webkitTransitionEnd");
 				j.t.css({"border": 0});
 
@@ -245,11 +279,17 @@ define(function (require, exports, module) {
 					});
 				});
 			});
+			});
 		});
 				
 		return deferred.promise();
 	};
 	
+	/**
+	 * Reload server setting list in the server list panel from preference file.
+	 * 
+	 * @returns {$.Promise} 
+	 */
 	reloadServerSettingList = function () {
 
 		if (j.l.length) {
@@ -283,12 +323,12 @@ define(function (require, exports, module) {
 		return new $.Deferred().resolve().promise();
 	};
 	
+	
 	/* Private Methods */
 	
-	_closeAllDocuments = function () {
-		
-	};
-
+	/**
+	 * the panel will fadeout when close main panel then the project files container will shown.
+	 */
 	_fadeOutMain = function () {
 		var $main = j.m;
 		var $ph_pcChild = $("#project-files-header, #project-files-container > *");
@@ -304,6 +344,11 @@ define(function (require, exports, module) {
 		});
 	};
 	
+	/**
+	 * Initialize main panel, and register some events.
+	 * 
+	 * @returns {$.Promise} 
+	 */
 	_initMainUI = function () {
 		var html = Mustache.render(main_html, {
 			Strings: Strings
@@ -325,6 +370,11 @@ define(function (require, exports, module) {
 		return new $.Deferred().resolve().promise();
 	};
 	
+	/**
+	 * Initialize server setting panel and some events of that.
+	 * 
+	 * @returns {$.Promise} 
+	 */
 	_initServerSettingUI = function () {
 		var html = Mustache.render(server_setting_html);
 		var $serverSetting = $(html);
@@ -337,11 +387,21 @@ define(function (require, exports, module) {
 		return new $.Deferred().resolve().promise();
 	};
 	
+	/**
+	 * Initialize server list panel (see reloadServerSettingList)
+	 *
+	 * @returns {$.Promise} 
+	 */
 	_initServerListUI = function () {
 		reloadServerSettingList();
 		return new $.Deferred().resolve().promise();
 	};
 	
+	/**
+	 * Initialize server list panel and some events of that.
+	 * 
+	 * @returns {$.Promise} 
+	 */
 	_reloadServerSettingListWhenDelete = function () {
 
 		var deferred = new $.Deferred();
@@ -380,6 +440,14 @@ define(function (require, exports, module) {
 
 	};
 	
+	/**
+	 * Show the server setting form panel
+	 *
+	 * @param   {Object} e       event object.
+	 * @param   {String} state   update or insert.
+	 * @param   {Object}   setting Server setting object when used state is update.
+	 * @returns {$.Promise} 
+	 */
 	_showServerSetting = function (e, state, setting) {
 		var deferred = new $.Deferred();
 		// when the setting form is already opened
@@ -442,6 +510,11 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 	
+	/**
+	 * Close the server setting form panel
+	 *
+	 * @returns {$.Promise} 
+	 */
 	_hideServerSetting = function () {
 		var deferred = new $.Deferred();
 		if (j.s.hasClass("hide")) {
@@ -460,6 +533,11 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 	
+	/**
+	 * Close the server list panel
+	 * 
+	 * @returns {$.Promise} 
+	 */
 	_hideServerList = function () {
 		var deferred = new $.Deferred();
 		if (j.l.hasClass("hide")) {
@@ -478,6 +556,12 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 	
+	/**
+	 * Delete server setting object from index of list.
+	 *
+	 * @param   {int} index 
+	 * @returns {$.Promise} 
+	 */
 	_removeServerSettingListRow = function (index) {
 		var deferred = new $.Deferred();
 		var list = $("div.list > div.item", j.l);

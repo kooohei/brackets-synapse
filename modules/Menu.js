@@ -184,7 +184,9 @@ define(function (require, exports, module) {
 
 	};
 	
-	// for reload brackets
+	
+	/* for Debug */
+	
 	_nodeConnection = new NodeConnection();
 	_nodeConnection.connect(true);
 

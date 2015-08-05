@@ -34,7 +34,6 @@ define(function (require, exports, module) {
 			_hideConnectTestSpinner;
 	/* endregion */
 
-	
 	var domain,
 			preference = PreferencesManager.getExtensionPrefs("brackets-synapse");
 	var Server = function () {
@@ -52,7 +51,8 @@ define(function (require, exports, module) {
 	};
 
 
-
+	/* Public Methods */
+	
 	init = function (_domain) {
 		var deferred = new $.Deferred();
 		domain = _domain;
@@ -176,6 +176,24 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 
+	getServerList = function () {
+		return _getServerSettings();
+	};
+
+	getServerSetting = function (index) {
+		var list = _getServerSettings();
+		var res = null;
+		list.forEach(function (item) {
+			if (item.index === index) {
+				res = item;
+			}
+		});
+		return res;
+	};
+	
+	
+	/* Private Methods */
+	
 	_appendServerBtnState = function (state) {
 		var dev_null = null;
 		var _state = state;
@@ -209,21 +227,6 @@ define(function (require, exports, module) {
 		} else {
 			return JSON.parse(json);
 		}
-	};
-
-	getServerList = function () {
-		return _getServerSettings();
-	};
-
-	getServerSetting = function (index) {
-		var list = _getServerSettings();
-		var res = null;
-		list.forEach(function (item) {
-			if (item.index === index) {
-				res = item;
-			}
-		});
-		return res;
 	};
 
 	_editServerSetting = function (state, setting) {

@@ -3,7 +3,7 @@
 define(function (require, exports, module) {
 	"use strict";
 	
-	
+	/* region Modules */
 	var PathManager = require("modules/PathManager");
 	var FileSystem = brackets.getModule("filesystem/FileSystem");
 	var ProjectManager = brackets.getModule("project/ProjectManager");
@@ -17,34 +17,40 @@ define(function (require, exports, module) {
 	var moment = require("node_modules/moment/moment");
 	var _ = brackets.getModule("thirdparty/lodash");
 	var DocumentManager = brackets.getModule("document/DocumentManager");
-
-	// public methods
+	/* endregion */
+	
+	
+	/* region Public vars */
 	var open,
 			close,
+			closeProject,
 			isOpen,
 			getOpenProjectDocuments,
-			getServerSetting
-			;
-	// private methods
+			getServerSetting,
+			maxProjectHistory = 3;
+	/* endregion */
+	
+	/* region Private vars */
 	var
 			_initProjectContext,
 			_makeProjectDirIfIsNotExists,
 			_createDirectory;
-	// private vars
+	/* endregion */
+	
+	/* region Private Methods */
 	var _currentServer,
 			_hostDir,
 			_projectDir,
 			_projectBaseDir,
-			_fallbackProjectRoot;
-	// wrapper methods for promise
-	var _directoryIsExists,
+			_fallbackProjectRoot,
+			_directoryIsExists,
 			_getDirectoryContents,
 			_removeDirectoryContents,
 			_removeContent,
 			_removeProjectDirectoryFromRecent;
+	/* endregionn */
 
-	var maxProjectHistory = 3;
-
+	/* region Static vars */
 	var OPEN = true,
 			CLOSE = false,
 			PROJECT_STATE_CHANGED = "PROJECT_STATE_CHANGED",
@@ -58,8 +64,20 @@ define(function (require, exports, module) {
 					exports.trigger(PROJECT_STATE_CHANGED, {state: this._state, directory: _projectDir});
 				}
 			};
+	/* endregion */
 
-	// Start function
+	
+	/* Public Methods */
+	
+	/**
+	 * Open the project when the success connected to server, then get files list.
+	 *
+	 * * and this function, that will checked. is that exists tmporary diredtory and make.
+	 * * and this function will checked backup number via maxProjectHistory.
+	 *
+	 * @param   {Object}   server setting object
+	 * @returns {$.Promise} 
+	 */
 	open = function (server) {
 		if (Connection.state === OPEN) {
 			throw new Error("Unexpected exception: Project mode should be OFFLINE before open project.");
@@ -139,26 +157,76 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 
+	/**
+	 * Erase files in the tree view then remove recent project (backup temporary directory) from preference.
+	 *
+	 * @returns {$.Promise} 
+	 */
 	close = function () {
 		var deferred = new $.Deferred();
-		ProjectManager.openProject(_fallbackProjectRoot)
-			.then(function () {
-				FileTreeView.clearCurrentTree()
-					.then(_removeProjectDirectoryFromRecent)
-					.then(function () {
-						Connection.state = CLOSE;
-						deferred.resolve();
-					});
-			})
-			.fail(function () {
-				deferred.reject();
-			});
+		FileTreeView.clearCurrentTree()
+		.then(_removeProjectDirectoryFromRecent)
+		.then(function () {
+			Connection.state = CLOSE;
+			deferred.resolve();
+		});
 		return deferred.promise();
 	};
 
+	/**
+	 * Close brackets projects then opened project, that is opend when before the connected remove
+	 * 
+	 * @returns {$.Promise}
+	 */
+	closeProject = function () {
+		if (Connection.state === OPEN) {
+			return ProjectManager.openProject(_fallbackProjectRoot);
+		}
+	};
+
+	/**
+	 * it will back boolean to caller, if it is true when opened Synapse project
+	 *
+	 * @returns {$.Promise} 
+	 */
+	isOpen = function () {
+		return Connection.state;
+	};
+	
+	/**
+	 * It open file to current editor
+	 *
+	 * @returns {Array} array of Document object.
+	 */
+	getOpenProjectDocuments = function () {
+		var deferred = new $.Deferred();
+		var tmp = [];
+		if (Connection.state) {
+			var files = MainViewManager.getAllOpenFiles();
+			_.forEach(files, function (file) {
+				tmp.push(DocumentManager.getOpenDocumentForPath(file.fullPath));
+			});
+		}
+		return deferred.resolve(tmp).promise();
+	};
+	
+	/**
+	 * It will be back current server setting object.
+	 *
+	 * @returns {MIX} 
+	 */
+	getServerSetting = function () {
+		if (Connection.state === OPEN) {
+			return _currentServer;
+		} else {
+			return false;
+		}
+	};
+	
+	/* Private Methods */
+	
 	_makeProjectDirIfIsNotExists = function (server) {
 		var deferred = new $.Deferred();
-		console.log(server);
 		_hostDir = FileSystem.getDirectoryForPath(PathManager.getProjectDirectoryPath(server.host + "-" + server.user));
 		_hostDir.exists(function (err, exists) {
 			if (err) {
@@ -202,10 +270,7 @@ define(function (require, exports, module) {
 		});
 		return deferred.promise();
 	};
-
-	/**
-	 * Wrapped brackets api methods for Promise.
-	 */
+	
 	_directoryIsExists = function () {
 		var deferred = new $.Deferred();
 		var directory = _projectBaseDir;
@@ -271,9 +336,8 @@ define(function (require, exports, module) {
 		}
 		var recentProjects = getRecentProject(),
 				newAry = [];
-
 		recentProjects.forEach(function (item, idx) {
-			if (item !== _projectDir.fullPath) {
+			if (item !== FileUtils.stripTrailingSlash(_projectDir.fullPath)) {
 				newAry.push(item);
 			}
 		});
@@ -281,35 +345,13 @@ define(function (require, exports, module) {
 		return new $.Deferred().resolve().promise();
 	};
 
-	isOpen = function () {
-		return Connection.state;
-	};
 	
-	getOpenProjectDocuments = function () {
-		var deferred = new $.Deferred();
-		
-		if (Connection.state) {
-			var files = MainViewManager.getAllOpenFiles();
-			_.forEach(files, function (file) {
-				var doc = DocumentManager.getOpenDocumentForPath(file.fullPath);
-			});
-		} else {
-			return [];
-		}
-	};
-	
-	getServerSetting = function () {
-		if (Connection.state === OPEN) {
-			return _currentServer;
-		} else {
-			return false;
-		}
-	};
 	
 	EventDispatcher.makeEventDispatcher(exports);
 
 	exports.open = open;
 	exports.close = close;
+	exports.closeProject = closeProject;
 	exports.OPEN = OPEN;
 	exports.CLOSE = CLOSE;
 	exports.PROJECT_STATE_CHANGED = PROJECT_STATE_CHANGED;

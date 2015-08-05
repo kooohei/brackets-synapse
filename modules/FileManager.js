@@ -17,9 +17,13 @@ define(function (require, exports, module) {
 	/* region Public vars */
 	var init;
 	var openFile;
+	/* endregion */
+	
+	/* region Handlers */
 	var onSaved;
 	var onDirtyFlagChange;
 	var onBeforeProjectClose;
+	var onBeforeAppClose;
 	/* endregion */
 	
 	/* region Private vars */
@@ -27,12 +31,44 @@ define(function (require, exports, module) {
 	var _projectState = Project.CLOSE;
 	/* endregion */
 	
+	
 	/* Public Methods */
 	
 	init = function (domain) {
 		var deferred = new $.Deferred();
 		_attachEvent();
 		return deferred.resolve(domain).promise();
+	};
+	
+	openFile = function (localPath) {
+		var deferred = new $.Deferred();
+		if (!EditorManager.canOpenPath(localPath)) {
+			console.log("could not open this file for path");
+			return;
+		}
+		CommandManager.execute(Commands.CMD_ADD_TO_WORKINGSET_AND_OPEN, {fullPath: localPath})
+		.then(deferred.resolve, deferred.reject);
+		return deferred.promise();
+	};
+	
+	/* Private Methods */
+	
+	_attachEvent = function attachEvent() {
+		Project.on(Project.PROJECT_STATE_CHANGED, function (evt, obj) {
+			_projectState = obj.state;
+			ProjectManager.on("beforeAppClose", onBeforeAppClose);
+			DocumentManager.on("dirtyFlagChange", onDirtyFlagChange);
+			DocumentManager.on("documentSaved", onSaved);
+		});
+	};
+	
+	
+	/* Handlers */
+	onBeforeAppClose = function () {
+		if (_projectState === Project.OPEN) {
+			console.log("close");
+			return Project.close();
+		}
 	};
 	
 	onDirtyFlagChange = function (evt, document) {
@@ -55,33 +91,6 @@ define(function (require, exports, module) {
 			throw new Error("Could not saved file to server<br>" + err);
 		});
 		
-	};
-	
-	openFile = function (localPath) {
-		var deferred = new $.Deferred();
-		if (!EditorManager.canOpenPath(localPath)) {
-			console.log("could not open this file for path");
-			return;
-		}
-		CommandManager.execute(Commands.CMD_ADD_TO_WORKINGSET_AND_OPEN, {fullPath: localPath})
-		.then(deferred.resolve, deferred.reject);
-		return deferred.promise();
-	};
-	
-	
-	/* Private Methods */
-	
-	_attachEvent = function attachEvent() {
-		Project.on(Project.PROJECT_STATE_CHANGED, function (evt, obj) {
-			_projectState = obj.state;
-			if (obj.state === Project.OPEN) {
-				DocumentManager.on("dirtyFlagChange", onDirtyFlagChange);
-				DocumentManager.on("documentSaved", onSaved);
-			} else {
-				DocumentManager.off("dirtyFlagChanage", onDirtyFlagChange);
-				DocumentManager.off("documentSaved", onSaved);
-			}
-		});
 	};
 	
 	exports.init= init;

@@ -808,7 +808,6 @@ define(function (require, exports, module) {
 	};
 	
 	
-	
 	/* Handlers */
 	
 	onTreeViewContextMenu = function (e, menu) {

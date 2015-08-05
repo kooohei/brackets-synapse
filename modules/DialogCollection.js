@@ -5,17 +5,19 @@ define(function (require, exports, module) {
 	
 	/* region Modules */
 	var Dialogs = brackets.getModule("widgets/Dialogs");
-
+	/* endregion */
+	
 	/* region Public vars */
 	var Yes = "Confirm_Dialog_Button_Yes",
 			No = "Confirm_Dialog_Button_No";
 	/* endregion */
 	
-	/* Public Methods */
+	/* region Public Methods */
 	var showYesNoModal;
 	/* endregion */
 	
 	/* Public Methods */
+	
 	showYesNoModal = function (className, title, message, yesBtnText, noBtnText) {
 		var yesText = yesBtnText || "Yes";
 		var noText = noBtnText || "No";
