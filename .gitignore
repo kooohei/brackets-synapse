@@ -44,4 +44,5 @@ Temporary Items
 
 node_modules
 node/node_modules
+__PROJ__
 .jsbeautifyrc
