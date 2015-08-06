@@ -123,6 +123,7 @@ define(function (require, exports, module) {
 	 */
 	init = function (domain) {
 		_domain = domain;
+		_projectState = Project.CLOSE;
 		var deferred = new $.Deferred();
 		_initMainUI()
 			.then(_initServerSettingUI)
@@ -212,9 +213,8 @@ define(function (require, exports, module) {
 		if (!j.l.hasClass("hide")) {
 			return deferred.resolve().promise();
 		}
-
-		function open() {
-			if (_projectState === Project.CLOSE) {
+		function open(state) {
+			if (state === Project.CLOSE) {
 				reloadServerSettingList()
 					.then(function () {
 						var destHeight = j.m.outerHeight() - j.h.outerHeight() - (j.l.outerHeight() + 10);
@@ -228,12 +228,16 @@ define(function (require, exports, module) {
 			}
 			return deferred.promise();
 		}
+		
 		if (!j.s.hasClass("hide")) {
+		
 			_hideServerSetting()
-				.then(open)
+				.then(function () {
+					return open(_projectState);
+				})
 				.then(deferred.resolve, deferred.reject);
 		} else {
-			open()
+			open(_projectState)
 				.then(deferred.resolve, deferred.reject);
 		}
 		return deferred.promise();
@@ -286,6 +290,7 @@ define(function (require, exports, module) {
 		});
 		return deferred.promise();
 	};
+	
 	/**
 	 * Reload server setting list in the server list panel from preference file.
 	 * 
@@ -478,11 +483,10 @@ define(function (require, exports, module) {
 								"background-color": "#016dc4"
 							});
 						$("#synapse-server-port").val("21");
-
 						// berow code when debug only
-						$("#synapse-server-host").val("s2.bitglobe.net");
-						$("#synapse-server-user").val("hayashi");
-						$("#synapse-server-password").val("kohei0730");
+						$("#synapse-server-host").val("");
+						$("#synapse-server-user").val("");
+						$("#synapse-server-password").val("");
 					}
 					return new $.Deferred().resolve().promise();
 				})
