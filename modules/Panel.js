@@ -10,7 +10,7 @@ define(function (require, exports, module) {
 	var CommandManager = brackets.getModule("command/CommandManager");
 	var Commands = brackets.getModule("command/Commands");
 	var _ = brackets.getModule("thirdparty/lodash");
-	
+
 	var Project = require("modules/Project");
 	var DialogCollection = require("modules/DialogCollection");
 	var FileTreeView = require("modules/FileTreeView");
@@ -18,17 +18,17 @@ define(function (require, exports, module) {
 	var RemoteManager = require("modules/RemoteManager");
 	var Strings = require("strings");
 	/* endregion */
-	
+
 	/* region Private vars */
-	var 
+	var
 			_projectState = Project.CLOSE,
 			_currentServerIndex = null,
 			_projectDir = null,
 			_domain = null;
 	/* endregion */
-	
+
 	/* region Public methods */
-	var 
+	var
 			init,
 			closeProject,
 			reloadServerSettingList,
@@ -41,7 +41,7 @@ define(function (require, exports, module) {
 			showHeaderSpinner,
 			showServerList,
 	/* endregion */
-			
+
 	/* region Private methods */
 			_initServerSettingUI,
 			_initMainUI,
@@ -53,9 +53,10 @@ define(function (require, exports, module) {
 			_flipAnimation,
 			_fadeOutMain,
 			_closeProject,
+			_toggleConnectBtn,
 			_removeServerSettingListRow,
 	/* endregion */
-			
+
 	/* region Event handler */
 			onClickConnectBtn,
 			onClickDeleteBtn,
@@ -65,7 +66,7 @@ define(function (require, exports, module) {
 			onClickEditBtn,
 			onProjectStateChanged;
 	/* endregion */
-	
+
 	/* region UI Parts */
 	var j = {
 				get sb() {
@@ -106,20 +107,20 @@ define(function (require, exports, module) {
 	server_setting_html = require("../text!ui/serverSetting.html"),
 	server_list_html = require("../text!ui/serverList.html"),
 	$sidebar = $("#sidebar");
-	
+
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/style.css");
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/treeview.css");
 	ExtensionUtils.loadStyleSheet(module, "../node_modules/font-awesome/css/font-awesome.min.css");
 	/* endregion */
-	
-	
+
+
 	/* Public Methods */
-	
+
 	/**
 	 * Inittialize Panel UI and register listener.
-	 * 
-	 * @param   {DomainManager} domain 
-	 * @returns {$.Promise} 
+	 *
+	 * @param   {DomainManager} domain
+	 * @returns {$.Promise}
 	 */
 	init = function (domain) {
 		_domain = domain;
@@ -137,7 +138,7 @@ define(function (require, exports, module) {
 			});
 		return deferred.resolve(domain).promise();
 	};
-	
+
 	/**
 	 * Show Main Panel to side view.
 	 */
@@ -145,6 +146,7 @@ define(function (require, exports, module) {
 		var $main = j.m;
 		var $ph_pcChild = $("#project-files-header, #project-files-container > *");
 		var $ph_pc = $("#project-files-header, #project-files-container");
+
 		$ph_pcChild.animate({
 			"opacity": 0
 		}, "fast", function () {
@@ -153,14 +155,14 @@ define(function (require, exports, module) {
 			});
 			$main.removeClass("hide");
 			$main.css({
-				"opacity": 0,
+				"opacity": 0
 			});
 			$main.animate({
 				"opacity": 1
 			}, "fast");
 		});
 	};
-	
+
 	/**
 	 * Show progress spinner on the tree view when connected to server.
 	 */
@@ -174,7 +176,7 @@ define(function (require, exports, module) {
 			}
 		}
 	};
-	
+
 	/**
 	 * Hide progress spinner on the tree view when disconnected from server.
 	 */
@@ -188,25 +190,25 @@ define(function (require, exports, module) {
 			}
 		}
 	};
-	
+
 	/**
 	 * Show progress spinner on the header when connected to server.
 	 */
 	showHeaderSpinner = function () {
 		$("#synapse-header .spinner").addClass("spin").removeClass("hide");
 	};
-	
+
 	/**
 	 * Hide Progress spinner on header when the disconnected from server.
 	 */
 	hideHeaderSpinner = function () {
 		$("#synapse-header .spinner").addClass("hide").removeClass("spin");
 	};
-	
+
 	/**
 	 * Show server list on top of the main panel.
-	 * 
-	 * @returns {$.Promise} 
+	 *
+	 * @returns {$.Promise}
 	 */
 	showServerList = function () {
 		var deferred = new $.Deferred();
@@ -221,16 +223,16 @@ define(function (require, exports, module) {
 						j.l.removeClass("hide");
 						j.tvc.css({"border-top": "1px solid rgba(255, 255, 255, 0.05)"});
 						j.tvc.animate({
-							"top": (j.l.outerHeight() + 10) + j.h.outerHeight() + "px",
+							"top": j.h.outerHeight() + (j.l.outerHeight() + 10) +  "px",
 							//"height": destHeight + "px"
 						}, "fast").promise().done(deferred.resolve);
 					});
 			}
 			return deferred.promise();
 		}
-		
+
 		if (!j.s.hasClass("hide")) {
-		
+
 			_hideServerSetting()
 				.then(function () {
 					return open(_projectState);
@@ -242,7 +244,7 @@ define(function (require, exports, module) {
 		}
 		return deferred.promise();
 	};
-	
+
 	/**
 	 * Close main panel
 	 */
@@ -257,13 +259,14 @@ define(function (require, exports, module) {
 			_fadeOutMain();
 		}
 	};
-	
+
 	/**
 	 * check unsaved files and project closed then fadeout panel.
-	 * 
+	 *
 	 * @returns {$.Promise}
 	 */
 	closeProject = function () {
+		var tvcHeight = j.tvc.outerHeight() + "px";
 		var deferred = new $.Deferred();
 		CommandManager.execute(Commands.FILE_CLOSE_ALL)
 		.fail(function () {
@@ -273,6 +276,8 @@ define(function (require, exports, module) {
 		.done(function () {
 			Project.closeProject()
 			.then(function() {
+				$("#synapse-tree").css({"height": tvcHeight});
+				$("#synapse-tree-back").css({"height": tvcHeight});
 				j.t.css({"border": "1px solid rgba(255, 255, 255, 0.15)"});
 				j.tvc.toggleClass("flip").on("webkitTransitionEnd", function () {
 					j.tvc.off("webkitTransitionEnd");
@@ -282,6 +287,8 @@ define(function (require, exports, module) {
 						j.tb.css({"border": "1px solid rgba(255, 255, 255, 0.15)"});
 						j.tvc.toggleClass("flip").on("webkitTransitionEnd", function () {
 							j.tb.css({"border": 0});
+							$("#synapse-tree").css("height", "");
+							$("#synapse-tree-back").css("height", "");
 							deferred.resolve();
 						});
 					});
@@ -290,11 +297,11 @@ define(function (require, exports, module) {
 		});
 		return deferred.promise();
 	};
-	
+
 	/**
 	 * Reload server setting list in the server list panel from preference file.
-	 * 
-	 * @returns {$.Promise} 
+	 *
+	 * @returns {$.Promise}
 	 */
 	reloadServerSettingList = function () {
 
@@ -328,9 +335,9 @@ define(function (require, exports, module) {
 
 		return new $.Deferred().resolve().promise();
 	};
-	
+
 	/* Private Methods */
-	
+
 	/**
 	 * the panel will fadeout when close main panel then the project files container will shown.
 	 */
@@ -338,21 +345,22 @@ define(function (require, exports, module) {
 		var $main = j.m;
 		var $ph_pcChild = $("#project-files-header, #project-files-container > *");
 		var $ph_pc = $("#project-files-header, #project-files-container");
-		
+
 		$main.animate({
 			"opacity": 0,
 		}, "slow").promise()
 		.done(function () {
+			_toggleConnectBtn();
 			$(this).addClass("hide");
 			$ph_pc.css({"display": "block"});
 			$ph_pcChild.animate({"opacity": 1}, "slow");
 		});
 	};
-	
+
 	/**
 	 * Initialize main panel, and register some events.
-	 * 
-	 * @returns {$.Promise} 
+	 *
+	 * @returns {$.Promise}
 	 */
 	_initMainUI = function () {
 		var html = Mustache.render(main_html, {
@@ -373,11 +381,11 @@ define(function (require, exports, module) {
 		});
 		return new $.Deferred().resolve().promise();
 	};
-	
+
 	/**
 	 * Initialize server setting panel and some events of that.
-	 * 
-	 * @returns {$.Promise} 
+	 *
+	 * @returns {$.Promise}
 	 */
 	_initServerSettingUI = function () {
 		var html = Mustache.render(server_setting_html);
@@ -390,21 +398,21 @@ define(function (require, exports, module) {
 		$("input", $serverSetting).on("blur", SettingManager.validateAll);
 		return new $.Deferred().resolve().promise();
 	};
-	
+
 	/**
 	 * Initialize server list panel (see reloadServerSettingList)
 	 *
-	 * @returns {$.Promise} 
+	 * @returns {$.Promise}
 	 */
 	_initServerListUI = function () {
 		reloadServerSettingList();
 		return new $.Deferred().resolve().promise();
 	};
-	
+
 	/**
 	 * Initialize server list panel and some events of that.
-	 * 
-	 * @returns {$.Promise} 
+	 *
+	 * @returns {$.Promise}
 	 */
 	_reloadServerSettingListWhenDelete = function () {
 
@@ -443,14 +451,14 @@ define(function (require, exports, module) {
 		return deferred.promise();
 
 	};
-	
+
 	/**
 	 * Show the server setting form panel
 	 *
 	 * @param   {Object} e       event object.
 	 * @param   {String} state   update or insert.
 	 * @param   {Object}   setting Server setting object when used state is update.
-	 * @returns {$.Promise} 
+	 * @returns {$.Promise}
 	 */
 	_showServerSetting = function (e, state, setting) {
 		var deferred = new $.Deferred();
@@ -512,11 +520,11 @@ define(function (require, exports, module) {
 		}
 		return deferred.promise();
 	};
-	
+
 	/**
 	 * Close the server setting form panel
 	 *
-	 * @returns {$.Promise} 
+	 * @returns {$.Promise}
 	 */
 	_hideServerSetting = function () {
 		var deferred = new $.Deferred();
@@ -535,11 +543,11 @@ define(function (require, exports, module) {
 			});
 		return deferred.promise();
 	};
-	
+
 	/**
 	 * Close the server list panel
-	 * 
-	 * @returns {$.Promise} 
+	 *
+	 * @returns {$.Promise}
 	 */
 	_hideServerList = function () {
 		var deferred = new $.Deferred();
@@ -549,7 +557,7 @@ define(function (require, exports, module) {
 		var destHeight = j.m.outerHeight() - j.h.outerHeight();
 		j.tvc.animate({
 				"top": j.h.outerHeight() + "px",
-				//"height": destHeight + "px"
+				"height": destHeight + "px"
 			}, "fast").promise()
 			.done(function () {
 				j.l.addClass("hide");
@@ -558,12 +566,12 @@ define(function (require, exports, module) {
 			});
 		return deferred.promise();
 	};
-	
+
 	/**
 	 * Delete server setting object from index of list.
 	 *
-	 * @param   {int} index 
-	 * @returns {$.Promise} 
+	 * @param   {int} index
+	 * @returns {$.Promise}
 	 */
 	_removeServerSettingListRow = function (index) {
 		var deferred = new $.Deferred();
@@ -590,44 +598,65 @@ define(function (require, exports, module) {
 			});
 		return deferred.promise();
 	};
-	
+
 	/* Handlers */
-	
+
 	onEdit = function (e) {
 		var $btn = $(e.currentTarget);
 		SettingManager.edit($btn.html());
 	};
 
 	onClickConnectBtn = function (e) {
-		
+
 		var $btn = $(e.currentTarget);
 		var index = $btn.data("index");
 		var server = SettingManager.getServerSetting(index);
-		
+
 		if (_projectState === Project.OPEN) {
 			if ($(this).data("index") === _currentServerIndex) {
 				closeProject()
 				.then(function () {
-					$btn.removeClass("btn-disconnect");
-					$btn.addClass("btn-connect");
-					$btn.html("CONNECT");
-					_currentServerIndex = null;
+					_toggleConnectBtn();
 				});
 				return;
 			}
 			FileTreeView.showAlert("Project is already opened.", "Please close current project before open other project.");
 			return;
 		}
-		
+
 		RemoteManager.connect(server)
 		.then(function () {
-			$btn.removeClass("btn-connect");
-			$btn.addClass("btn-disconnect");
-			$btn.html("DISCONNECT");
 			_currentServerIndex = index;
+			_toggleConnectBtn();
 		});
 	};
-	
+
+	_toggleConnectBtn = function () {
+		var $connectBtn = null;
+		var $btnGrp = $(".synapse-server-list-user .btn-group button");
+		_.forEach($btnGrp, function (button) {
+			var $btn = $(button);
+			if ($btn.attr("id") === "server-btn" && $btn.data("index") === _currentServerIndex) {
+				$connectBtn = $btn;
+			}
+		});
+		
+		if ($connectBtn === null) {
+			return;
+		}
+		
+		if (_projectState === Project.CLOSE) {
+			$connectBtn.removeClass("btn-disconnect");
+			$connectBtn.addClass("btn-connect");
+			$connectBtn.html("CONNECT");
+			_currentServerIndex = null;
+		} else {
+			$connectBtn.removeClass("btn-connect");
+			$connectBtn.addClass("btn-disconnect");
+			$connectBtn.html("DISCONNECT");
+		}
+	};
+
 	onClickEditBtn = function (e) {
 		var idx = $(this).data("index");
 		var setting = SettingManager.getServerSetting(idx);
@@ -637,17 +666,17 @@ define(function (require, exports, module) {
 		}
 		_showServerSetting(null, "update", setting);
 	};
-	
+
 	onClickDeleteBtn = function (e) {
-		
+
 		var idx = $(this).data("index");
 		var deferred = new $.Deferred();
-		
+
 		if (_projectState === Project.OPEN) {
 			FileTreeView.showAlert("Failed.", "Could not delete setting because project is open");
 			return deferred.reject().promise();
 		}
-		
+
 		//show confirm dialog
 		DialogCollection.showYesNoModal(
 				"error-dialog",
@@ -675,7 +704,7 @@ define(function (require, exports, module) {
 			});
 		return deferred.promise();
 	};
-	
+
 	onEnterListBtns = function (e) {
 		if (_projectState === Project.OPEN) {
 			if ($(this).data("index") !== _currentServerIndex) {
@@ -686,13 +715,13 @@ define(function (require, exports, module) {
 			"opacity": 1
 		}, 200);
 	};
-	
+
 	onLeaveListBtns = function (e) {
 		$(this).find(".btn-group").animate({
 			"opacity": 0
 		}, 200);
 	};
-	
+
 	onProjectStateChanged = function (evt, obj) {
 		_projectState = obj.state;
 		_projectDir = obj.directory;

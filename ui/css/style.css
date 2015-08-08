@@ -4,7 +4,6 @@
 	box-sizing: : border-box;
 	position: relative;
 	top: 0;
-	height: 100%;
 	width: 100%;
 	overflow: hidden;
 	background-color: rgb(22, 22, 22);
@@ -18,12 +17,10 @@
 	background-color: rgb(25, 25, 25);
 	border-top: 1px solid rgba(255, 255, 255, 0.05);
 	color: #adb9bd;
-/*	position: relative;*/
 	width: 100%;
 	background-color: rgb(25, 25, 25);
 	overflow: hidden;
 }
-
 #synapse-header-spinner-container {
 	display: -webkit-box;
 	padding: 6px;
@@ -68,7 +65,6 @@
 #synapse-header > div .fa:hover {
 	color: rgb(143, 221, 255);
 }
-
 
 #synapse-server-setting {
 	position: absolute;
@@ -136,7 +132,6 @@
 #synapse-server-setting button {
 	padding:3px 8px;
 }
-
 
 #synapse-server-list {
 	position: absolute;
@@ -234,56 +229,50 @@
 	background-color: rgba(25, 25, 25, 1);
 	box-sizing: border-box;
 	position: absolute;
-	top: 37px;
 	width: 100%;
-	-webkit-perspective: 1200;
+	top: 37px;
+	bottom: 0;
+	overflow: hidden;
+	overflow-y: auto;
+	-webkit-perspective: 1000;
 }
 #synapse #synapse-treeview-container .treeview-flip {
+
 	-webkit-transform: rotateY(0deg);
 }
 #synapse #synapse-treeview-container.flip .treeview-flip {
+
 	-webkit-transform: rotateY(180deg);
 }
-#synapse-treeview-container, 
+#synapse-treeview-container,
 #synapse-treeview-container div#synapse-tree,
 #synapse-treeview-container div#synapse-tree-back {
 	width: 100%;
-	height: 100%;
 }
 
 #synapse .treeview-flip {
 	-webkit-transition: 0.6s;
 	-webkit-transform-style: preserve-3d;
 	width: 100%;
-	height: 100%;
 	position: relative;
 }
 div#synapse-tree,
 div#synapse-tree-back {
 	box-sizing: border-box;
-	
 	-webkit-backface-visibility: hidden;
 	position: absolute;
 	top: 0;
 	left: 0;
-	width: 100%;
-	height: 100%;
 }
 div#synapse-tree {
 	background-color: rgb(25, 25, 25);
 	z-index: 2;
 }
 div#synapse-tree-back {
-	background-color: rgb(20, 20, 20);
+	background-color: rgb(22, 22, 22);
 	-webkit-transform: rotateY(180deg);
+	min-height: 100%;
 }
-
-
-
-
-
-
-
 
 #synapse .synapse-server-setting-alert * {
 	margin: 0;

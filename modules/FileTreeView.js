@@ -174,7 +174,7 @@ define(function (require, exports, module) {
 		var deferred = new $.Deferred();
 		var promises = [];
 		var params = [];
-
+		
 		var depth = parent.depth + 1;
 		list.forEach(function (item, index) {
 			var type = (item.type === "d") ? "directory" : "file";
@@ -192,7 +192,7 @@ define(function (require, exports, module) {
 			};
 			promises.push(_setEntity(param, index));
 		});
-
+		
 		Async.waitForAll(promises, false, 5000)
 			.then(function () {
 				return _setElement(parent);
@@ -368,6 +368,52 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 	
+	showAlert = function (title, message) {
+		var $container = $("<div/>").addClass("synapse-treeview-alert")
+			.html($("<p/>").addClass("title").html(title))
+			.append($("<p/>").addClass("caption").html(message)).hide();
+		var $treeviewcontainer = $("#synapse-treeview-container");
+		$treeviewcontainer.append($container);
+		var height = $container.outerHeight();
+		var left = $treeviewcontainer.outerWidth();
+		var treeHeight = $treeviewcontainer.outerHeight();
+		var top = ((treeHeight - height) / 2) - $treeviewcontainer.offset().top;
+		$container.css({
+			"top": top + "px",
+			"left": "-" + left + "px"
+		}).show();
+
+		$("#synapse-tree").animate({
+				"opacity": 0.3
+		}, 100).promise()
+		.done(function () {
+			$("#synapse-tree").addClass("disabled");
+			$container.animate({
+				"left": 0,
+					"opacity": 1
+				}, 150).promise()
+				.done(function () {
+					_detachEvent();
+					$container.one("click", function () {
+						$(this).animate({
+								"left": left + "px",
+								"opacity": 0
+							}, 150).promise()
+							.done(function () {
+								$container.remove();
+								return $("#synapse-tree").animate({
+									"opacity": 1
+								}, 100).promise();
+							})
+							.done(function () {
+								$("#synapse-tree").removeClass("disabled");
+								_attachEvent();
+							});
+						});
+					});
+			});
+	};
+	
 	
 	/* Private Methods */
 	
@@ -384,7 +430,7 @@ define(function (require, exports, module) {
 		}
 
 		$parent.find("ul.treeview-contents").remove();
-		var $ul = $("<ul/>").addClass("treeview-contents");
+		var $ul = $("<ul/>").addClass("treeview-contents quiet-scrollbars");
 		$parent.append($ul);
 		
 		if (entity === null) {
@@ -709,52 +755,6 @@ define(function (require, exports, module) {
 	
 	_resetElement = function (parent) {
 		return _setElement(parent);
-	};
-	
-	showAlert = function (title, message) {
-		var $container = $("<div/>").addClass("synapse-treeview-alert")
-			.html($("<p/>").addClass("title").html(title))
-			.append($("<p/>").addClass("caption").html(message)).hide();
-		var $treeviewcontainer = $("#synapse-treeview-container");
-		$treeviewcontainer.append($container);
-		var height = $container.outerHeight();
-		var left = $treeviewcontainer.outerWidth();
-		var treeHeight = $treeviewcontainer.outerHeight();
-		var top = ((treeHeight - height) / 2) - $treeviewcontainer.offset().top;
-		$container.css({
-			"top": top + "px",
-			"left": "-" + left + "px"
-		}).show();
-
-		$("#synapse-tree").animate({
-				"opacity": 0.3
-		}, 100).promise()
-		.done(function () {
-			$("#synapse-tree").addClass("disabled");
-			$container.animate({
-				"left": 0,
-					"opacity": 1
-				}, 150).promise()
-				.done(function () {
-					_detachEvent();
-					$container.one("click", function () {
-						$(this).animate({
-								"left": left + "px",
-								"opacity": 0
-							}, 150).promise()
-							.done(function () {
-								$container.remove();
-								return $("#synapse-tree").animate({
-									"opacity": 1
-								}, 100).promise();
-							})
-							.done(function () {
-								$("#synapse-tree").removeClass("disabled");
-								_attachEvent();
-							});
-						});
-					});
-			});
 	};
 	
 	_flipContainer = function () {
