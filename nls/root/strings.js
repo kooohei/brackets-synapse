@@ -75,6 +75,6 @@ define({
     "TITLE_ERROR_UNINSTALLING": "Error uninstalling Bower package",
     "SUMMARY_ERROR_UNINSTALLING_DEPENDANTS": "The package \"{0}\" has dependants packages",
     "NOTE_QUESTION_CONTINUE_UNINSTALLING": "Are you sure you want to uninstall it?",
-    "SUMMARY_ERROR": "Oops! An error ocurred."
+    "SUMMARY_ERROR": "Oops! An error occurred."
 		*/
 });
