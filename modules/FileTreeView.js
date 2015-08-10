@@ -68,6 +68,7 @@ define(function (require, exports, module) {
 			refresh,
 			rename,
 			deleteFile,
+			removeFile,
 			newFile,
 			removeDirectory,
 			newDirectory,
@@ -267,6 +268,17 @@ define(function (require, exports, module) {
 			}
 			return deferred.promise();
 		});
+	};
+	
+	
+	removeFile = function () {
+		var deferred = new $.Deferred();
+		if (_ctxMenuCurrentEntity === null) {
+			return deferred.reject().promise();
+		}
+		
+		console.log(_ctxMenuCurrentEntity);
+			
 	};
 	
 	removeDirectory = function () {
@@ -898,6 +910,7 @@ define(function (require, exports, module) {
 	exports.refresh = refresh;
 	exports.rename = rename;
 	exports.showAlert = showAlert;
+	exports.removeFile = removeFile;
 	exports.newFile = newFile;
 	exports.deleteFile = deleteFile;
 	exports.newDirectory = newDirectory;

@@ -10,8 +10,10 @@ define(function (require, exports, module) {
 	var Commands = brackets.getModule("command/Commands");
 	var KeyBindingManager = brackets.getModule("command/KeyBindingManager");
 	var _ = brackets.getModule("thirdparty/lodash");
+	
 	var Panel = require("modules/Panel");
 	var FileTreeView = require("modules/FileTreeView");
+	var Strings = require("strings");
 	/* endregion */
 	
 	/* region Public vars */
@@ -36,23 +38,21 @@ define(function (require, exports, module) {
 	
 	/* region Static objects */
 	var ContextMenuIds = {
-		TREEVIEW_CTX_MENU: "kohei-synapse-treeview-context-menu"
+			TREEVIEW_CTX_MENU: "kohei-synapse-treeview-context-menu"
 	};
 	var ContextMenuCommandIds = {
-		SYNAPSE_FILE_NEW: "kohei.synapse.file_new",
-		SYNAPSE_DIRECTORY_NEW: "kohei.synapse.directory_new",
-		SYNAPSE_DIRECTORY_REMOVE: "kohei.synapse.directory_remove",
-		SYNAPSE_FILE_REFRESH: "kohei.synapse.file_refresh",
-		SYNAPSE_FILE_RENAME: "kohei.synapse.file_rename",
-		SYNAPSE_FILE_DELETE: "kohei.synapse.file_delete"
+			SYNAPSE_FILE_NEW: "kohei.synapse.file_new",
+			SYNAPSE_DIRECTORY_NEW: "kohei.synapse.directory_new",
+			SYNAPSE_FILE_REFRESH: "kohei.synapse.file_refresh",
+			SYNAPSE_FILE_RENAME: "kohei.synapse.file_rename",
+			SYNAPSE_DELETE: "kohei.synapse.delete"
 	};
 	var MenuText = {
-		SYNAPSE_FILE_NEW: "New File",
-		SYNAPSE_DIRECTORY_NEW: "New Directory",
-		SYNAPSE_DIRECTORY_REMOVE: "Remove Directory",
-		SYNAPSE_FILE_REFRESH: "Refresh",
-		SYNAPSE_FILE_RENAME: "Rename",
-		SYNAPSE_FILE_DELETE: "Delete File"
+			SYNAPSE_CTX_FILE_NEW: Strings.SYNAPSE_CTX_FILE_NEW,
+			SYNAPSE_CTX_DIRECTORY_NEW: Strings.SYNAPSE_CTX_DIRECTORY_NEW,
+			SYNAPSE_CTX_FILE_REFRESH: Strings.SYNAPSE_CTX_FILE_REFRESH,
+			SYNAPSE_CTX_FILE_RENAME: Strings.SYNAPSE_CTX_FILE_RENAME,
+			SYNAPSE_CTX_DELETE: Strings.SYNAPSE_CTX_DELETE
 	};
 	/* endregion */
 	
@@ -60,13 +60,13 @@ define(function (require, exports, module) {
 	var Open_TreeView_Context_Menu_On_Directory_State = [
 			ContextMenuCommandIds.SYNAPSE_FILE_NEW,
 			ContextMenuCommandIds.SYNAPSE_DIRECTORY_NEW,
-			ContextMenuCommandIds.SYNAPSE_DIRECTORY_REMOVE,
+			ContextMenuCommandIds.SYNAPSE_DELETE,
 			ContextMenuCommandIds.SYNAPSE_FILE_REFRESH,
 			ContextMenuCommandIds.SYNAPSE_FILE_RENAME
 		];
 	var Open_TreeView_Context_Menu_On_File_State = [
 			ContextMenuCommandIds.SYNAPSE_FILE_RENAME,
-			ContextMenuCommandIds.SYNAPSE_FILE_DELETE
+			ContextMenuCommandIds.SYNAPSE_DELETE
 		];
 	var Open_TreeView_Context_Menu_On_Root_State = [
 			ContextMenuCommandIds.SYNAPSE_FILE_NEW,
@@ -75,9 +75,7 @@ define(function (require, exports, module) {
 		];
 	/* endregion */
 	
-	
 	/* Public Methods */
-	
 	treeViewContextMenuState = function (entity) {
 		_disableTreeViewContextMenuAllItem();
 
@@ -99,7 +97,7 @@ define(function (require, exports, module) {
 			return;
 		}
 	};
-
+	
 	setRootMenu = function () {
 		var menu = CommandManager.register(
 			"Synapse",
@@ -112,10 +110,8 @@ define(function (require, exports, module) {
 			displayKey: "Ctrl-Shift-Alt-Enter"
 		});
 		topMenu.addMenuDivider();
-
-//		setDebugMenu();
 	};
-
+	
 	setDebugMenu = function () {
 		var menu = CommandManager.register(
 			"Reload App wiz Node",
@@ -128,9 +124,8 @@ define(function (require, exports, module) {
 			key: "Ctrl-Shift-F6",
 			displeyKey: "Ctrl-Shift-F6"
 		});
-
 	};
-
+	
 	reloadBrackets = function () {
 		try {
 			_nodeConnection.domains.base.restartNode();
@@ -139,37 +134,30 @@ define(function (require, exports, module) {
 			console.error("Failed trying to restart Node: " + e.message);
 		}
 	};
-
+	
 	initTreeViewContextMenu = function () {
-		CommandManager.register(MenuText.SYNAPSE_FILE_REFRESH, ContextMenuCommandIds.SYNAPSE_FILE_REFRESH, FileTreeView.refresh);
-		CommandManager.register(MenuText.SYNAPSE_FILE_RENAME, ContextMenuCommandIds.SYNAPSE_FILE_RENAME, FileTreeView.rename);
-		CommandManager.register(MenuText.SYNAPSE_FILE_NEW, ContextMenuCommandIds.SYNAPSE_FILE_NEW, FileTreeView.newFile);
-		CommandManager.register(MenuText.SYNAPSE_FILE_DELETE, ContextMenuCommandIds.SYNAPSE_FILE_DELETE, FileTreeView.deleteFile);
-		CommandManager.register(MenuText.SYNAPSE_DIRECTORY_NEW, ContextMenuCommandIds.SYNAPSE_DIRECTORY_NEW, FileTreeView.newDirectory);
-		CommandManager.register(MenuText.SYNAPSE_DIRECTORY_REMOVE, ContextMenuCommandIds.SYNAPSE_DIRECTORY_REMOVE, FileTreeView.removeDirectory);
+		CommandManager.register(MenuText.SYNAPSE_CTX_FILE_REFRESH, ContextMenuCommandIds.SYNAPSE_FILE_REFRESH, FileTreeView.refresh);
+		CommandManager.register(MenuText.SYNAPSE_CTX_FILE_RENAME, ContextMenuCommandIds.SYNAPSE_FILE_RENAME, FileTreeView.rename);
+		CommandManager.register(MenuText.SYNAPSE_CTX_FILE_NEW, ContextMenuCommandIds.SYNAPSE_FILE_NEW, FileTreeView.newFile);
+		CommandManager.register(MenuText.SYNAPSE_CTX_DIRECTORY_NEW, ContextMenuCommandIds.SYNAPSE_DIRECTORY_NEW, FileTreeView.newDirectory);
+		CommandManager.register(MenuText.SYNAPSE_CTX_DELETE, ContextMenuCommandIds.SYNAPSE_DELETE, FileTreeView.removeFile);
 
 		treeViewContextMenu = Menus.registerContextMenu(ContextMenuIds.TREEVIEW_CTX_MENU);
+		
 		treeViewContextMenu.addMenuItem(ContextMenuCommandIds.SYNAPSE_FILE_REFRESH);
 		treeViewContextMenu.addMenuItem(ContextMenuCommandIds.SYNAPSE_FILE_RENAME, null, Menus.LAST, null);
 		treeViewContextMenu.addMenuDivider();
 		treeViewContextMenu.addMenuItem(ContextMenuCommandIds.SYNAPSE_FILE_NEW, null, Menus.LAST, null);
-		treeViewContextMenu.addMenuItem(ContextMenuCommandIds.SYNAPSE_FILE_DELETE, null, Menus.LAST, null);
-		treeViewContextMenu.addMenuDivider();
 		treeViewContextMenu.addMenuItem(ContextMenuCommandIds.SYNAPSE_DIRECTORY_NEW, null, Menus.LAST, null);
-		treeViewContextMenu.addMenuItem(ContextMenuCommandIds.SYNAPSE_DIRECTORY_REMOVE, null, Menus.LAST, null);
-		/**
-		 * if assign to specific element (button etc), use this
-		 * not need mouse position or current target element.
-		 */
+		treeViewContextMenu.addMenuDivider();
+		treeViewContextMenu.addMenuItem(ContextMenuCommandIds.SYNAPSE_DELETE, null, Menus.LAST, null);
+		
 		//Menus.ContextMenu.assignContextMenuToSelector("(button etc)" menu);
 		$("#synapse-treeview-container").contextmenu(function (e) {
 			FileTreeView.onTreeViewContextMenu(e, treeViewContextMenu);
 		});
 	};
-	
-	
 	/* Private Methods */
-	
 	_disableTreeViewContextMenuAllItem = function () {
 		if (treeViewContextMenu === null) {
 			return;
@@ -177,19 +165,15 @@ define(function (require, exports, module) {
 		_.forIn(ContextMenuCommandIds, function (val, key) {
 			CommandManager.get(val).setEnabled(false);
 		});
-
 	};
-	
-	
 	/* for Debug */
-	
 	_nodeConnection = new NodeConnection();
 	_nodeConnection.connect(true);
-
+	
 	exports.setRootMenu = setRootMenu;
 	exports.initTreeViewContextMenu = initTreeViewContextMenu;
 	exports.ContextMenuCommandIds = ContextMenuCommandIds;
 	exports.ContextMenuIds = ContextMenuIds;
 	exports.treeViewContextMenuState = treeViewContextMenuState;
-});
 
+});

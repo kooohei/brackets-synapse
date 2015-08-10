@@ -50,6 +50,8 @@ define(function (require, exports, module) {
 			_hideServerSetting,
 			_hideServerList,
 			_showServerSetting,
+			_enableToolbarIcon,
+			_disableToolbarIcon,
 			_flipAnimation,
 			_fadeOutMain,
 			_closeProject,
@@ -115,7 +117,7 @@ define(function (require, exports, module) {
 
 
 	/* Public Methods */
-
+	
 	/**
 	 * Inittialize Panel UI and register listener.
 	 *
@@ -138,18 +140,23 @@ define(function (require, exports, module) {
 			});
 		return deferred.resolve(domain).promise();
 	};
-
+	
 	/**
 	 * Show Main Panel to side view.
 	 */
 	showMain = function () {
+		if ($("#synapse-icon").hasClass("enabled")) {
+			return;
+		}
+		
 		var $main = j.m;
 		var $ph_pcChild = $("#project-files-header, #project-files-container > *");
 		var $ph_pc = $("#project-files-header, #project-files-container");
 
 		$ph_pcChild.animate({
 			"opacity": 0
-		}, "fast", function () {
+		}, "fast").promise()
+		.done(function () {
 			$ph_pc.css({
 				"display": "none"
 			});
@@ -159,10 +166,11 @@ define(function (require, exports, module) {
 			});
 			$main.animate({
 				"opacity": 1
-			}, "fast");
+			}, "fast").promise()
+			.done(_enableToolbarIcon);
 		});
 	};
-
+	
 	/**
 	 * Show progress spinner on the tree view when connected to server.
 	 */
@@ -176,7 +184,7 @@ define(function (require, exports, module) {
 			}
 		}
 	};
-
+	
 	/**
 	 * Hide progress spinner on the tree view when disconnected from server.
 	 */
@@ -190,21 +198,21 @@ define(function (require, exports, module) {
 			}
 		}
 	};
-
+	
 	/**
 	 * Show progress spinner on the header when connected to server.
 	 */
 	showHeaderSpinner = function () {
 		$("#synapse-header .spinner").addClass("spin").removeClass("hide");
 	};
-
+	
 	/**
 	 * Hide Progress spinner on header when the disconnected from server.
 	 */
 	hideHeaderSpinner = function () {
 		$("#synapse-header .spinner").addClass("hide").removeClass("spin");
 	};
-
+	
 	/**
 	 * Show server list on top of the main panel.
 	 *
@@ -244,7 +252,7 @@ define(function (require, exports, module) {
 		}
 		return deferred.promise();
 	};
-
+	
 	/**
 	 * Close main panel
 	 */
@@ -259,7 +267,7 @@ define(function (require, exports, module) {
 			_fadeOutMain();
 		}
 	};
-
+	
 	/**
 	 * check unsaved files and project closed then fadeout panel.
 	 *
@@ -297,7 +305,7 @@ define(function (require, exports, module) {
 		});
 		return deferred.promise();
 	};
-
+	
 	/**
 	 * Reload server setting list in the server list panel from preference file.
 	 *
@@ -318,7 +326,8 @@ define(function (require, exports, module) {
 		}
 		var list = SettingManager.getServerList();
 		var html = Mustache.render(server_list_html, {
-			serverList: list
+			serverList: list,
+			Strings: Strings
 		});
 		var $html = $(html);
 		j.s.after($html);
@@ -335,9 +344,9 @@ define(function (require, exports, module) {
 
 		return new $.Deferred().resolve().promise();
 	};
-
+	
 	/* Private Methods */
-
+	
 	/**
 	 * the panel will fadeout when close main panel then the project files container will shown.
 	 */
@@ -353,10 +362,11 @@ define(function (require, exports, module) {
 			_toggleConnectBtn();
 			$(this).addClass("hide");
 			$ph_pc.css({"display": "block"});
-			$ph_pcChild.animate({"opacity": 1}, "slow");
+			$ph_pcChild.animate({"opacity": 1}, "slow").promise()
+			.done(_disableToolbarIcon);
 		});
 	};
-
+	
 	/**
 	 * Initialize main panel, and register some events.
 	 *
@@ -381,14 +391,14 @@ define(function (require, exports, module) {
 		});
 		return new $.Deferred().resolve().promise();
 	};
-
+	
 	/**
 	 * Initialize server setting panel and some events of that.
 	 *
 	 * @returns {$.Promise}
 	 */
 	_initServerSettingUI = function () {
-		var html = Mustache.render(server_setting_html);
+		var html = Mustache.render(server_setting_html, {Strings: Strings});
 		var $serverSetting = $(html);
 		j.h.after($serverSetting);
 
@@ -478,7 +488,7 @@ define(function (require, exports, module) {
 						$("#synapse-server-password").val(setting.password);
 						$("#synapse-server-dir").val(setting.dir);
 						$("button.btn-add", j.s)
-							.html("UPDATE")
+							.html(Strings.SYNAPSE_SETTING_UPDATE)
 							.css({
 								"background-color": "#5cb85c"
 							})
@@ -486,7 +496,7 @@ define(function (require, exports, module) {
 							.prop("disabled", false);
 					} else {
 						$("button.btn-add", j.s)
-							.html("APPEND")
+							.html(Strings.SYNAPSE_SETTING_APPEND)
 							.css({
 								"background-color": "#016dc4"
 							});
@@ -598,6 +608,42 @@ define(function (require, exports, module) {
 			});
 		return deferred.promise();
 	};
+	
+	_enableToolbarIcon = function () {
+		$("#synapse-icon").removeClass("disabled").addClass("enabled");
+		$("#synapse-icon").css({"background-position": "0 -24px"});
+	};
+	
+	_disableToolbarIcon = function () {
+		$("#synapse-icon").removeClass("enabled").addClass("disabled");
+		$("#synapse-icon").css({"background-position": "0 0"});
+	};
+	
+	_toggleConnectBtn = function () {
+		var $connectBtn = null;
+		var $btnGrp = $(".synapse-server-list-user .btn-group button");
+		_.forEach($btnGrp, function (button) {
+			var $btn = $(button);
+			if ($btn.attr("id") === "server-btn" && $btn.data("index") === _currentServerIndex) {
+				$connectBtn = $btn;
+			}
+		});
+		
+		if ($connectBtn === null) {
+			return;
+		}
+		
+		if (_projectState === Project.CLOSE) {
+			$connectBtn.removeClass("btn-disconnect");
+			$connectBtn.addClass("btn-connect");
+			$connectBtn.html(Strings.SYNAPSE_LIST_CONNECT);
+			_currentServerIndex = null;
+		} else {
+			$connectBtn.removeClass("btn-connect");
+			$connectBtn.addClass("btn-disconnect");
+			$connectBtn.html(Strings.SYNAPSE_LIST_DISCONNECT);
+		}
+	};
 
 	/* Handlers */
 
@@ -605,7 +651,7 @@ define(function (require, exports, module) {
 		var $btn = $(e.currentTarget);
 		SettingManager.edit($btn.html());
 	};
-
+	
 	onClickConnectBtn = function (e) {
 
 		var $btn = $(e.currentTarget);
@@ -630,33 +676,7 @@ define(function (require, exports, module) {
 			_toggleConnectBtn();
 		});
 	};
-
-	_toggleConnectBtn = function () {
-		var $connectBtn = null;
-		var $btnGrp = $(".synapse-server-list-user .btn-group button");
-		_.forEach($btnGrp, function (button) {
-			var $btn = $(button);
-			if ($btn.attr("id") === "server-btn" && $btn.data("index") === _currentServerIndex) {
-				$connectBtn = $btn;
-			}
-		});
-		
-		if ($connectBtn === null) {
-			return;
-		}
-		
-		if (_projectState === Project.CLOSE) {
-			$connectBtn.removeClass("btn-disconnect");
-			$connectBtn.addClass("btn-connect");
-			$connectBtn.html("CONNECT");
-			_currentServerIndex = null;
-		} else {
-			$connectBtn.removeClass("btn-connect");
-			$connectBtn.addClass("btn-disconnect");
-			$connectBtn.html("DISCONNECT");
-		}
-	};
-
+	
 	onClickEditBtn = function (e) {
 		var idx = $(this).data("index");
 		var setting = SettingManager.getServerSetting(idx);
@@ -666,7 +686,7 @@ define(function (require, exports, module) {
 		}
 		_showServerSetting(null, "update", setting);
 	};
-
+	
 	onClickDeleteBtn = function (e) {
 
 		var idx = $(this).data("index");
@@ -704,7 +724,7 @@ define(function (require, exports, module) {
 			});
 		return deferred.promise();
 	};
-
+	
 	onEnterListBtns = function (e) {
 		if (_projectState === Project.OPEN) {
 			if ($(this).data("index") !== _currentServerIndex) {
@@ -715,13 +735,13 @@ define(function (require, exports, module) {
 			"opacity": 1
 		}, 200);
 	};
-
+	
 	onLeaveListBtns = function (e) {
 		$(this).find(".btn-group").animate({
 			"opacity": 0
 		}, 200);
 	};
-
+	
 	onProjectStateChanged = function (evt, obj) {
 		_projectState = obj.state;
 		_projectDir = obj.directory;
