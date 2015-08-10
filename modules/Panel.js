@@ -621,13 +621,22 @@ define(function (require, exports, module) {
 	
 	_toggleConnectBtn = function () {
 		var $connectBtn = null;
+		var $editBtn = null;
+		var $deleteBtn = null;
 		var $btnGrp = $(".synapse-server-list-user .btn-group button");
 		_.forEach($btnGrp, function (button) {
 			var $btn = $(button);
-			if ($btn.attr("id") === "server-btn" && $btn.data("index") === _currentServerIndex) {
+			if ($btn.hasClass("connection-btn") && $btn.data("index") === _currentServerIndex) {
 				$connectBtn = $btn;
 			}
+			if ($btn.hasClass("btn-edit") && $btn.data("index") === _currentServerIndex) {
+				$editBtn = $btn;
+			}
+			if ($btn.hasClass("btn-delete") && $btn.data("index") === _currentServerIndex) {
+				$deleteBtn = $btn;
+			}
 		});
+			
 		
 		if ($connectBtn === null) {
 			return;
@@ -637,10 +646,18 @@ define(function (require, exports, module) {
 			$connectBtn.removeClass("btn-disconnect");
 			$connectBtn.addClass("btn-connect");
 			$connectBtn.html(Strings.SYNAPSE_LIST_CONNECT);
+			
+			$editBtn.prop("disabled", false);
+			$deleteBtn.prop("disabled", false);
+			
 			_currentServerIndex = null;
 		} else {
 			$connectBtn.removeClass("btn-connect");
 			$connectBtn.addClass("btn-disconnect");
+			
+			$editBtn.prop("disabled", true);
+			$deleteBtn.prop("disabled", true);
+			
 			$connectBtn.html(Strings.SYNAPSE_LIST_DISCONNECT);
 		}
 	};
