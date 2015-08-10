@@ -277,8 +277,14 @@ define(function (require, exports, module) {
 			return deferred.reject().promise();
 		}
 		
-		console.log(_ctxMenuCurrentEntity);
-			
+		if (_ctxMenuCurrentEntity.type === "file") {
+			deleteFile()
+			.then(deferred.resolve, deferred.reject);
+		} else {
+			removeDirectory()
+			.then(deferred.resolve, deferred.reject);
+		}
+		return deferred.promise();
 	};
 	
 	removeDirectory = function () {
