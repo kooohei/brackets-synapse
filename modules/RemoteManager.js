@@ -8,6 +8,7 @@ define(function (require, exports, module) {
 	var PathManager = require("modules/PathManager");
 	var Panel = require("modules/Panel");
 	var Project = require("modules/Project");
+	var _ = brackets.getModule("thirdparty/lodash");
 	/* endregion */
 
 	/* region Private vars */
@@ -65,6 +66,9 @@ define(function (require, exports, module) {
 	};
 
 	getListIgnoreExclude = function (serverSetting, list) {
+		if (serverSetting.exclude === undefined) {
+			serverSetting.exclude = "";
+		}
 		var ary = serverSetting.exclude.split(",");
 		var tmp = [];
 		if (ary.length > 0) {
