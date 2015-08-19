@@ -306,7 +306,7 @@ define(function (require, exports, module) {
 		var settingHeight = $("#synapse-server-setting").height();
 		var top = (settingHeight - height) / 2;
 		$container.css({"top": top + "px", "left": left});
-		$container.animate({"left": left, "opacity": 1}, 100, function () {
+		$container.animate({"left": 0, "opacity": 1}, 300, function () {
 			$("#synapse-server-setting input").addClass("disabled");
 			$("#synapse-server-setting input").prop("disabled", true);
 			$("#synapse-server-setting button").addClass("disabled");
@@ -319,7 +319,7 @@ define(function (require, exports, module) {
 		var $container = $(e.currentTarget);
 		var left = "-" + $container.outerWidth() + "px";
 		$container.off("click", _hideSettingAlert);
-		$container.animate({"left": left, "opacity": 0}, 100, function () {
+		$container.animate({"left": left, "opacity": 0}, 300, function () {
 			$("#synapse-server-setting input").removeClass("disabled");
 			$("#synapse-server-setting input").prop("disabled", false);
 			$("#synapse-server-setting button").removeClass("disabled");
