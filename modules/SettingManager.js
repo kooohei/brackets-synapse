@@ -9,7 +9,7 @@ define(function (require, exports, module) {
 	var PathManager = require("modules/PathManager");
 	var Panel = require("modules/Panel");
 	/* endregion */
-	
+
 	/* region Public Methods */
 	var init,
 			edit,
@@ -52,7 +52,7 @@ define(function (require, exports, module) {
 
 
 	/* Public Methods */
-	
+
 	init = function (_domain) {
 		var deferred = new $.Deferred();
 		domain = _domain;
@@ -100,7 +100,8 @@ define(function (require, exports, module) {
 			port 		: {form: $("#synapse-server-port", $serverSetting), icon: $("i.fa-plug"), invalid: false},
 			user 		: {form: $("#synapse-server-user", $serverSetting), icon: $("i.fa-user"), invalid: false},
 			password: {form: $("#synapse-server-password", $serverSetting),icon: $("i.fa-unlock-alt"), invalid: false},
-			dir	 		: {form: $("#synapse-server-dir", $serverSetting), icon: $("i.fa-sitemap"), invalid: false}
+			dir	 		: {form: $("#synapse-server-dir", $serverSetting), icon: $("i.fa-sitemap"), invalid: false},
+			exclude	: {form: $("#synapse-server-exclude", $serverSetting), icon: $("i.fa-ban"), invalid: false}
 		};
 
 		var keys = Object.keys(values);
@@ -133,6 +134,7 @@ define(function (require, exports, module) {
 				result[key] = values[key].form.val();
 			});
 			_appendServerBtnState("enabled");
+
 			return result;
 		} else {
 			_appendServerBtnState("disabled");
@@ -155,6 +157,26 @@ define(function (require, exports, module) {
 		}
 		if (prop === "dir") {
 			return value === "" || (value.match(regexp.unix_path) || value.match(regexp.win_path));
+		}
+		if (prop === "exclude") {
+			if (value !== "") {
+				var error = false;
+				var tmp = value.split(",");
+				if (tmp.length > 0) {
+					_.forEach(tmp, function (val) {
+						if (val.trim() === "") {
+							error = true;
+						}
+					});
+				}
+				if (error) {
+					return false;
+				} else {
+					return true;
+				}
+			} else {
+				return true;
+			}
 		}
 
 	};
@@ -190,10 +212,10 @@ define(function (require, exports, module) {
 		});
 		return res;
 	};
-	
-	
+
+
 	/* Private Methods */
-	
+
 	_appendServerBtnState = function (state) {
 		var dev_null = null;
 		var _state = state;
@@ -234,13 +256,13 @@ define(function (require, exports, module) {
 				deferred = new $.Deferred(),
 				index,
 				temp = [];
-		
+
 		if (setting.dir.length > 1) {
 			if (setting.dir.slice(-1) === "/") {
 				setting.dir = setting.dir.slice(0, -1);
 			}
 		}
-		
+
 		if (state === "UPDATE") {
 			setting.index = $("#synapse-server-setting").data("index");
 			temp = _.map(list, function (item, idx, ary) {

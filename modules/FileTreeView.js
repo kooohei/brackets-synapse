@@ -13,7 +13,7 @@ define(function (require, exports, module) {
 	var FileSystem = brackets.getModule("filesystem/FileSystem");
 	var MainViewManager = brackets.getModule("view/MainViewManager");
 	var _ = brackets.getModule("thirdparty/lodash");
-	
+
 	var DialogCollection = require("modules/DialogCollection");
 	var PathManager = require("modules/PathManager");
 	var RemoteManager = require("modules/RemoteManager");
@@ -22,7 +22,7 @@ define(function (require, exports, module) {
 	var FileManager = require("modules/FileManager");
 	var Strings = require("strings");
 	/* endregion */
-	
+
 	/* region Private vars */
 	var _modulePath = FileUtils.getParentPath(ExtensionUtils.getModulePath(module)),
 			_domain,
@@ -31,13 +31,13 @@ define(function (require, exports, module) {
 			_currentServerSetting = null,
 			_ctxMenuCurrentEntity = null;
 	/* endregion */
-	
+
 	/* region Public vars */
 	var rootEntity,
 			offset_left = 13; // font-size
 	var PROJECT_DIR = "PROJ";
 	/* endregion */
-	
+
 	/* region Private methods */
 	var _checkPrimitive,
 			_getProjectDirectoryPath,
@@ -63,7 +63,7 @@ define(function (require, exports, module) {
 			showAlert,
 			_newFile,
 	/* endregion */
-			
+
 	/* region Public methods */
 			refresh,
 			rename,
@@ -121,10 +121,10 @@ define(function (require, exports, module) {
 			};
 	/* endregion */
 
-	
-	
+
+
 	/* Public Methods */
-	
+
 	init = function (domain) {
 		var deferred = new $.Deferred();
 		_domain = domain;
@@ -134,7 +134,7 @@ define(function (require, exports, module) {
 		deferred.resolve(domain);
 		return deferred.promise();
 	};
-	
+
 	loadTreeView = function (serverSetting) {
 		_currentServerSetting = serverSetting;
 		_remoteRootPath = _currentServerSetting.dir;
@@ -159,7 +159,7 @@ define(function (require, exports, module) {
 			});
 		return rootEntity;
 	};
-	
+
 	clearCurrentTree = function () {
 		var deferred = new $.Deferred();
 		_currentServerSetting = null;
@@ -167,7 +167,7 @@ define(function (require, exports, module) {
 		jq.root_ul.remove();
 		return deferred.resolve().promise();
 	};
-	
+
 	setEntities = function (list, parent) {
 		if (parent.type !== "directory") {
 			throw new Error("the type property of the parent object must set directory");
@@ -175,7 +175,7 @@ define(function (require, exports, module) {
 		var deferred = new $.Deferred();
 		var promises = [];
 		var params = [];
-		
+
 		var depth = parent.depth + 1;
 		list.forEach(function (item, index) {
 			var type = (item.type === "d") ? "directory" : "file";
@@ -193,7 +193,7 @@ define(function (require, exports, module) {
 			};
 			promises.push(_setEntity(param, index));
 		});
-		
+
 		Async.waitForAll(promises, false, 5000)
 			.then(function () {
 				return _setElement(parent);
@@ -206,7 +206,7 @@ define(function (require, exports, module) {
 			.fail(deferred.reject);
 		return deferred.promise();
 	};
-	
+
 	refresh = function () {
 		var deferred = new $.Deferred();
 		if (_ctxMenuCurrentEntity === null) {
@@ -218,33 +218,33 @@ define(function (require, exports, module) {
 			.then(deferred.resolve, deferred.reject);
 		return deferred.promise();
 	};
-	
+
 	rename = function () {
 		var deferred = new $.Deferred();
 		if (_ctxMenuCurrentEntity === null) {
 			return deferred.reject().promise();
 		}
-		
+
 		var oldLocalPath = PathManager.completionLocalPath(_getPathArray(_ctxMenuCurrentEntity));
 		var oldRemotePath = PathManager.completionRemotePath(_getPathArray(_ctxMenuCurrentEntity));
-		
+
 		var entry = null;
 		if (_ctxMenuCurrentEntity.type === "file") {
 			entry = FileSystem.getFileForPath(oldLocalPath);
 		} else if (_ctxMenuCurrentEntity.type === "directory") {
 			entry = FileSystem.getDirectoryForPath(oldLocalPath);
 		}
-		
+
 		_rename(_ctxMenuCurrentEntity, function (entity) {
-			
+
 			var newLocalPath = PathManager.completionLocalPath(_getPathArray(entity));
 			var newRemotePath = PathManager.completionRemotePath(_getPathArray(entity));
-			
+
 			if (entity) {
 				if (newLocalPath === oldLocalPath) {
 					return;
 				} else {
-					
+
 					RemoteManager.rename(_currentServerSetting, oldRemotePath, newRemotePath)
 						.then(function (res) {
 							if (_ctxMenuCurrentEntity.downloaded) {
@@ -257,7 +257,7 @@ define(function (require, exports, module) {
 									}
 								});
 							}
-						
+
 							//DocumentManager.notifyPathNameChanged(oldLocalPath, newLocalPath);
 							deferred.resolve();
 						}, function (err) {
@@ -269,14 +269,14 @@ define(function (require, exports, module) {
 			return deferred.promise();
 		});
 	};
-	
-	
+
+
 	removeFile = function () {
 		var deferred = new $.Deferred();
 		if (_ctxMenuCurrentEntity === null) {
 			return deferred.reject().promise();
 		}
-		
+
 		if (_ctxMenuCurrentEntity.type === "file") {
 			deleteFile()
 			.then(deferred.resolve, deferred.reject);
@@ -286,7 +286,7 @@ define(function (require, exports, module) {
 		}
 		return deferred.promise();
 	};
-	
+
 	removeDirectory = function () {
 		var deferred = new $.Deferred();
 		if (_ctxMenuCurrentEntity === null) {
@@ -312,13 +312,13 @@ define(function (require, exports, module) {
 			});
 		return deferred.promise();
 	};
-	
+
 	newDirectory = function () {
 		var deferred = new $.Deferred();
 		if (_ctxMenuCurrentEntity === null) {
 			return deferred.reject().promise();
 		}
-		
+
 		if (_ctxMenuCurrentEntity.type === "directory") {
 			if (!_getElementWithEntity(_ctxMenuCurrentEntity).hasClass("loaded")) {
 				_loadDirectory(_ctxMenuCurrentEntity)
@@ -332,16 +332,16 @@ define(function (require, exports, module) {
 			.then(deferred.resolve, deferred.reject);
 		return deferred.promise();
 	};
-	
+
 	newFile = function () {
 		var deferred = new $.Deferred();
 		if (_ctxMenuCurrentEntity === null || _ctxMenuCurrentEntity.type !== "directory") {
 			deferred.reject();
 			return deferred.promise();
 		}
-		
+
 		var $elem = _getElementWithEntity(_ctxMenuCurrentEntity);
-		
+
 		if (_ctxMenuCurrentEntity.type === "directory") {
 			if (!$elem.hasClass("loaded")) {
 				_loadDirectory(_ctxMenuCurrentEntity)
@@ -358,7 +358,7 @@ define(function (require, exports, module) {
 		}
 		return deferred.promise();
 	};
-	
+
 	deleteFile = function () {
 		var deferred = new $.Deferred();
 		var remotePath = PathManager.completionRemotePath(_getPathArray(_ctxMenuCurrentEntity));
@@ -385,7 +385,7 @@ define(function (require, exports, module) {
 			});
 		return deferred.promise();
 	};
-	
+
 	showAlert = function (title, message) {
 		var $container = $("<div/>").addClass("synapse-treeview-alert")
 			.html($("<p/>").addClass("title").html(title))
@@ -431,10 +431,10 @@ define(function (require, exports, module) {
 					});
 			});
 	};
-	
-	
+
+
 	/* Private Methods */
-	
+
 	_setElement = function (entity) {
 		var deferred = new $.Deferred();
 		var $parent = null;
@@ -450,7 +450,7 @@ define(function (require, exports, module) {
 		$parent.find("ul.treeview-contents").remove();
 		var $ul = $("<ul/>").addClass("treeview-contents quiet-scrollbars");
 		$parent.append($ul);
-		
+
 		if (entity === null) {
 			$ul.show();
 			_makeRowElement(rootEntity, $("#synapse-tree"), $ul);
@@ -473,7 +473,7 @@ define(function (require, exports, module) {
 		}
 		return deferred.promise();
 	};
-	
+
 	_setEntity = function (param) {
 		var deferred = new $.Deferred();
 		var entity = new Entity(param);
@@ -482,25 +482,25 @@ define(function (require, exports, module) {
 		}
 		return deferred.resolve(entity).promise();
 	};
-	
+
 	_attachEvent = function () {
 		jq.container.on("click", onClick);
 	};
-	
+
 	_detachEvent = function () {
 		jq.container.off("click", onClick);
 	};
-	
+
 	_checkPrimitive = function (param) {
 		var toStr = Object.prototype.toString;
 		var res = toStr.call(param);
 		return res.replace(/\[|\]/g, "").split(" ")[1];
 	};
-	
+
 	_getProjectDirectoryPath = function () {
 		return _modulePath + PROJECT_DIR;
 	};
-	
+
 	_getPathArray = function (entity) {
 		var target = entity;
 		var entities = [];
@@ -510,17 +510,17 @@ define(function (require, exports, module) {
 		}
 		return entities;
 	};
-	
+
 	/**
 	 * Return entity from corresponding jQuery object.
-	 * @param   {Object} $elem 
+	 * @param   {Object} $elem
 	 * @returns {[[Type]]} [[Description]]
 	 */
 	_getEntityWithElement = function ($elem) {
 		var id = $elem.attr("id");
 		return _getEntityWithId(id);
 	};
-	
+
 	_getEntityWithId = function (id) {
 		if (id === "tv-0") {
 			return rootEntity;
@@ -543,11 +543,11 @@ define(function (require, exports, module) {
 		}
 		return entity;
 	};
-	
+
 	_getElementWithEntity = function (entity) {
 		return $("#tv-" + entity.id, jq.container);
 	};
-	
+
 	_makeRowElement = function (entity, $parent, $ul) {
 		var deferred = new $.Deferred();
 		var $li = $("<li/>").addClass("treeview-entity").addClass(entity.class).attr({
@@ -556,7 +556,7 @@ define(function (require, exports, module) {
 		var $p = $("<p/>").addClass("treeview-row");
 		var $text = $("<span/>").addClass("filename").html(entity.text);
 		var $icon = $("<i/>");
-		
+
 		if (entity.type === "directory") {
 			$li.addClass("treeview-close");
 			$icon.addClass(Icon.folder);
@@ -594,7 +594,7 @@ define(function (require, exports, module) {
 			"height": "toggle"
 		}, "fast");
 	};
-	
+
 	_loadDirectory = function (entity) {
 		var deferred = new $.Deferred();
 		var path = PathManager.completionRemotePath(_getPathArray(entity));
@@ -605,7 +605,7 @@ define(function (require, exports, module) {
 			.then(deferred.resolve, deferred.reject);
 		return deferred.promise();
 	};
-	
+
 	_rename = function (entity, cb) {
 		var $input = null;
 		var showInput = function (entity) {
@@ -661,7 +661,7 @@ define(function (require, exports, module) {
 				validate(entity, cb);
 			});
 	};
-	
+
 	_newFile = function (type) {
 		var deferred = new $.Deferred();
 		if (_ctxMenuCurrentEntity === null) {
@@ -687,7 +687,7 @@ define(function (require, exports, module) {
 		} else {
 			newName = (cnt === 0) ? "New Directory" : "New Directory(" + cnt + ")";
 		}
-		
+
 		var depth = parent.depth + 1;
 		var index = Object.keys(parent.children).length;
 		var newEntity = null;
@@ -703,7 +703,7 @@ define(function (require, exports, module) {
 			id: parent.id + "-" + index,
 			parent: parent
 		};
-		
+
 		_setEntity(param)
 			.then(function (entity) {
 				newEntity = entity;
@@ -743,7 +743,7 @@ define(function (require, exports, module) {
 			});
 		return deferred.promise();
 	};
-	
+
 	_deleteEntity = function (entity) {
 		var deferred = new $.Deferred();
 		var $elem = _getElementWithEntity(entity);
@@ -755,7 +755,7 @@ define(function (require, exports, module) {
 			.then(deferred.resolve, deferred.reject);
 		return deferred.promise();
 	};
-	
+
 	_rebuildChildrenIndex = function (parent) {
 		var deferred = new $.Deferred();
 		var entities = parent.children;
@@ -770,15 +770,15 @@ define(function (require, exports, module) {
 		parent.children = tmp;
 		return deferred.resolve(parent).promise();
 	};
-	
+
 	_resetElement = function (parent) {
 		return _setElement(parent);
 	};
-	
+
 	_flipContainer = function () {
-		
+
 	};
-	
+
 	_makeBaseDirectoryIfIsNotExists = function (localPath) {
 		var deferred = new $.Deferred();
 		var baseDirPath = FileUtils.getDirectoryPath(localPath);
@@ -800,7 +800,7 @@ define(function (require, exports, module) {
 		});
 		return deferred.promise();
 	};
-	
+
 	_openFile = function (entity) {
 		var deferred = new $.Deferred();
 		var remotePath = PathManager.completionRemotePath(_getPathArray(entity));
@@ -824,10 +824,10 @@ define(function (require, exports, module) {
 		}
 		return deferred.promise();
 	};
-	
-	
+
+
 	/* Handlers */
-	
+
 	onTreeViewContextMenu = function (e, menu) {
 		if ($("#synapse-tree").hasClass("disabled")) {
 			return;
@@ -863,7 +863,7 @@ define(function (require, exports, module) {
 		_ctxMenuCurrentEntity = _getEntityWithId($elem.attr("id"));
 		menu.open(e);
 	};
-	
+
 	onClick = function (e) {
 		var $elem = $(e.target);
 		/**
@@ -881,12 +881,12 @@ define(function (require, exports, module) {
 			onFileClicked($elem);
 		}
 	};
-	
+
 	onFileClicked = function ($elem) {
 		var entity = _getEntityWithElement($elem);
 		_openFile(entity);
 	};
-	
+
 	onDirClicked = function ($elem) {
 		var id = $elem.attr("id");
 		var entity = _getEntityWithId(id);
@@ -901,13 +901,13 @@ define(function (require, exports, module) {
 	};
 
 	onProjectStateChanged = function (e, obj) {
-		if (obj.state === Project.OPEN) { 
+		if (obj.state === Project.OPEN) {
 			_projectDir = obj.directory;
 		} else if (obj.state === Project.CLOSE) {
-			
+
 		}
 	};
-	
+
 	exports.init = init;
 	exports.setEntities = setEntities;
 	exports.rootEntity = rootEntity;
