@@ -10,6 +10,7 @@ define(function (require, exports, module) {
 	var ProjectManager = brackets.getModule("project/ProjectManager");
 	var DocumentManager = brackets.getModule("document/DocumentManager");
 	var PathManager = require("modules/PathManager");
+	var FileTreeView = require("modules/FileTreeView");
 	var Project = require("modules/Project");
 	var RemoteManager = require("modules/RemoteManager");
 	/* endregion */
@@ -88,6 +89,7 @@ define(function (require, exports, module) {
 		
 		RemoteManager.uploadFile(Project.getServerSetting(), localPath, remotePath)
 		.fail(function (err) {
+			FileTreeView.showAlert("ERROR", "Could not saved file to server <br>" + err);
 			throw new Error("Could not saved file to server<br>" + err);
 		});
 		

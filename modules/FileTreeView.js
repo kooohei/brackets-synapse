@@ -395,7 +395,7 @@ define(function (require, exports, module) {
 		var height = $container.outerHeight();
 		var left = $treeviewcontainer.outerWidth();
 		var treeHeight = $treeviewcontainer.outerHeight();
-		var top = ((treeHeight - height) / 2) - $treeviewcontainer.offset().top;
+		var top = ((treeHeight - height) / 2);
 		$container.css({
 			"top": top + "px",
 			"left": "-" + left + "px"
@@ -814,7 +814,12 @@ define(function (require, exports, module) {
 					FileManager.openFile(localPath);
 					deferred.resolve();
 				}, function (err) {
-					console.log(err);
+					
+					if (err.code === 550) {	
+						showAlert("ERROR", "Permission denied");
+					} else {
+						showAlert("ERROR", "Error Code: " + err.code);
+					}
 				});
 			}, function(err) {
 				throw new Error(err);

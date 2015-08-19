@@ -2,7 +2,7 @@
 {
   "name": "brackets-synapse",
 	"title": "Brackets Synapse",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Brackets extension for file sync between local and remote via FTP.",
   "author": "Kohei Hayashi (https://github.com/kooohei/)",
 	"homepage": "https://github.com/kooohei/brackets-synapse",
