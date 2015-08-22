@@ -81,6 +81,7 @@ define(function (require, exports, module) {
 	};
 	
 	onSaved = function (e, document) {
+		console.log("onSaved called");
 		if (_projectState === Project.CLOSE) {
 			return;
 		}
@@ -89,6 +90,9 @@ define(function (require, exports, module) {
 		
 		RemoteManager.uploadFile(Project.getServerSetting(), localPath, remotePath)
 		.fail(function (err) {
+			var ent = FileTreeView.getEntityWithPath(remotePath);
+			ent.downloaded = false;
+			
 			FileTreeView.showAlert("ERROR", "Could not saved file to server <br>" + err);
 			throw new Error("Could not saved file to server<br>" + err);
 		});

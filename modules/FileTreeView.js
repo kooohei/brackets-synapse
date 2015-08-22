@@ -60,7 +60,6 @@ define(function (require, exports, module) {
 			_getPathArray,
 			_getElementWithEntity,
 			_toggleDir,
-			showAlert,
 			_newFile,
 	/* endregion */
 
@@ -74,9 +73,11 @@ define(function (require, exports, module) {
 			newDirectory,
 			init,
 			setEntities,
+			getEntityWithPath,
 			clearCurrentTree,
 			open,
 			loadTreeView,
+			showAlert,
 			onClick,
 			onDirClicked,
 			onFileClicked,
@@ -430,6 +431,23 @@ define(function (require, exports, module) {
 						});
 					});
 			});
+	};
+	
+	getEntityWithPath = function (localPath) {
+		var split = localPath.split("/");
+		var children = rootEntity.children;
+		var entity = null;
+		split.forEach(function (f) {
+			_.forEach(children, function (ent) {
+				if (ent.text === f) {
+					entity = ent;
+				}
+			});
+			if (entity.type !== "file") {
+				children = entity.children;
+			}
+		});
+		return entity;
 	};
 
 
@@ -923,6 +941,7 @@ define(function (require, exports, module) {
 	exports.showAlert = showAlert;
 	exports.removeFile = removeFile;
 	exports.newFile = newFile;
+	exports.getEntityWithPath = getEntityWithPath;
 	exports.deleteFile = deleteFile;
 	exports.newDirectory = newDirectory;
 	exports.removeDirectory = removeDirectory;
