@@ -67,7 +67,6 @@ define(function (require, exports, module) {
 	/* Handlers */
 	onBeforeAppClose = function () {
 		if (_projectState === Project.OPEN) {
-			console.log("close");
 			return Project.close();
 		}
 	};
@@ -81,7 +80,6 @@ define(function (require, exports, module) {
 	};
 	
 	onSaved = function (e, document) {
-		console.log("onSaved called");
 		if (_projectState === Project.CLOSE) {
 			return;
 		}
@@ -92,7 +90,6 @@ define(function (require, exports, module) {
 		.fail(function (err) {
 			var ent = FileTreeView.getEntityWithPath(remotePath);
 			ent.downloaded = false;
-			
 			FileTreeView.showAlert("ERROR", "Could not saved file to server <br>" + err);
 			throw new Error("Could not saved file to server<br>" + err);
 		});
