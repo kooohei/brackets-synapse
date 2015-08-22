@@ -34,7 +34,6 @@
   },
   "homepage": "https://github.com/kooohei/brackets-synapse#readme",
 	"dependencies": {
-		"font-awesome": "~4.3.0",
 		"moment": "~2.10.3"
 	}
 }
