@@ -233,7 +233,7 @@ define(function (require, exports, module) {
 						j.tvc.animate({
 							"top": j.h.outerHeight() + (j.l.outerHeight() + 10) +  "px",
 							//"height": destHeight + "px"
-						}, "fast").promise().done(deferred.resolve);
+						}, "fast").promise().then(deferred.resolve);
 					});
 			}
 			return deferred.promise();
@@ -441,7 +441,8 @@ define(function (require, exports, module) {
 		}
 		var list = SettingManager.getServerList();
 		var html = Mustache.render(server_list_html, {
-			serverList: list
+			serverList: list, 
+			Strings: Strings
 		});
 		var $html = $(html);
 		j.l.addClass("hide");
@@ -456,8 +457,14 @@ define(function (require, exports, module) {
 			"mouseenter": onEnterListBtns,
 			"mouseleave": onLeaveListBtns
 		});
-		$("#synapse-server-list div.list").addClass("quiet-scrollbars");
-		deferred.resolve();
+		var destHeight = j.m.outerHeight() - j.h.outerHeight() - (j.l.outerHeight() + 10);
+		j.tvc.animate({
+			"top": j.h.outerHeight() + (j.l.outerHeight() + 10) + "px"
+		}, 400).promise().then(function () {
+			$("#synapse-server-list div.list").addClass("quiet-scrollbars");
+			deferred.resolve();
+		});
+		
 		return deferred.promise();
 
 	};

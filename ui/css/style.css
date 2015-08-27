@@ -286,7 +286,7 @@ div#synapse-tree-back {
 	position: absolute;
 	left: 0;
 	width: 100%;
-	background-color: rgba(168, 35, 35, 0.95);
+	background-color: #d9534f;
 	opacity: 0;
 	padding: 20px;
 }
@@ -298,5 +298,5 @@ div#synapse-tree-back {
 	font-weight: bold;
 }
 #synapse p.synapse-server-setting-alert-caption {
-	color: #a3a3a3;
+	color: #e6e6e6;
 }
