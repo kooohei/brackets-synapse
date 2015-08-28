@@ -163,7 +163,6 @@ define(function (require, exports, module) {
 		var deferred = new $.Deferred();
 		_domain.exec("RemoveDirectory", serverSetting, remotePath)
 		.then(function () {
-			console.log("ok");
 			deferred.resolve(true);
 		}, function (err) {
 			console.error(err);

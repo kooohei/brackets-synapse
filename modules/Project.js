@@ -20,13 +20,15 @@ define(function (require, exports, module) {
 	/* endregion */
 	
 	
-	/* region Public vars */
+	/* region Public Method */
 	var open,
 			close,
 			closeProject,
 			isOpen,
 			getOpenProjectDocuments,
 			getServerSetting,
+			createDirectoryIfExists,
+			renameLocalEntry,
 			maxProjectHistory = 3;
 	/* endregion */
 	
@@ -43,7 +45,7 @@ define(function (require, exports, module) {
 			_projectDir,
 			_projectBaseDir,
 			_fallbackProjectRoot,
-			_directoryIsExists,
+			_baseDirectoryIsExists,
 			_getDirectoryContents,
 			_removeDirectoryContents,
 			_removeContent,
@@ -67,7 +69,6 @@ define(function (require, exports, module) {
 	/* endregion */
 
 	
-	/* Public Methods */
 	
 	/**
 	 * Open the project when the success connected to server, then get files list.
@@ -87,7 +88,7 @@ define(function (require, exports, module) {
 		_currentServer = server;
 		var deferred = new $.Deferred();
 		_initProjectContext()
-			.then(_directoryIsExists)
+			.then(_baseDirectoryIsExists)
 			.then(function () {
 				return _makeProjectDirIfIsNotExists(_currentServer);
 			})
@@ -225,6 +226,52 @@ define(function (require, exports, module) {
 		}
 	};
 	
+	
+	createDirectoryIfExists = function (path) {
+		var d = new $.Deferred();
+		var dir = FileSystem.getDirectoryForPath(path);
+		dir.exists(function (err, exists) {
+			if (exists) {
+				d.resolve();
+			} else {
+				dir.create(function (err) {
+					if (err) {
+						d.reject(err);
+					} else {
+						d.resolve();
+					}
+				});
+			}
+		});
+		return d.promise();
+	};
+	
+	
+	renameLocalEntry = function (oldPath, newPath, type) {
+		var d = new $.Deferred();
+		var oldEntry = null,
+				newEntry = null;
+		if (type === "file") {
+			oldEntry = FileSystem.getFileForPath(oldPath);
+		} else {
+			oldEntry = FileSystem.getDirectoryForPath(oldPath);
+		}
+		oldEntry.exists(function (err, exists) {
+			if (exists) {
+				oldEntry.rename(newPath, function (err) {
+					if (err) {
+						d.reject(err);
+					} else {
+						d.resolve();
+					}
+				});
+			}
+			d.resolve();
+		});
+		return d.promise();
+	};
+	
+	
 	/* Private Methods */
 	
 	_makeProjectDirIfIsNotExists = function (server) {
@@ -273,7 +320,7 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 	
-	_directoryIsExists = function () {
+	_baseDirectoryIsExists = function () {
 		var deferred = new $.Deferred();
 		var directory = _projectBaseDir;
 		directory.exists(function (err, exists) {
@@ -315,7 +362,7 @@ define(function (require, exports, module) {
 	};
 
 	_removeContent = function (entity) {
-		console.log("current function _removeContent");
+		//console.log("current function _removeContent");
 		var deferred = new $.Deferred();
 		entity.moveToTrash(function (err) {
 			if (err) {
@@ -359,4 +406,6 @@ define(function (require, exports, module) {
 	exports.PROJECT_STATE_CHANGED = PROJECT_STATE_CHANGED;
 	exports.getOpenProjectDocuments = getOpenProjectDocuments;
 	exports.getServerSetting = getServerSetting;
+	exports.createDirectoryIfExists = createDirectoryIfExists;
+	exports.renameLocalEntry = renameLocalEntry;
 });

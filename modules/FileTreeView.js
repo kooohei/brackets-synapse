@@ -228,7 +228,7 @@ define(function (require, exports, module) {
 
 		var oldLocalPath = PathManager.completionLocalPath(_getPathArray(_ctxMenuCurrentEntity));
 		var oldRemotePath = PathManager.completionRemotePath(_getPathArray(_ctxMenuCurrentEntity));
-
+		
 		var entry = null;
 		if (_ctxMenuCurrentEntity.type === "file") {
 			entry = FileSystem.getFileForPath(oldLocalPath);
@@ -243,32 +243,25 @@ define(function (require, exports, module) {
 
 			if (entity) {
 				if (newLocalPath === oldLocalPath) {
-					return;
+					return deferred.resolve().promise();
 				} else {
-
 					RemoteManager.rename(_currentServerSetting, oldRemotePath, newRemotePath)
-						.then(function (res) {
-							if (_ctxMenuCurrentEntity.downloaded) {
-								entry.exits(function (err, exists) {
-									if (err) {
-										throw new Error(err);
-									}
-									if (exists) {
-										DocumentManager.notifyPathNameChanged(oldLocalPath, newLocalPath);
-									}
-								});
-							}
-
-							//DocumentManager.notifyPathNameChanged(oldLocalPath, newLocalPath);
-							deferred.resolve();
-						}, function (err) {
-							showAlert("Could not rename to remote file<br>" + err);
-							deferred.reject(err);
-						});
+					.then(function (res) {
+						return Project.renameLocalEntry(oldLocalPath, newLocalPath, entity.type);
+					})
+					.then(function () {
+						DocumentManager.notifyPathNameChanged(oldLocalPath, newLocalPath);
+						deferred.resolve();
+					}, function (err) {
+						showAlert("Could not rename to remote file<br>" + err);
+						deferred.reject(err);
+					});
 				}
+			} else {
+				deferred.reject();
 			}
-			return deferred.promise();
 		});
+		return deferred.promise();
 	};
 
 
@@ -323,14 +316,19 @@ define(function (require, exports, module) {
 		if (_ctxMenuCurrentEntity.type === "directory") {
 			if (!_getElementWithEntity(_ctxMenuCurrentEntity).hasClass("loaded")) {
 				_loadDirectory(_ctxMenuCurrentEntity)
-					.then(function () {
-						newDirectory();
-						return;
-					});
+				.then(function () {
+					newDirectory();
+					return;
+				}, function () {
+					deferred.reject();
+				});
+			} else {
+				_newFile("directory")
+				.then(deferred.resolve, deferred.reject);
 			}
+		} else {
+			deferred.resolve();
 		}
-		_newFile("directory")
-			.then(deferred.resolve, deferred.reject);
 		return deferred.promise();
 	};
 
@@ -346,16 +344,18 @@ define(function (require, exports, module) {
 		if (_ctxMenuCurrentEntity.type === "directory") {
 			if (!$elem.hasClass("loaded")) {
 				_loadDirectory(_ctxMenuCurrentEntity)
-					.then(function () {
-						newFile();
-						return deferred.resolve().promise();
-					}, function (err) {
-						console.error(err);
-						throw new Error("error");
-					});
+				.then(function () {
+					newFile();
+					return;
+				}, function (err) {
+					deferred.reject(err);
+				});
 			} else {
-				_newFile("file").then(deferred.resolve, deferred.reject);
+				_newFile("file")
+				.then(deferred.resolve, deferred.reject);
 			}
+		} else {
+			deferred.resolve();
 		}
 		return deferred.promise();
 	};
@@ -624,21 +624,25 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 
+	
+	
 	_rename = function (entity, cb) {
+		
 		var $input = null;
 		var showInput = function (entity) {
 			var deferred = new $.Deferred();
 			var $parent = _getElementWithEntity(entity.parent);
 			var $current = _getElementWithEntity(entity);
-			var $span = $("p.treeview-row > span", $current);
+			var $span = $("p.treeview-row > span", $current).first();
 			var $input = $("<input/>").attr({
 				type: "text",
 				"id": "synapse-treeview-rename-editor"
 			}).val(entity.text);
-			$("p.treeview-row", $current).append($input);
+			$("p.treeview-row", $current).first().append($input);
 			$span.hide();
 			return deferred.resolve().promise();
 		};
+		
 		var validate = function (entity, cb) {
 			var $current = _getElementWithEntity(entity);
 			var _$input = $("input", $current).focus().select();
@@ -659,7 +663,7 @@ define(function (require, exports, module) {
 				cb: cb
 			}, function () {
 				_.forEach(parent.children, function (ent, key) {
-					if (ent.id !== entity.id && ent.text === _$input.val()) {
+					if ((ent.id !== entity.id) && (ent.text === _$input.val())) {
 						exists = true;
 					}
 				});
@@ -673,11 +677,11 @@ define(function (require, exports, module) {
 				}
 			});
 		};
-
+		
 		showInput(entity)
-			.then(function () {
-				validate(entity, cb);
-			});
+		.then(function () {
+			validate(entity, cb);
+		});
 	};
 
 	_newFile = function (type) {
@@ -686,6 +690,7 @@ define(function (require, exports, module) {
 			return deferred.reject().promise();
 		}
 		var parent = _ctxMenuCurrentEntity;
+		
 		var $elem = _getElementWithEntity(_ctxMenuCurrentEntity);
 		var cnt = 0;
 		_.forEach(parent.children, function (ent, key) {
@@ -723,42 +728,41 @@ define(function (require, exports, module) {
 		};
 
 		_setEntity(param)
-			.then(function (entity) {
-				newEntity = entity;
-				return _setElement(entity.parent);
-			})
-			.then(function () {
-				if (type === "file") {
-					_rename(newEntity, function (ent) {
-						var localPath = _modulePath + "empty.txt";
-						var remotePath = PathManager.completionRemotePath(_getPathArray(ent));
-						RemoteManager.uploadFile(_currentServerSetting, localPath, remotePath)
-							.then(function () {
-								deferred.resolve();
-							}, function (err) {
-								console.log(err);
-								_deleteEntity(ent);
-								showAlert("ERROR", "New file could not upload to server.<br>" + err);
-								deferred.reject();
-							});
+		.then(function (entity) {
+			newEntity = entity;
+			return _setElement(entity.parent);
+		})
+		.then(function () {
+			if (type === "file") {
+				_rename(newEntity, function (ent) {
+					var localPath = _modulePath + "empty.txt";
+					var remotePath = PathManager.completionRemotePath(_getPathArray(ent));
+					RemoteManager.uploadFile(_currentServerSetting, localPath, remotePath)
+						.then(function () {
+							deferred.resolve();
+						}, function (err) {
+							_deleteEntity(ent);
+							showAlert("ERROR", "New file could not upload to server.<br>" + err);
+							deferred.reject();
+						});
+				});
+			} else {
+				_rename(newEntity, function (ent) {
+					var remotePath = PathManager.completionRemotePath(_getPathArray(ent));
+					RemoteManager.mkdir(_currentServerSetting, remotePath)
+					.then(function () {
+						//deferred.resolve();
+						return Project.createDirectoryIfExists(PathManager.completionLocalPath(_getPathArray(ent)));
+					}, function (err) {
+						_deleteEntity(ent);
+						showAlert("ERROR", "New directory could not upload to server.<br>" + err);
+						deferred.reject();
 					});
-				} else {
-					_rename(newEntity, function (ent) {
-						var remotePath = PathManager.completionRemotePath(_getPathArray(ent));
-						RemoteManager.mkdir(_currentServerSetting, remotePath)
-							.then(function () {
-								deferred.resolve();
-							}, function (err) {
-							console.log(err);
-								_deleteEntity(ent);
-								showAlert("ERROR", "New directory could not upload to server.<br>" + err);
-								deferred.reject();
-							});
-					});
-				}
-			}, function (err) {
-				throw new Error(err);
-			});
+				});
+			}
+		}, function (err) {
+			throw new Error(err);
+		});
 		return deferred.promise();
 	};
 
@@ -807,9 +811,11 @@ define(function (require, exports, module) {
 			} else {
 				if (!exists) {
 					baseDir.create(function (err, res) {
-						deferred.resolve(baseDir);
-					}, function (err) {
-						deferred.reject(err);
+						if (!err) {
+							deferred.resolve(baseDir);
+						} else {
+							deferred.reject(err);
+						}
 					});
 				} else {
 					deferred.resolve(baseDir);
@@ -886,7 +892,7 @@ define(function (require, exports, module) {
 		_ctxMenuCurrentEntity = _getEntityWithId($elem.attr("id"));
 		menu.open(e);
 	};
-
+	
 	onClick = function (e) {
 		var $elem = $(e.target);
 		/**
@@ -904,12 +910,12 @@ define(function (require, exports, module) {
 			onFileClicked($elem);
 		}
 	};
-
+	
 	onFileClicked = function ($elem) {
 		var entity = _getEntityWithElement($elem);
 		_openFile(entity);
 	};
-
+	
 	onDirClicked = function ($elem) {
 		var id = $elem.attr("id");
 		var entity = _getEntityWithId(id);
@@ -922,7 +928,7 @@ define(function (require, exports, module) {
 				});
 		}
 	};
-
+	
 	onProjectStateChanged = function (e, obj) {
 		if (obj.state === Project.OPEN) {
 			_projectDir = obj.directory;
