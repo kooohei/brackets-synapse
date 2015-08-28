@@ -215,12 +215,13 @@
 					cb(err);
 					logout(client);
 				} else {
+					stream.pipe(fs.createWriteStream(localPath));
 					stream.once("close", function () {
 						client.end();
 						logout(client);
 						cb(null, true);
 					});
-					stream.pipe(fs.createWriteStream(localPath));
+					
 				}
 				
 			});
