@@ -37,12 +37,12 @@
 
 		client.once("ready", function () {
 			client.list(remoteRoot, function (err, list) {
+				logout(client);
 				if (err) {
 					cb(err);
 				} else {
 					cb(null, list);
 				}
-				logout(client);
 			});
 		});
 
@@ -69,16 +69,18 @@
 			if (err) {
 				cb(err);
 			}
+			logout(client);
 		});
 
 		client.once("ready", function () {
 			client.put(localPath, remotePath, function (err) {
+				logout(client);
 				if (err) {
 					cb(err);
 				} else {
 					cb(null, true);
 				}
-				logout(client);
+				
 			});
 		});
 		client.connect(server);
@@ -91,16 +93,17 @@
 			if (err) {
 				cb(err);
 			}
+			logout(client);
 		});
 
 		client.once("ready", function () {
 			client.list(path, function (err, list) {
+				logout(client);
 				if (err) {
 					cb(err);
 				} else {
 					cb(null, list);
 				}
-				logout(client);
 			});
 		});
 		client.connect(server);
@@ -112,17 +115,19 @@
 			if (err) {
 				cb(err);
 			}
+			logout(client);
 		});
 
 		client.once("ready", function () {
 			client.rename(oldPath, newPath, function (err) {
+				logout(client);
 				if (err) {
 					cb(err);
 				} else {
 					var res = true;
 					cb(null, res);
 				}
-				logout(client);
+				
 			});
 		});
 		client.connect(server);
@@ -132,42 +137,42 @@
 		client = new Client();
 		client.once("error", function (err) {
 			if (err) {
+				logout(client);
 				cb(err);
 			}
 		});
 		client.once("ready", function () {
 			client.mkdir(path, false, function (err) {
-
+				logout(client);
 				if (err) {
 					cb(err);
 				} else {
 					var res = true;
 					cb(null, res);
 				}
-				logout(client);
 			});
 		});
 		client.connect(server);
 	};
 
 	removeDirectory = function (serverSetting, remotePath, cb) {
-		console.log("ok");
 		client = new Client();
 
 		client.once("error", function (err) {
 			if (err) {
+				logout(client);
 				cb(err);
 			}
 		});
 
 		client.once("ready", function () {
 			client.rmdir(remotePath, true, function (err) {
+				logout(client);
 				if (err) {
 					cb(err);
 				} else {
 					cb(null, true);
 				}
-				logout(client);
 			});
 		});
 		client.connect(serverSetting);
@@ -177,21 +182,20 @@
 		client = new Client();
 		client.once("error", function (err) {
 			console.log("error", err);
+			logout(client);
 			if (err) {
+				
 				cb(err);
 			}
 		});
-
-		console.log("remotePath: " + remotePath);
-
 		client.once("ready", function () {
 			client.delete(remotePath, function (err) {
+				logout(client);
 				if (err) {
 					cb(err);
 				} else {
 					cb(null, true);
 				}
-				logout(client);
 			});
 		});
 		client.connect(serverSetting);
@@ -201,6 +205,7 @@
 		client = new Client();
 		client.once("error", function (err) {
 			if (err) {
+				logout(client);
 				cb(err);
 			}
 		});
