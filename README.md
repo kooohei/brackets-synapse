@@ -2,7 +2,7 @@
 Synapse is Adobe Brackets extension. it will be provided useful function to you. that can be editing text file on remote server directly. May the code with you :-)
 
 <h2>Extension Install</h2>
-![Extension Install](https://raw.github.com/wiki/kooohei/brackets-synapse/images/1_inst.gif)
+![Extension Install](https://github.com/kooohei/brackets-synapse/wiki/images/1_inst.gif)
 
 
 <h2>Troubleshooting</h2>
