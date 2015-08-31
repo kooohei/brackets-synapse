@@ -302,8 +302,6 @@ div#synapse-tree-back {
 	color: #e6e6e6;
 }
 
-/*server setting when you write something is a bit illegible :)*/
-
 #synapse-server-host,
 #synapse-server-port,
 #synapse-server-user,
@@ -311,6 +309,7 @@ div#synapse-tree-back {
 #synapse-server-dir,
 #synapse-server-exclude{
 	color:#ededed;
+	border: none;
 }
 
 #synapse-server-list button.btn-connect,
