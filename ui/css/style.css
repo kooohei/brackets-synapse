@@ -320,7 +320,7 @@ div#synapse-tree-back {
 	background-color: transparent;
 	color: #818181;
 	cursor: pointer;
-	font-size: 14px;
+	font-size: 12px;
 	font-weight: 500;
 	line-height: normal;
 	border: none;
@@ -335,14 +335,20 @@ div#synapse-tree-back {
 
 #synapse-server-list button.btn-connect:hover {
 	background-color: #10a000;
+	border-radius: 0;
+	color: #2D2D2D;
 }
 
 #synapse-server-list button.btn-edit:hover {
 	background-color: #FAB400;
+	border-radius: 0;
+	color: #2D2D2D;
 }
 
 #synapse-server-list button.btn-delete:hover {
 	background-color: #d9534f;
+	border-radius: 0;
+	color: #2D2D2D;
 }
 
 #synapse-server-list button {
