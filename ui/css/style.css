@@ -312,4 +312,35 @@ div#synapse-tree-back {
 #synapse-server-exclude{
 	color:#ededed;
 }
+
+#synapse-server-list button.btn-connect,
+#synapse-server-list button.btn-edit,
+#synapse-server-list button.btn-delete{
+background-image: none;
+background-color: transparent;
+color: #818181;
+cursor: pointer;
+font-size: 14px;
+font-weight: 500;
+line-height: normal;
+border: none;
+-webkit-border-radius: 3px;
+-moz-border-radius: 3px;
+border-radius: 3px;
+box-shadow: none;
+-webkit-font-smoothing: antialiased;
+text-shadow: none;
+margin: 3px 0px 3px 3px;
+}
+
+#synapse-server-list button.btn-connect:hover {
+background-color: #10a000;
+}
+
+#synapse-server-list button.btn-edit:hover {
+background-color: #FAB400;
+}
+
+#synapse-server-list button.btn-delete:hover {
+background-color: #d9534f;
 }
