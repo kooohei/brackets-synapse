@@ -355,3 +355,15 @@ div#synapse-tree-back {
 	font-size: 11px;
 	border-radius: 0;
 }
+
+#synapse-server-list button.btn-disconnect {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    color: #DF0000;
+}
+
+#synapse-server-list button.btn-disconnect:hover {
+	background-color: #E50000;
+	color: #ccc;
+}
