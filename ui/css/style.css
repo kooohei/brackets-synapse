@@ -312,6 +312,8 @@ div#synapse-tree-back {
 	border: none;
 }
 
+/*css button*/
+
 #synapse-server-list button.btn-connect,
 #synapse-server-list button.btn-edit,
 #synapse-server-list button.btn-delete{
