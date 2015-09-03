@@ -46,4 +46,5 @@ node_modules
 node/node_modules
 __PROJ__
 .jsbeautifyrc
-temp.js
+tmp.js
+__KEYS__/*

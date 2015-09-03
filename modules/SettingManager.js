@@ -7,6 +7,7 @@ define(function (require, exports, module) {
 	var PreferencesManager = brackets.getModule("preferences/PreferencesManager");
 	var _ = brackets.getModule("thirdparty/lodash");
 	var PathManager = require("modules/PathManager");
+	var FileManager = require("modules/FileManager");
 	var Panel = require("modules/Panel");
 	/* endregion */
 
@@ -37,11 +38,15 @@ define(function (require, exports, module) {
 	var domain,
 			preference = PreferencesManager.getExtensionPrefs("brackets-synapse");
 	var Server = function () {
+		this.protocol = "ftp";
 		this.host = null;
 		this.port = 21;
 		this.user = null;
 		this.password = null;
+		this.passphrase = null;
+		this.privateKey = null;
 		this.dir = null;
+		this.exclude = null;
 	};
 	var $serverSetting = null;
 	var regexp = {
@@ -62,31 +67,40 @@ define(function (require, exports, module) {
 		regexp.port = new RegExp("[1-65535]");
 		regexp.unix_path = new RegExp("^$|^\\.\\/.*?|^\\/.*?");
 		regexp.win_path = new RegExp("^[a-z]\\:\\\.*?");
-		$("input", $serverSetting).val("").removeClass("invalid");
+		var $file = $("#synapse-server-privateKey");
+		$file.parent().html($file.parent().html());
+		$("input[type='text'], input[type='password']", $serverSetting).val("").removeClass("invalid");
 		$("th > i", $serverSetting).removeClass("done");
+		$("th > i.fa-plug", $serverSetting).addClass("done");
 		$("button.btn-add").addClass("disabled");
 		deferred.resolve(domain);
 		return deferred.promise();
 	};
 
+
+
 	edit = function (state) {
 		var deferred = new $.Deferred();
 		var setting = validateAll();
+		setting.protocol = $("#currentProtocol").val();
 		if (setting !== false) {
 			_appendServerBtnState("disabled");
-			_connectTest(setting)
-				.done(function () {
-					_editServerSetting(state, setting)
-						.then(function () {
-							Panel.showServerList();
-						}, deferred.reject);
-				})
-				.fail(function (err) {
-					_showSettingAlert("Failed", "Could not connect to server");
-					deferred.reject(err);
-				}).always(function () {
-					_appendServerBtnState("enabled");
-				});
+			FileManager.savePrivateKey(state, setting, Panel.getCurrentPrivateKeyText())
+			.then(_connectTest, function () {
+				var err = new Error("Uncaught saved private key to local file");
+				deferred.reject(err);
+			})
+			.then(function () {
+				_editServerSetting(state, setting)
+					.then(function () {
+						Panel.showServerList();
+					}, deferred.reject);
+			}, function (err) {
+				_showSettingAlert("Failed", "Could not connect to server");
+				deferred.reject(err);
+			}).always(function () {
+				_appendServerBtnState("enabled");
+			});
 		}
 		return deferred.promise();
 	};
@@ -95,15 +109,27 @@ define(function (require, exports, module) {
 		var deferred = new $.Deferred();
 		var invalid = [];
 
-		var values = {
-			host 		: {form: $("#synapse-server-host", $serverSetting), icon: $("i.fa-desktop"), invalid: false},
-			port 		: {form: $("#synapse-server-port", $serverSetting), icon: $("i.fa-plug"), invalid: false},
-			user 		: {form: $("#synapse-server-user", $serverSetting), icon: $("i.fa-user"), invalid: false},
-			password: {form: $("#synapse-server-password", $serverSetting),icon: $("i.fa-unlock-alt"), invalid: false},
-			dir	 		: {form: $("#synapse-server-dir", $serverSetting), icon: $("i.fa-sitemap"), invalid: false},
-			exclude	: {form: $("#synapse-server-exclude", $serverSetting), icon: $("i.fa-ban"), invalid: false}
+		var ftp = {
+			host 				: {form: $("#synapse-server-host", $serverSetting), icon: $("i.fa-desktop"), invalid: false},
+			port 				: {form: $("#synapse-server-port", $serverSetting), icon: $("i.fa-plug"), invalid: false},
+			user 				: {form: $("#synapse-server-user", $serverSetting), icon: $("i.fa-user"), invalid: false},
+			password		: {form: $("#synapse-server-password", $serverSetting),icon: $("i.fa-unlock-alt"), invalid: false},
+			dir	 				: {form: $("#synapse-server-dir", $serverSetting), icon: $("i.fa-sitemap"), invalid: false},
+			exclude			: {form: $("#synapse-server-exclude", $serverSetting), icon: $("i.fa-ban"), invalid: false}
+		};
+		var sftp = {
+			host 				: {form: $("#synapse-server-host", $serverSetting), icon: $("i.fa-desktop"), invalid: false},
+			port 				: {form: $("#synapse-server-port", $serverSetting), icon: $("i.fa-plug"), invalid: false},
+			user 				: {form: $("#synapse-server-user", $serverSetting), icon: $("i.fa-user"), invalid: false},
+			passphrase	: {form: $("#synapse-server-passphrase", $serverSetting),icon: $("i.fa-unlock-alt"), invalid: false},
+			privateKey	: {form: $(".span2.privateKeyName", $serverSetting), icon: $("i.fa-key"), invalid: false},
+			dir	 				: {form: $("#synapse-server-dir", $serverSetting), icon: $("i.fa-sitemap"), invalid: false},
+			exclude			: {form: $("#synapse-server-exclude", $serverSetting), icon: $("i.fa-ban"), invalid: false}
 		};
 
+		var currentProtocol = $("#currentProtocol").val();
+
+		var values = currentProtocol === "ftp" ? ftp : sftp;
 		var keys = Object.keys(values);
 
 		keys.forEach(function (key) {
@@ -113,6 +139,8 @@ define(function (require, exports, module) {
 		});
 
 		var invalidCnt = 0;
+
+		var returnValue = false;
 
 		keys.forEach(function (key) {
 			var obj = values[key];
@@ -134,12 +162,12 @@ define(function (require, exports, module) {
 				result[key] = values[key].form.val();
 			});
 			_appendServerBtnState("enabled");
-
-			return result;
+			returnValue = result;
 		} else {
 			_appendServerBtnState("disabled");
-			return false;
 		}
+
+		return returnValue;
 	};
 
 	validate = function (prop, value) {
@@ -153,6 +181,12 @@ define(function (require, exports, module) {
 			return value !== "";
 		}
 		if (prop === "password") {
+			return value !== "";
+		}
+		if (prop === "passphrase") {
+			return value !== "";
+		}
+		if (prop === "privateKey") {
 			return value !== "";
 		}
 		if (prop === "dir") {
@@ -345,6 +379,7 @@ define(function (require, exports, module) {
 	};
 
 	_connectTest = function (server) {
+
 		var deferred = new $.Deferred();
 		var remotePath = server.dir === "" ? "./" : server.dir;
 
@@ -352,6 +387,7 @@ define(function (require, exports, module) {
 
 		domain.exec("Connect", server, remotePath)
 			.done(function (list) {
+				console.log(list);
 				deferred.resolve();
 			})
 			.fail(function (err) {

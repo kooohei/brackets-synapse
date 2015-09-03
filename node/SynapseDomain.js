@@ -5,7 +5,7 @@
 
 	/**
 	 * App path policy
-	 * 
+	 *
 	 * all paths tailling slash is invalid, if path started character is "." then that is relative path.
 	 * however that character is "/" then this is absolute path.
 	 */
@@ -27,27 +27,54 @@
 
 
 	connect = function (server, remoteRoot, cb) {
-		client = new Client();
+		if (server.protocol === "ftp") {
 
-		client.once("error", function (err) {
-			if (err) {
-				cb(err);
-			}
-		});
-
-		client.once("ready", function () {
-			client.list(remoteRoot, function (err, list) {
-				logout(client);
+			client = new Client();
+			client.once("error", function (err) {
 				if (err) {
 					cb(err);
-				} else {
-					cb(null, list);
 				}
 			});
-		});
+			client.once("ready", function () {
+				client.list(remoteRoot, function (err, list) {
+					logout(client);
+					if (err) {
+						cb(err);
+					} else {
+						cb(null, list);
+					}
+				});
+			});
+			server.debug = true;
+			client.connect(server);
 
-		server.debug = true;
-		client.connect(server);
+		} else if (server.protocol === "sftp") {
+			Client = require("ssh2").Client;
+			client = new Client();
+			client.on("ready", function () {
+				client.sftp(function (err, sftp) {
+					if (err) {
+						cb(err);
+						
+					} else {
+						sftp.readdir(remoteRoot, function (err, list) {
+							if (err) {
+								cb(err);
+								client.end();
+							} else {
+								cb(null, list);
+								client.end();
+							}
+						});
+					}
+				});
+			}).connect({
+				host: server.host,
+				port: server.port,
+				username: server.user,
+				password: server.passphrase
+			});
+		}
 	};
 
 	logout = function (client) {
@@ -80,7 +107,7 @@
 				} else {
 					cb(null, true);
 				}
-				
+
 			});
 		});
 		client.connect(server);
@@ -98,6 +125,7 @@
 
 		client.once("ready", function () {
 			client.list(path, function (err, list) {
+				console.log(list);
 				logout(client);
 				if (err) {
 					cb(err);
@@ -127,7 +155,7 @@
 					var res = true;
 					cb(null, res);
 				}
-				
+
 			});
 		});
 		client.connect(server);
@@ -184,7 +212,7 @@
 			console.log("error", err);
 			logout(client);
 			if (err) {
-				
+
 				cb(err);
 			}
 		});
@@ -221,14 +249,14 @@
 						logout(client);
 						cb(null, true);
 					});
-					
+
 				}
-				
+
 			});
 		});
 		client.connect(serverSetting);
 	};
-	
+
 	/**
 	 * initialize
 	 */
@@ -370,7 +398,7 @@
 				type: "boolean"
 			}]
 		);
-		
+
 		domainManager.registerCommand(
 			"synapse",
 			"Download",
@@ -390,7 +418,7 @@
 				type: "boolean"
 			}]
 		);
-		
+
 		/**
 		 * register events
 		 */
