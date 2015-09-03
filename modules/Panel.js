@@ -1,4 +1,4 @@
-/*jslint node: true, vars: true, plusplus: true, devel: true, nomen: true, regexp: true, indent: 2, maxerr: 50 */
+/*jslint node: true, vars: true, plusplus: true, devel: true, nomen: true, regexp: true, indent: 2, maxerr: 50, browser: true */
 /*global define, $, brackets, Mustache, window, console */
 define(function (require, exports, module) {
 	"use strict";
@@ -14,6 +14,7 @@ define(function (require, exports, module) {
 	var Project = require("modules/Project");
 	var DialogCollection = require("modules/DialogCollection");
 	var FileTreeView = require("modules/FileTreeView");
+	var FileManager = require("modules/FileManager");
 	var SettingManager = require("modules/SettingManager");
 	var RemoteManager = require("modules/RemoteManager");
 	var Strings = require("strings");
@@ -24,7 +25,8 @@ define(function (require, exports, module) {
 			_projectState = Project.CLOSE,
 			_currentServerIndex = null,
 			_projectDir = null,
-			_domain = null;
+			_domain = null,
+			_currentPrivateKeyText = null;
 	/* endregion */
 
 	/* region Public methods */
@@ -36,6 +38,7 @@ define(function (require, exports, module) {
 			hideSpinner,
 			hideHeaderSpinner,
 			showMain,
+			getCurrentPrivateKeyText,
 			showSpinner,
 			connect,
 			showHeaderSpinner,
@@ -57,16 +60,22 @@ define(function (require, exports, module) {
 			_closeProject,
 			_toggleConnectBtn,
 			_removeServerSettingListRow,
+			_readPrivateKeyFile,
 	/* endregion */
 
 	/* region Event handler */
+			onProtocolGroup,
 			onClickConnectBtn,
 			onClickDeleteBtn,
 			onLeaveListBtns,
 			onEdit,
 			onEnterListBtns,
 			onClickEditBtn,
-			onProjectStateChanged;
+			onProjectStateChanged,
+			onPrivateKeySelected,
+
+			openFileSelect,
+			resetPrivateKey;
 	/* endregion */
 
 	/* region UI Parts */
@@ -113,6 +122,7 @@ define(function (require, exports, module) {
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/style.css");
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/treeview.css");
 	ExtensionUtils.loadStyleSheet(module, "../node_modules/font-awesome/css/font-awesome.min.css");
+
 	/* endregion */
 
 
@@ -393,7 +403,7 @@ define(function (require, exports, module) {
 	};
 
 	/**
-	 * Initialize server setting panel and some events of that.
+	 * Initialize server setting panel and some events;
 	 *
 	 * @returns {$.Promise}
 	 */
@@ -402,10 +412,26 @@ define(function (require, exports, module) {
 		var $serverSetting = $(html);
 		j.h.after($serverSetting);
 
+		$("button#choosePrivateKey").on("click", openFileSelect);
+		$("button#resetPrivateKey").on("click", resetPrivateKey);
+		$(".protocol-group", $serverSetting).on("click", onProtocolGroup);
 		$(".btn-add", $serverSetting).on("click", onEdit);
 		$(".btn-cancel", $serverSetting).on("click", _hideServerSetting);
 		$(".close-btn", $serverSetting).on("click", _hideServerSetting);
-		$("input", $serverSetting).on("blur", SettingManager.validateAll);
+		$("input[type='text']", $serverSetting).on("blur", SettingManager.validateAll);
+		$("input[type='password']", $serverSetting).on("blur", SettingManager.validateAll);
+		$("#synapse-server-privateKey").on("change", function() {
+			console.log("ok");
+		});
+
+		// reset protocol
+		$("#currentProtocol").val("ftp");
+		$("button.toggle-ftp").addClass("active");
+		$("button.toggle-sftp").removeClass("active");
+		// show ftp row
+		$(".sftp-row").hide();
+		$(".ftp-row").show();
+
 		return new $.Deferred().resolve().promise();
 	};
 
@@ -420,7 +446,7 @@ define(function (require, exports, module) {
 	};
 
 	/**
-	 * Initialize server list panel and some events of that.
+	 * Initialize server list panel and some events.
 	 *
 	 * @returns {$.Promise}
 	 */
@@ -441,7 +467,7 @@ define(function (require, exports, module) {
 		}
 		var list = SettingManager.getServerList();
 		var html = Mustache.render(server_list_html, {
-			serverList: list, 
+			serverList: list,
 			Strings: Strings
 		});
 		var $html = $(html);
@@ -464,7 +490,7 @@ define(function (require, exports, module) {
 			$("#synapse-server-list div.list").addClass("quiet-scrollbars");
 			deferred.resolve();
 		});
-		
+
 		return deferred.promise();
 
 	};
@@ -513,7 +539,7 @@ define(function (require, exports, module) {
 						$("#synapse-server-host").val("");
 						$("#synapse-server-user").val("");
 						$("#synapse-server-password").val("");
-						
+
 					}
 					return new $.Deferred().resolve().promise();
 				})
@@ -522,8 +548,7 @@ define(function (require, exports, module) {
 					j.s.removeClass("hide");
 					j.tvc.css({"border-top": "1px solid rgba(255, 255, 255, 0.05)"});
 					j.tvc.animate({
-						"top": (j.s.outerHeight() + 10) + j.h.outerHeight() + "px",
-						//"height": destHeight + "px"
+						"top": (j.s.outerHeight() + 10) + j.h.outerHeight() + "px"
 					}, "fast").promise().done(deferred.resolve);
 				});
 			return deferred.promise();
@@ -673,6 +698,44 @@ define(function (require, exports, module) {
 
 	/* Handlers */
 
+
+	onProtocolGroup = function (e) {
+		var $btn = $(e.target);
+		if (!$btn.hasClass("toggle-ftp") && !$btn.hasClass("toggle-sftp")) {
+			return;
+		}
+		var childs = $(".protocol-group", j.s).children();
+		_.forEach(childs, function (item) {
+			if ($(item).hasClass("toggle-ftp") || $(item).hasClass("toggle-sftp")) {
+				$(item).removeClass("active");
+			}
+		});
+
+		SettingManager.reset();
+		_currentPrivateKeyText = null;
+
+		if ($btn.hasClass("toggle-ftp")) {
+			$("#currentProtocol").val("ftp");
+			$("tr.ftp-row").show();
+			$("tr.sftp-row").hide();
+			$("#synapse-server-port").val("21");
+		} else if ($btn.hasClass("toggle-sftp")) {
+			$("#currentProtocol").val("sftp");
+			$("tr.ftp-row").hide();
+			$("tr.sftp-row").show();
+			$("#synapse-server-port").val("22");
+		}
+		var destHeight = j.m.outerHeight() - j.h.outerHeight() - (j.s.outerHeight() + 10);
+		j.s.removeClass("hide");
+		j.tvc.css({"border-top": "1px solid rgba(255, 255, 255, 0.05)"});
+		j.tvc.animate({
+			"top": (j.s.outerHeight() + 10) + j.h.outerHeight() + "px",
+		}, 100).promise().then(function () {
+			$btn.addClass("active");
+		});
+
+	};
+
 	onEdit = function (e) {
 		var $btn = $(e.currentTarget);
 		SettingManager.edit($btn.html());
@@ -773,11 +836,78 @@ define(function (require, exports, module) {
 		_projectDir = obj.directory;
 	};
 
+	openFileSelect = function (e) {
+		if ($("#synapse-server-privateKey").length) {
+			$("#synapse-server-privateKey").remove();
+		}
+		var $input = $("<input>").attr({type: "file", id: "synapse-server-privateKey"}).css({
+		"display": "none"});
+		$("div.privateKeyFileSelect > div").html($input);
+		$input.on("change", onPrivateKeySelected);
+		$input.click();
+	};
+
+	resetPrivateKey = function (e) {
+		if ($("#synapse-server-privateKey").length) {
+			$("#synapse-server-privateKey").remove();
+		}
+		$(".span2.privateKeyName").val("");
+		_currentPrivateKeyText = null;
+		SettingManager.validateAll();
+	};
+
+	onPrivateKeySelected = function (e) {
+		var reader = new FileReader();
+		var file = $(e.target).prop("files")[0];
+		var $keyName = $(".span2.privateKeyName", j.s);
+		_readPrivateKeyFile(file)
+		.then(function(res) {
+			var text = res;
+			var reg = new RegExp(/PRIVATE KEY/g);
+			if (!text.match(reg)) {
+				$keyName.val("").addClass("invalid");
+				_currentPrivateKeyText = null;
+			} else {
+				$keyName.removeClass("invalid");
+				$keyName.val(file.name);
+				_currentPrivateKeyText = res;
+			}
+		}, function () {
+			if ($("#synapse-server-privateKey").length) {
+				$("#synapse-server-privateKey").remove();
+			}
+			$keyName.val("").addClass("invalid");
+			_currentPrivateKeyText = null;
+			console.error("error");
+		}).always(function () {
+			SettingManager.validateAll();
+		});
+	};
+
+	_readPrivateKeyFile = function (file) {
+		var reader = new FileReader();
+		var deferred = new $.Deferred();
+		reader.onload = function (e) {
+			deferred.resolve(e.target.result);
+		};
+		reader.onerror = function () {
+			deferred.reject();
+		};
+		reader.readAsText(file);
+		return deferred.promise();
+	};
+
+	getCurrentPrivateKeyText = function () {
+		return _currentPrivateKeyText;
+	};
+
+
 	exports.init = init;
 	exports.showMain = showMain;
 	exports.showSpinner = showSpinner;
 	exports.hideSpinner = hideSpinner;
 	exports.showHeaderSpinner = showHeaderSpinner;
+	exports.getCurrentPrivateKeyText = getCurrentPrivateKeyText;
 	exports.hideHeaderSpinner = hideHeaderSpinner;
 	exports.reloadServerSettingList = reloadServerSettingList;
 	exports.showServerList = showServerList;
