@@ -176,7 +176,7 @@ define(function (require, exports, module) {
 		var deferred = new $.Deferred();
 		var promises = [];
 		var params = [];
-
+		
 		var depth = parent.depth + 1;
 		list.forEach(function (item, index) {
 			var type = (item.type === "d") ? "directory" : "file";
@@ -185,7 +185,7 @@ define(function (require, exports, module) {
 				type: type,
 				text: item.name,
 				size: item.size,
-				mode: item.rights.user,
+				mode: item.rights.user === null ? "": item.rights.user,
 				date: item.date,
 				depth: depth,
 				index: index,
@@ -287,6 +287,9 @@ define(function (require, exports, module) {
 			return deferred.reject().promise();
 		}
 		var remotePath = PathManager.completionRemotePath(_getPathArray(_ctxMenuCurrentEntity));
+		
+		console.log(remotePath);
+		
 		DialogCollection.showYesNoModal(
 				"removeDirectoryDialog",
 				"Confirm",
@@ -895,14 +898,13 @@ define(function (require, exports, module) {
 	
 	onClick = function (e) {
 		var $elem = $(e.target);
-		/**
-		 * Directory Clicked
-		 */
+		
 		if ($elem.hasClass("treeview-contents") || $elem.hasClass("filename") || $elem.hasClass("fa")) {
 			$elem = $elem.parent().parent();
 		} else if ($elem.hasClass("treeview-row")) {
 			$elem = $elem.parent();
 		}
+		
 		if ($elem.hasClass("treeview-directory") || $elem.hasClass("treeview-root")) {
 			onDirClicked($elem);
 		}
@@ -919,6 +921,7 @@ define(function (require, exports, module) {
 	onDirClicked = function ($elem) {
 		var id = $elem.attr("id");
 		var entity = _getEntityWithId(id);
+		
 		if ($elem.hasClass("loaded")) {
 			_toggleDir(entity);
 		} else {

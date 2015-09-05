@@ -110,6 +110,8 @@ define(function (require, exports, module) {
 			displayKey: "Ctrl-Shift-Alt-Enter"
 		});
 		topMenu.addMenuDivider();
+		
+		setDebugMenu();
 	};
 	
 	setDebugMenu = function () {
@@ -169,6 +171,7 @@ define(function (require, exports, module) {
 	/* for Debug */
 	_nodeConnection = new NodeConnection();
 	_nodeConnection.connect(true);
+	
 	
 	exports.setRootMenu = setRootMenu;
 	exports.initTreeViewContextMenu = initTreeViewContextMenu;

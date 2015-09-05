@@ -52,12 +52,12 @@ define(function (require, exports, module) {
 	var regexp = {
 		host: null,
 		port: null,
-		path: null
+		path: null,
+		unix_path: null,
+		win_path: null
 	};
 
-
 	/* Public Methods */
-
 	init = function (_domain) {
 		var deferred = new $.Deferred();
 		domain = _domain;
@@ -66,7 +66,7 @@ define(function (require, exports, module) {
 		regexp.host = new RegExp("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])$");
 		regexp.port = new RegExp("[1-65535]");
 		regexp.unix_path = new RegExp("^$|^\\.\\/.*?|^\\/.*?");
-		regexp.win_path = new RegExp("^[a-z]\\:\\\.*?");
+		regexp.win_path = new RegExp("^[a-zA-Z]\\:\\\.*?");
 		var $file = $("#synapse-server-privateKey");
 		$file.parent().html($file.parent().html());
 		$("input[type='text'], input[type='password']", $serverSetting).val("").removeClass("invalid");
@@ -77,12 +77,15 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 
-
-
 	edit = function (state) {
 		var deferred = new $.Deferred();
 		var setting = validateAll();
+		
 		setting.protocol = $("#currentProtocol").val();
+		if (setting.protocol === "sftp") {
+			setting.auth = $("#currentAuth").val();
+		}
+		
 		if (setting !== false) {
 			_appendServerBtnState("disabled");
 			FileManager.savePrivateKey(state, setting, Panel.getCurrentPrivateKeyText())
@@ -113,23 +116,42 @@ define(function (require, exports, module) {
 			host 				: {form: $("#synapse-server-host", $serverSetting), icon: $("i.fa-desktop"), invalid: false},
 			port 				: {form: $("#synapse-server-port", $serverSetting), icon: $("i.fa-plug"), invalid: false},
 			user 				: {form: $("#synapse-server-user", $serverSetting), icon: $("i.fa-user"), invalid: false},
-			password		: {form: $("#synapse-server-password", $serverSetting),icon: $("i.fa-unlock-alt"), invalid: false},
+			password		: {form: $("#synapse-server-password", $serverSetting),icon: $("i.fa-unlock"), invalid: false},
 			dir	 				: {form: $("#synapse-server-dir", $serverSetting), icon: $("i.fa-sitemap"), invalid: false},
 			exclude			: {form: $("#synapse-server-exclude", $serverSetting), icon: $("i.fa-ban"), invalid: false}
 		};
-		var sftp = {
+		var sftpKey = {
 			host 				: {form: $("#synapse-server-host", $serverSetting), icon: $("i.fa-desktop"), invalid: false},
 			port 				: {form: $("#synapse-server-port", $serverSetting), icon: $("i.fa-plug"), invalid: false},
 			user 				: {form: $("#synapse-server-user", $serverSetting), icon: $("i.fa-user"), invalid: false},
-			passphrase	: {form: $("#synapse-server-passphrase", $serverSetting),icon: $("i.fa-unlock-alt"), invalid: false},
 			privateKey	: {form: $(".span2.privateKeyName", $serverSetting), icon: $("i.fa-key"), invalid: false},
+			passphrase	: {form: $("#synapse-server-passphrase", $serverSetting), icon: $("i.fa-unlock-alt"), invalid: false},
+			dir	 				: {form: $("#synapse-server-dir", $serverSetting), icon: $("i.fa-sitemap"), invalid: false},
+			exclude			: {form: $("#synapse-server-exclude", $serverSetting), icon: $("i.fa-ban"), invalid: false}
+		};
+		var sftpPassword = {
+			host 				: {form: $("#synapse-server-host", $serverSetting), icon: $("i.fa-desktop"), invalid: false},
+			port 				: {form: $("#synapse-server-port", $serverSetting), icon: $("i.fa-plug"), invalid: false},
+			user 				: {form: $("#synapse-server-user", $serverSetting), icon: $("i.fa-user"), invalid: false},
+			password		: {form: $("#synapse-server-password", $serverSetting),icon: $("i.fa-unlock"), invalid: false},
 			dir	 				: {form: $("#synapse-server-dir", $serverSetting), icon: $("i.fa-sitemap"), invalid: false},
 			exclude			: {form: $("#synapse-server-exclude", $serverSetting), icon: $("i.fa-ban"), invalid: false}
 		};
 
 		var currentProtocol = $("#currentProtocol").val();
-
-		var values = currentProtocol === "ftp" ? ftp : sftp;
+		var auth = $("#currentAuth").val();
+		
+		var values = "";
+		if (currentProtocol === "ftp") {
+			values = ftp;
+		} else if (currentProtocol === "sftp") {
+			if (auth === "key") {
+				values = sftpKey;
+			} else if (auth === "password") {
+				values = sftpPassword;
+			}
+		}
+		
 		var keys = Object.keys(values);
 
 		keys.forEach(function (key) {
@@ -183,11 +205,11 @@ define(function (require, exports, module) {
 		if (prop === "password") {
 			return value !== "";
 		}
-		if (prop === "passphrase") {
-			return value !== "";
-		}
 		if (prop === "privateKey") {
 			return value !== "";
+		}
+		if (prop === "passphrase") {
+			return true;
 		}
 		if (prop === "dir") {
 			return value === "" || (value.match(regexp.unix_path) || value.match(regexp.win_path));
@@ -249,7 +271,6 @@ define(function (require, exports, module) {
 
 
 	/* Private Methods */
-
 	_appendServerBtnState = function (state) {
 		var dev_null = null;
 		var _state = state;
@@ -291,10 +312,26 @@ define(function (require, exports, module) {
 				index,
 				temp = [];
 
+		
 		if (setting.dir.length > 1) {
 			if (setting.dir.slice(-1) === "/") {
 				setting.dir = setting.dir.slice(0, -1);
 			}
+		}
+		if (setting.protocol === "sftp") {
+			setting.dir = setting.dir === "" ? "./" : setting.dir;
+			if (setting.auth === "key") {
+				delete setting.password;
+			} else
+			if (setting.auth === "password") {
+				delete setting.privateKey;
+				delete setting.passphrase;
+			}
+		}
+		
+		if (setting.protocol === "ftp") {
+			delete setting.passphrase;
+			delete setting.privateKey;
 		}
 
 		if (state === "UPDATE") {
@@ -384,10 +421,8 @@ define(function (require, exports, module) {
 		var remotePath = server.dir === "" ? "./" : server.dir;
 
 		Panel.showHeaderSpinner();
-
 		domain.exec("Connect", server, remotePath)
 			.done(function (list) {
-				console.log(list);
 				deferred.resolve();
 			})
 			.fail(function (err) {
@@ -399,7 +434,7 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 
-
+	
 
 	exports.init = init;
 	exports.edit = edit;

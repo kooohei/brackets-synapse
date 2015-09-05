@@ -17,7 +17,7 @@ define(function (require, exports, module) {
 			_currentServerSetting;
 	/* endregion */
 
-	/* region Public vars */
+	/* region Public methods */
 	var init,
 			clear,
 			connect,
@@ -54,7 +54,10 @@ define(function (require, exports, module) {
 	/* endregion */
 
 
-	/* Public Methods */
+	/* region Private method */
+	var _convObjectLikeFTP;
+	/* endretion */
+	
 
 	init = function (domain) {
 		_domain = domain;
@@ -90,7 +93,7 @@ define(function (require, exports, module) {
 			return list;
 		}
 	};
-
+	
 	connect = function (serverSetting) {
 		var deferred =  new $.Deferred();
 		var _rootEntity = FileTreeView.loadTreeView(serverSetting);
@@ -100,17 +103,21 @@ define(function (require, exports, module) {
 		var remoteRoot = PathManager.getRemoteRoot();
 		_domain.exec("Connect", serverSetting, remoteRoot)
 		.then(function (list) {
+			if (serverSetting.protocol === "sftp") {
+				list = _convObjectLikeFTP(list);
+			}
 			list = getListIgnoreExclude(serverSetting, list);
+			
 			return FileTreeView.setEntities(list, _rootEntity);
 		}, function (err) {
 			console.error(err);
-			throw new Error(err);
+			//throw new Error(err);
 		})
 		.then(function (list) {
 			return Project.open(serverSetting);
 		}, function (err) {
 			console.error(err);
-			throw new Error(err);
+			//throw new Error(err);
 		})
 		.then(function () {
 			_currentServerSetting = serverSetting;
@@ -118,7 +125,7 @@ define(function (require, exports, module) {
 			deferred.resolve(result);
 		}, function (err) {
 			console.error(err);
-			throw new Error(err);
+			//throw new Error(err);
 		})
 		.always(function () {
 			Panel.hideSpinner();
@@ -127,13 +134,20 @@ define(function (require, exports, module) {
 	};
 
 	getList = function (entity, serverSetting, remotePath) {
-
 		var deferred = new $.Deferred();
+		Panel.showHeaderSpinner();
 		_domain.exec("List", serverSetting, remotePath)
 			.then(function (list) {
+				if (serverSetting.protocol === "sftp") {
+					list = _convObjectLikeFTP(list);
+				}
 				list = getListIgnoreExclude(serverSetting, list);
 				deferred.resolve(list);
-			}, deferred.reject);
+			}, function (err) {
+				console.log(err);
+			}).always(function () {
+				Panel.hideHeaderSpinner();
+			});
 		return deferred.promise();
 	};
 
@@ -197,6 +211,76 @@ define(function (require, exports, module) {
 				deferred.resolve(true);
 			}, deferred.reject);
 		return deferred.promise();
+	};
+	
+	
+	_convObjectLikeFTP = function (ents) {
+		var list = [];
+		_.forEach(ents, function (ent) {
+			var obj = {},
+			octMode = ent.attrs.mode.toString(8),
+			owner = "";
+	
+			function getTime(ts) {
+				var timestamp = ts;
+				var date = new Date(timestamp * 1000);
+				return date.toISOString();
+			}
+			function digitToString(digit) {
+				var res = "";
+				switch (digit) {
+					case '7':
+						res = "rwx";
+						break;
+					case '6':
+						res = "rw";
+						break;
+					case '5':
+						res = "rx";
+						break;
+					case '4':
+						res = "r";
+						break;
+					case '3':
+						res = "wx";
+						break;
+					case '2':
+						res = "w";
+						break;
+					case '1':
+						res = "x";
+						break;
+					case '0':
+						res = "";
+						break;
+				}
+				return res;
+			}
+			
+			var tmp = "";
+			if (octMode.charAt(0) === "1") {
+				tmp = octMode.substr(3);
+				obj.type = "";
+			} else {
+				tmp = octMode.substr(2);
+				obj.type = "d";
+			}
+			var rights = {};
+			rights.user = digitToString(tmp.charAt(0));
+			rights.group = digitToString(tmp.charAt(1));
+			rights.other = digitToString(tmp.charAt(2));
+			
+			obj.acl = false;
+			obj.owner = ent.attrs.uid;
+			obj.group = ent.attrs.gid;
+			obj.rights = rights;
+			obj.name = ent.filename;
+			obj.size = ent.attrs.size;
+			obj.date = getTime(ent.attrs.mtime);
+			obj.sticky = false;
+			list.push(obj);
+		});
+		return list;
 	};
 
 

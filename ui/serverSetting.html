@@ -17,6 +17,18 @@
 				</div>
 			</td>
 		</tr>
+		<tr class="sftp-row">
+			<th>
+				<i class="fa fa-sign-in" style="color:#c2d3e6"></i>
+			</th>
+			<td>
+				<input type="hidden" id="currentAuth" value="key">
+				<div class="btn-group auth-group">
+					<button type="button" class="btn small toggle-password">PASSWORD AUTH</button>
+					<button type="button" class="btn small toggle-key active">KEY AUTH</button>
+				</div>
+			</td>
+		</tr>
 		<tr>
 			<th>
 				<i class="fa fa-desktop"></i>
@@ -41,23 +53,15 @@
 				<input type="text" id="synapse-server-user" placeholder="{{Strings.SYNAPSE_SETTING_PH_USER}}">
 			</td>
 		</tr>
-		<tr class="ftp-row">
+		<tr class="password-row">
 			<th>
-				<i class="fa fa-unlock-alt"></i>
+				<i class="fa fa-unlock"></i>
 			</th>
 			<td>
 				<input type="password" id="synapse-server-password" placeholder="{{Strings.SYNAPSE_SETTING_PH_PASSWORD}}">
 			</td>
 		</tr>
-		<tr class="sftp-row">
-			<th>
-				<i class="fa fa-unlock-alt"></i>
-			</th>
-			<td>
-				<input type="password" id="synapse-server-passphrase" placeholder="{{Strings.SYNAPSE_SETTING_PH_PASSPHRASE}}">
-			</td>
-		</tr>
-		<tr class="sftp-row">
+		<tr class="sftp-row key-row">
 			<th>
 				<i class="fa fa-key"></i>
 			</th>
@@ -70,6 +74,14 @@
 					<button id="choosePrivateKey" class="btn" type="button"><i class="fa fa-search"></i></button>
 					<button id="resetPrivateKey" class="btn" type="button"><i class="fa fa-refresh"></i></button>
 				</div>
+			</td>
+		</tr>
+		<tr class="sftp-row passphrase-row">
+			<th>
+				<i class="fa fa-unlock-alt"></i>
+			</th>
+			<td>
+				<input type="password" id="synapse-server-passphrase" placeholder="{{Strings.SYNAPSE_SETTING_PH_PASSPHRASE}}">
 			</td>
 		</tr>
 		<tr>
@@ -85,7 +97,7 @@
 				<i class="fa fa-ban"></i>
 			</th>
 			<td>
-				<input type="text" id="synapse-server-exclude" placeholder="{{Strings.SYNAPSE_SETTING_PH_EXCLUDEFILES}}"><br>
+				<input type="text" id="synapse-server-exclude" placeholder="{{Strings.SYNAPSE_SETTING_PH_EXCLUDEFILES}}" value=".,.."><br>
 			</td>
 		</tr>
 	</table>

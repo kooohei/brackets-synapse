@@ -46,23 +46,31 @@ define(function (require, exports, module) {
 	};
 
 	setRemoteRoot = function (_path) {
-		// '(^)./', '/.(.*n)/', '/./', '/..$', '/../$'
-		if (_path.match(/(^\.+\/|\/\.+\/|\/\.\/|\/\.\.\/?$)/g)) {
+		// '/.(.*n)/', '/./', '/..$', '/../$'
+		
+		
+		if (_path.match(/(\/\.+\/|\/\.\/|\/\.\.\/?$)/g) && _path !== "./") {
 			throw new Error("path is invalid");
 		}
 		isRelative = (_path.charAt(0) !== "/");
-		remoteRoot = _path.split('/').filter(function (item) {
-			return (item !== "") && (item !== ".") && (item !== "..");
-		});
+		if (_path === "./") {
+			remoteRoot = "./";
+		} else {
+			remoteRoot = _path.split('/').filter(function (item) {
+				return (item !== "") && (item !== ".") && (item !== "..");
+			});
+		}
 	};
 
 	getRemoteRoot = function () {
+		console.log({remoteRooot: remoteRoot, isRelative: isRelative});
 		var tmp = [].concat(remoteRoot);
 		return ((isRelative) ? "" : "/") + tmp.join("/");
 	};
 
 	completionRemotePath = function (pathAry) {
 		var remotePath = getRemoteRoot();
+		console.log(remotePath);
 		if (pathAry === false || pathAry.length === 0) {
 			return remotePath;
 		}
@@ -70,6 +78,8 @@ define(function (require, exports, module) {
 			return pathAry.join("/");
 		} else if (remotePath === "/") {
 			return "/" + pathAry.join("/");
+		} else if (remotePath === "./") {
+			return remotePath + pathAry.join("/");
 		} else {
 			return remotePath + "/" + pathAry.join("/");
 		}

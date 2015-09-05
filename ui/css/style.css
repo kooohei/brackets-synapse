@@ -123,6 +123,9 @@
 #synapse-server-setting table td div.protocol-group > button.active {
 	background: #518dbf;
 }
+#synapse-server-setting table td div.auth-group > button.active {
+	background: #4ca263;
+}
 #synapse-server-setting table td input[type=text],
 #synapse-server-setting table td input[type=password] {
 	border: 1px solid #202020;
