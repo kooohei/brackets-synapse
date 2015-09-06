@@ -3,7 +3,6 @@
 define(function (require, exports, module) {
 	"use strict";
 	
-	/* region Modules */
 	var NodeConnection = brackets.getModule("utils/NodeConnection");
 	var Menus = brackets.getModule("command/Menus");
 	var CommandManager = brackets.getModule("command/CommandManager");
@@ -14,27 +13,23 @@ define(function (require, exports, module) {
 	var Panel = require("modules/Panel");
 	var FileTreeView = require("modules/FileTreeView");
 	var Strings = require("strings");
-	/* endregion */
 	
 	/* region Public vars */
 	var treeViewContextMenu = null;
-	/* endregion */
 	
 	/* region Private vars */
 	var _nodeConnection = null;
-	/* endregion */
 	
 	/* region Public methods */
-	var initTreeViewContextMenu,
+	var showMainPanel,
+			initTreeViewContextMenu,
 			setRootMenu,
 			setDebugMenu,
 			reloadBrackets,
 			treeViewContextMenuState;
-	/* endregion */
 	
 	/* region Private methods */
 	var _disableTreeViewContextMenuAllItem;
-	/* endregion */
 	
 	/* region Static objects */
 	var ContextMenuIds = {
@@ -54,7 +49,6 @@ define(function (require, exports, module) {
 			SYNAPSE_CTX_FILE_RENAME: Strings.SYNAPSE_CTX_FILE_RENAME,
 			SYNAPSE_CTX_DELETE: Strings.SYNAPSE_CTX_DELETE
 	};
-	/* endregion */
 	
 	/* region enable flags */
 	var Open_TreeView_Context_Menu_On_Directory_State = [
@@ -73,9 +67,13 @@ define(function (require, exports, module) {
 			ContextMenuCommandIds.SYNAPSE_DIRECTORY_NEW,
 			ContextMenuCommandIds.SYNAPSE_FILE_REFRESH
 		];
-	/* endregion */
 	
 	/* Public Methods */
+	
+	showMainPanel = function() {
+		CommandManager.execute("kohei.synapse.mainPanel");
+	};
+	
 	treeViewContextMenuState = function (entity) {
 		_disableTreeViewContextMenuAllItem();
 
@@ -172,7 +170,7 @@ define(function (require, exports, module) {
 	_nodeConnection = new NodeConnection();
 	_nodeConnection.connect(true);
 	
-	
+	exports.showMainPanel = showMainPanel;
 	exports.setRootMenu = setRootMenu;
 	exports.initTreeViewContextMenu = initTreeViewContextMenu;
 	exports.ContextMenuCommandIds = ContextMenuCommandIds;

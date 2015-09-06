@@ -3,6 +3,6 @@
   "dependencies": {
     "ftp": "0.3.10",
     "node-sftp": "^0.1.1",
-    "ssh2": "^0.4.11"
+    "ssh2": "latest"
   }
 }

@@ -3,33 +3,44 @@
 define(function (require, exports, module) {
 	"use strict";
 	
-	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
-	var AppInit = brackets.getModule("utils/AppInit");
-	var NodeDomain = brackets.getModule("utils/NodeDomain");
-	var CommandManager = brackets.getModule("command/CommandManager");
-	var PathManager = require("modules/PathManager");
-	var Menu = require("modules/Menu");
-	var Panel = require("modules/Panel");
-	var SettingManager = require("modules/SettingManager");
-	var FileTreeView = require("modules/FileTreeView");
-	var RemoteManager = require("modules/RemoteManager");
-	var FileManager = require("modules/FileManager");
-	var $icon = null;
-	var COMMAND_ID = "kohei.synapse.mainPanel";
+	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils"),
+			AppInit = brackets.getModule("utils/AppInit"),
+			NodeDomain = brackets.getModule("utils/NodeDomain"),
+			CommandManager = brackets.getModule("command/CommandManager"),
+			PathManager = require("modules/PathManager"),
+			Menu = require("modules/Menu"),
+			Panel = require("modules/Panel"),
+			SettingManager = require("modules/SettingManager"),
+			FileTreeView = require("modules/FileTreeView"),
+			RemoteManager = require("modules/RemoteManager"),
+			FileManager = require("modules/FileManager"),
+			COMMAND_ID = "kohei.synapse.mainPanel",
+			$icon = null,
+			$brackets = {
+				get toolbar() {
+					return $("#main-toolbar .buttons");
+				},
+				get projectFilesContainer() {
+					return $("#project-files-container");
+				},
+				get sidebar() {
+					return $("#sidebar");
+				}
+			};
 	
+	var setAppIcon = function () {
+		var d = new $.Deferred(),
+				icon = $("<a id='synapse-icon' href='#' title='Synapse'>")
+				.addClass("diabled")
+				.on("click", Menu.showMainPanel)
+				.appendTo($brackets.toolbar);
+		return d.resolve().promise();
+	};
 	
 	AppInit.appReady(function () {
 		var domain = new NodeDomain("synapse", ExtensionUtils.getModulePath(module, "node/SynapseDomain"));
 		
-		$icon = $("<a/>")
-			.attr("id", "synapse-icon")
-			.attr("href", "#")
-			.attr("title", "Synapse")
-			.addClass("disabled")
-			.on("click", function () {
-				CommandManager.execute(COMMAND_ID);
-			})
-			.appendTo($("#main-toolbar .buttons"));
+		setAppIcon();
 		
 		Panel.init(domain)
 		.then(PathManager.init)
