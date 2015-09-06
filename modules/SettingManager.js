@@ -269,7 +269,6 @@ define(function (require, exports, module) {
 		return res;
 	};
 
-
 	/* Private Methods */
 	_appendServerBtnState = function (state) {
 		var dev_null = null;
@@ -312,8 +311,7 @@ define(function (require, exports, module) {
 				index,
 				temp = [];
 
-		
-		if (setting.dir.length > 1) {
+		if (setting.dir.length > 1 && setting.dir !== "./") {
 			if (setting.dir.slice(-1) === "/") {
 				setting.dir = setting.dir.slice(0, -1);
 			}
@@ -420,7 +418,7 @@ define(function (require, exports, module) {
 		var deferred = new $.Deferred();
 		var remotePath = server.dir === "" ? "./" : server.dir;
 
-		Panel.showHeaderSpinner();
+		Panel.showSpinner();
 		domain.exec("Connect", server, remotePath)
 			.done(function (list) {
 				deferred.resolve();
@@ -429,7 +427,7 @@ define(function (require, exports, module) {
 				deferred.reject(err);
 			})
 			.always(function () {
-				Panel.hideHeaderSpinner();
+				Panel.hideSpinner();
 			});
 		return deferred.promise();
 	};

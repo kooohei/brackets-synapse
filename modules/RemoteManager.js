@@ -28,7 +28,8 @@ define(function (require, exports, module) {
 			download,
 			mkdir,
 			removeDirectory,
-			deleteFile;
+			deleteFile
+			;
 	/* endregion */
 
 	/* region Static vars */
@@ -69,23 +70,33 @@ define(function (require, exports, module) {
 		jq.tv.html("");
 	};
 
+	
+	
 	getListIgnoreExclude = function (serverSetting, list) {
-		if (serverSetting.exclude === undefined) {
+		if (serverSetting.exclude === undefined || serverSetting.exclude  === "") {
 			serverSetting.exclude = "";
+			return list;
 		}
+		
+		
+		function isExclude (ptnAry, filename) {
+			var _isExclude = false;
+			_.forEach(ptnAry, function (ptn) {
+				ptn = ptn.replace(/\./g, "\\.");
+				ptn = ptn.replace(/\*/g, ".*");
+				var regexp = new RegExp(ptn);
+				_isExclude = filename.match(regexp);
+				return false;
+			});
+			return _isExclude;
+		}
+		
 		var ary = serverSetting.exclude.split(",");
 		var tmp = [];
 		if (ary.length > 0) {
-			_.forEach(list, function (file) {
-				var flag = false;
-				_.forEach(ary, function (ex) {
-					if (ex === file.name) {
-						flag = true;
-						return false;
-					}
-				});
-				if (!flag) {
-					tmp.push(file);
+			_.forEach(list, function (ent) {
+				if (!isExclude(ary, ent.name)) {
+					tmp.push(ent);
 				}
 			});
 			return tmp;
@@ -135,18 +146,21 @@ define(function (require, exports, module) {
 
 	getList = function (entity, serverSetting, remotePath) {
 		var deferred = new $.Deferred();
-		Panel.showHeaderSpinner();
+		Panel.showSpinner();
 		_domain.exec("List", serverSetting, remotePath)
 			.then(function (list) {
 				if (serverSetting.protocol === "sftp") {
 					list = _convObjectLikeFTP(list);
 				}
-				list = getListIgnoreExclude(serverSetting, list);
+				_.forEach(list, function (row) {
+					console.log(row);
+				});
+				//list = getListIgnoreExclude(serverSetting, list);
 				deferred.resolve(list);
 			}, function (err) {
 				console.log(err);
 			}).always(function () {
-				Panel.hideHeaderSpinner();
+				Panel.hideSpinner();
 			});
 		return deferred.promise();
 	};

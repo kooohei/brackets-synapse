@@ -34,7 +34,6 @@
     "url": "https://github.com/kooohei/brackets-synapse/issues"
   },
   "dependencies": {
-    "bootstrap-toggle": "^2.2.1",
     "font-awesome": "latest",
     "moment": "^2.10.6"
   }

@@ -36,13 +36,11 @@ define(function (require, exports, module) {
 			closeProject,
 			reloadServerSettingList,
 			hideMain,
+			showSpinner,
 			hideSpinner,
-			hideHeaderSpinner,
 			showMain,
 			getCurrentPrivateKeyText,
-			showSpinner,
 			connect,
-			showHeaderSpinner,
 			showServerList,
 	/* endregion */
 
@@ -186,44 +184,16 @@ define(function (require, exports, module) {
 	};
 
 	/**
-	 * Show progress spinner on the tree view when connected to server.
-	 */
-	showSpinner = function () {
-		var $spinnerContainer = $("#synapse .spinnerContainer");
-		var $spinner = $("#synapse .spinner");
-		if ($spinnerContainer.hasClass("hide")) {
-			$spinnerContainer.removeClass("hide");
-			if (!$spinner.hasClass("spin")) {
-				$spinner.addClass("spin");
-			}
-		}
-	};
-
-	/**
-	 * Hide progress spinner on the tree view when disconnected from server.
-	 */
-	hideSpinner = function () {
-		var $spinnerContainer = $("#synapse .spinnerContainer");
-		var $spinner = $("#synapse .spinner");
-		if (!$spinnerContainer.hasClass("hide")) {
-			$spinnerContainer.addClass("hide");
-			if ($spinner.hasClass("spin")) {
-				$spinner.removeClass("spin");
-			}
-		}
-	};
-
-	/**
 	 * Show progress spinner on the header when connected to server.
 	 */
-	showHeaderSpinner = function () {
+	showSpinner = function () {
 		$("#synapse-header .spinner").addClass("spin").removeClass("hide");
 	};
 
 	/**
-	 * Hide Progress spinner on header when the disconnected from server.
+	 * Hide Progress spinner when the connection.
 	 */
-	hideHeaderSpinner = function () {
+	hideSpinner = function () {
 		$("#synapse-header .spinner").addClass("hide").removeClass("spin");
 	};
 
@@ -601,7 +571,7 @@ define(function (require, exports, module) {
 			return deferred.resolve().promise();
 		}
 		
-		hideHeaderSpinner();
+		hideSpinner();
 		
 		var destHeight = j.m.outerHeight() - j.h.outerHeight();
 		j.tvc.animate({
@@ -627,7 +597,7 @@ define(function (require, exports, module) {
 			return deferred.reject("unexpected error").promise();
 		}
 		
-		hideHeaderSpinner();
+		hideSpinner();
 		
 		var destHeight = j.m.outerHeight() - j.h.outerHeight();
 		j.tvc.animate({
@@ -996,9 +966,7 @@ define(function (require, exports, module) {
 	exports.showMain = showMain;
 	exports.showSpinner = showSpinner;
 	exports.hideSpinner = hideSpinner;
-	exports.showHeaderSpinner = showHeaderSpinner;
 	exports.getCurrentPrivateKeyText = getCurrentPrivateKeyText;
-	exports.hideHeaderSpinner = hideHeaderSpinner;
 	exports.reloadServerSettingList = reloadServerSettingList;
 	exports.showServerList = showServerList;
 });
