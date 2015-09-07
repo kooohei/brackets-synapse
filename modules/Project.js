@@ -56,14 +56,18 @@ define(function (require, exports, module) {
 	var OPEN = true,
 			CLOSE = false,
 			PROJECT_STATE_CHANGED = "PROJECT_STATE_CHANGED",
-			Connection = {
+			STATE = {
 				_state: CLOSE,
-				get state() {
-					return this._state;
+				isOpen: function () {
+					return this._state === OPEN;
 				},
-				set state(val) {
-					this._state = val;
-					exports.trigger(PROJECT_STATE_CHANGED, {state: this._state, directory: _projectDir});
+				setOpen: function () {
+					this._state = OPEN;
+					exports.trigger(PROJECT_STATE_CHANGED, {state: OPEN, directory: _projectDir});
+				},
+				setClose: function () {
+					this._state = CLOSE;
+					exports.trigger(PROJECT_STATE_CHANGED, {state: CLOSE, directory: _projectDir});
 				}
 			};
 	/* endregion */
@@ -148,11 +152,11 @@ define(function (require, exports, module) {
 				return ProjectManager.openProject(_projectDir.fullPath)
 					.then(function () {
 						//console.log("promise is done when the called openProject");
-						Connection.state = OPEN;
+						STATE.setOpen();
 						return new $.Deferred().resolve().promise();
 					}, function (err) {
 						//console.log("promise is fail when the called openProject");
-						Connection.state = CLOSE;
+						STATE.setClose();
 						return new $.Deferred().reject(err).promise();
 					});
 			})
@@ -170,7 +174,7 @@ define(function (require, exports, module) {
 		FileTreeView.clearCurrentTree()
 		.then(_removeProjectDirectoryFromRecent)
 		.then(function () {
-			Connection.state = CLOSE;
+			STATE.setClose();
 			deferred.resolve();
 		});
 		return deferred.promise();
@@ -182,7 +186,7 @@ define(function (require, exports, module) {
 	 * @returns {$.Promise}
 	 */
 	closeProject = function () {
-		if (Connection.state === OPEN) {
+		if (STATE.isOpen()) {
 			return ProjectManager.openProject(_fallbackProjectRoot);
 		}
 	};
@@ -193,7 +197,7 @@ define(function (require, exports, module) {
 	 * @returns {$.Promise} 
 	 */
 	isOpen = function () {
-		return Connection.state;
+		return STATE.isOpen();
 	};
 	
 	/**
@@ -204,7 +208,7 @@ define(function (require, exports, module) {
 	getOpenProjectDocuments = function () {
 		var deferred = new $.Deferred();
 		var tmp = [];
-		if (Connection.state) {
+		if (STATE.isOpen()) {
 			var files = MainViewManager.getAllOpenFiles();
 			_.forEach(files, function (file) {
 				tmp.push(DocumentManager.getOpenDocumentForPath(file.fullPath));
@@ -219,7 +223,7 @@ define(function (require, exports, module) {
 	 * @returns {MIX} 
 	 */
 	getServerSetting = function () {
-		if (Connection.state === OPEN) {
+		if (STATE.isOpen()) {
 			return _currentServer;
 		} else {
 			return false;
@@ -403,6 +407,7 @@ define(function (require, exports, module) {
 	exports.closeProject = closeProject;
 	exports.OPEN = OPEN;
 	exports.CLOSE = CLOSE;
+	exports.STATE = STATE;
 	exports.PROJECT_STATE_CHANGED = PROJECT_STATE_CHANGED;
 	exports.getOpenProjectDocuments = getOpenProjectDocuments;
 	exports.getServerSetting = getServerSetting;
