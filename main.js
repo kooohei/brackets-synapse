@@ -7,6 +7,7 @@ define(function (require, exports, module) {
 			AppInit = brackets.getModule("utils/AppInit"),
 			NodeDomain = brackets.getModule("utils/NodeDomain"),
 			CommandManager = brackets.getModule("command/CommandManager"),
+			
 			PathManager = require("modules/PathManager"),
 			Menu = require("modules/Menu"),
 			Panel = require("modules/Panel"),
@@ -14,9 +15,9 @@ define(function (require, exports, module) {
 			FileTreeView = require("modules/FileTreeView"),
 			RemoteManager = require("modules/RemoteManager"),
 			FileManager = require("modules/FileManager"),
-			COMMAND_ID = "kohei.synapse.mainPanel",
-			$icon = null,
-			$brackets = {
+			COMMAND_ID = "kohei.synapse.mainPanel";
+			
+	var $brackets = {
 				get toolbar() {
 					return $("#main-toolbar .buttons");
 				},
@@ -28,21 +29,26 @@ define(function (require, exports, module) {
 				}
 			};
 	
-	var setAppIcon = function () {
+	
+	var setAppIcon = function (_domain) {
 		var d = new $.Deferred(),
-				icon = $("<a id='synapse-icon' href='#' title='Synapse'>")
+				icon = $("<a>")
+				.attr({
+					id:"synapse-icon",
+					"href": "#", 
+					"title": "Synapse"
+				})
 				.addClass("diabled")
 				.on("click", Menu.showMainPanel)
 				.appendTo($brackets.toolbar);
-		return d.resolve().promise();
+		return d.resolve(_domain).promise();
 	};
+	
 	
 	AppInit.appReady(function () {
 		var domain = new NodeDomain("synapse", ExtensionUtils.getModulePath(module, "node/SynapseDomain"));
-		
-		setAppIcon();
-		
-		Panel.init(domain)
+		setAppIcon(domain)
+		.then(Panel.init)
 		.then(PathManager.init)
 		.then(SettingManager.init)
 		.then(RemoteManager.init)
