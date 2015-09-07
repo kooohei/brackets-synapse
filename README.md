@@ -15,11 +15,16 @@ Synapse is Adobe Brackets extension. it will be provided useful function to you.
 
 #### Append Server setting ####
 
-Register the your FTP account to the extension.
+Register the your FTP, SFTP account to the extension.
 
 1. Click "+" button. there is top of the panel.
 2. You must be input to Host, Port User, Password.
-3. Input to the forms. "Host", "Port", "User" and "Password" is not allowed empty value.
+3. Switch the forms after Choose protocol the FTP or SFTP
+4. **FTP:** Input to the forms. "Host", "Port", "User" and "Password" is not allowed empty value.<br>**SFTP:** choose auth method whether KEY of PASSWORD, you should be selected private key file and should be input to passphrase if it need.
+	 
+**NOTE**
+
+Private key file is supported OpenSSH format.
 "Current Directory" is optional, this property is initial base path when the connect to server.
 Exclude files is file names expressed CSV format, that is optional. 
 Treeview will ignore the file if there is same file name in the Exclude files.

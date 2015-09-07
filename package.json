@@ -1,8 +1,8 @@
 {
   "name": "brackets-synapse",
   "title": "Brackets Synapse",
-  "version": "1.0.14",
-  "description": "Brackets extension for file sync between local and remote via FTP.",
+  "version": "1.1.0",
+  "description": "Brackets extension for file sync between local and remote via FTP, SFTP.",
   "author": "Kohei Hayashi (https://github.com/kooohei/)",
   "homepage": "https://github.com/kooohei/brackets-synapse#readme",
   "repository": {
@@ -23,6 +23,7 @@
   "keywords": [
     "brackets",
     "ftp",
+		"sftp",
     "sync",
     "remote",
     "javascript",
