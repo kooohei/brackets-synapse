@@ -47,8 +47,6 @@ define(function (require, exports, module) {
 
 	setRemoteRoot = function (_path) {
 		// '/.(.*n)/', '/./', '/..$', '/../$'
-		
-		
 		if (_path.match(/(\/\.+\/|\/\.\/|\/\.\.\/?$)/g) && _path !== "./") {
 			throw new Error("path is invalid");
 		}
@@ -70,7 +68,6 @@ define(function (require, exports, module) {
 
 	completionRemotePath = function (pathAry) {
 		var remotePath = getRemoteRoot();
-		console.log(remotePath);
 		if (pathAry === false || pathAry.length === 0) {
 			return remotePath;
 		}

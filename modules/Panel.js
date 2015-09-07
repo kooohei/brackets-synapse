@@ -534,6 +534,7 @@ define(function (require, exports, module) {
 					$("#synapse-server-host").val("");
 					$("#synapse-server-user").val("");
 					$("#synapse-server-password").val("");
+					$("#synapse-server-exclude").val("., .., .*");
 					d.resolve();
 				}
 				return d.promise();

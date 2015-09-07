@@ -45,6 +45,8 @@ define(function (require, exports, module) {
 	};
 	
 	
+	
+	
 	AppInit.appReady(function () {
 		var domain = new NodeDomain("synapse", ExtensionUtils.getModulePath(module, "node/SynapseDomain"));
 		setAppIcon(domain)
@@ -57,7 +59,7 @@ define(function (require, exports, module) {
 		.then(function () {
 			Menu.setRootMenu();
 		}, function (err) {
-			throw new Error("Could not initialize to Synapse main panel");
+			throw new Error(["Could not initialize to Synapse main panel", err]);
 		});
 	});
 });

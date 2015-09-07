@@ -82,12 +82,20 @@ define(function (require, exports, module) {
 		function isExclude (ptnAry, filename) {
 			var _isExclude = false;
 			_.forEach(ptnAry, function (ptn) {
-				ptn = ptn.replace(/\./g, "\\.");
-				ptn = ptn.replace(/\*/g, ".*");
-				var regexp = new RegExp(ptn);
-				_isExclude = filename.match(regexp);
-				return false;
+				if (ptn !== "") {
+					ptn = ptn.trim();
+					if (ptn === "." || ptn === "..") {
+						return filename === ptn;
+					} else {
+						ptn = ptn.replace(/\./g, "\\.");
+						ptn = ptn.replace(/\*/g, ".*");
+						var regexp = new RegExp(ptn);
+						_isExclude = filename.match(regexp);
+						return false;
+					}
+				}
 			});
+			
 			return _isExclude;
 		}
 		

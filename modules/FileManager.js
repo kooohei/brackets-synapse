@@ -10,6 +10,7 @@ define(function (require, exports, module) {
 	var ProjectManager = brackets.getModule("project/ProjectManager");
 	var DocumentManager = brackets.getModule("document/DocumentManager");
 	var FileUtils = brackets.getModule("file/FileUtils");
+	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
 	var FileSystem = brackets.getModule("filesystem/FileSystem");
 	var PathManager = require("modules/PathManager");
 	var FileTreeView = require("modules/FileTreeView");
@@ -17,6 +18,12 @@ define(function (require, exports, module) {
 	var RemoteManager = require("modules/RemoteManager");
 	/* endregion */
 
+	
+	/* region Private Methods */
+	var _attachEvent;
+	var _createKeysDirectoryIfNotExists;
+	/* endregion */
+	
 	/* region Public Methods */
 	var init;
 	var openFile;
@@ -31,17 +38,21 @@ define(function (require, exports, module) {
 	/* endregion */
 
 	/* region Private vars and methods */
-	var _attachEvent;
 	var _projectState = Project.CLOSE;
+	var _modulePath = FileUtils.getParentPath(ExtensionUtils.getModulePath(module));
 	/* endregion */
 
-
-	/* Public Methods */
 
 	init = function (domain) {
 		var deferred = new $.Deferred();
 		_attachEvent();
-		return deferred.resolve(domain).promise();
+		_createKeysDirectoryIfNotExists()
+		.then(function () {
+			deferred.resolve(domain);
+		}, function (err) {
+			deferred.reject(err);
+		});
+		return deferred.promise();
 	};
 
 	openFile = function (localPath) {
@@ -112,7 +123,29 @@ define(function (require, exports, module) {
 		}, d.reject);
 		return d.promise();
 	};
-
+	
+	_createKeysDirectoryIfNotExists = function () {
+		var d = new $.Deferred();
+		var keysDir = FileSystem.getDirectoryForPath(_modulePath + "__KEYS__");
+		keysDir.exists(function (err, exists) {
+			if (err) {
+				d.reject(err);
+			} else {
+				if (!exists) {
+					keysDir.create(function (err, stat) {
+						if (err) {
+							d.reject();
+						} else {
+							d.resolve();
+						}
+					});
+				} else {
+					d.resolve();
+				}
+			}
+		});
+		return d.promise();
+	};
 
 	exports.init= init;
 	exports.openFile = openFile;
