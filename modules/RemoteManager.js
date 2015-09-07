@@ -1,6 +1,7 @@
-/*jslint node: true, vars: true, plusplus: true, devel: true, nomen: true, regexp: true, indent: 2, maxerr: 50 */
+/*jslint node: true, vars: true, plusplus: true, devel: true, nomen: true, regexp: true, white: true, indent: 2, maxerr: 50 */
 /*global define, $, brackets, Mustache, window, console */
 define(function (require, exports, module) {
+	"use strict";
 
 	/* region Modules */
 	var EventDispatcher = brackets.getModule("utils/EventDispatcher");
@@ -16,7 +17,7 @@ define(function (require, exports, module) {
 			_currentServerSetting;
 	/* endregion */
 
-	/* region Public vars */
+	/* region Public methods */
 	var init,
 			clear,
 			connect,
@@ -27,7 +28,8 @@ define(function (require, exports, module) {
 			download,
 			mkdir,
 			removeDirectory,
-			deleteFile;
+			deleteFile
+			;
 	/* endregion */
 
 	/* region Static vars */
@@ -53,7 +55,10 @@ define(function (require, exports, module) {
 	/* endregion */
 
 
-	/* Public Methods */
+	/* region Private method */
+	var _convObjectLikeFTP;
+	/* endretion */
+	
 
 	init = function (domain) {
 		_domain = domain;
@@ -65,23 +70,33 @@ define(function (require, exports, module) {
 		jq.tv.html("");
 	};
 
+	
+	
 	getListIgnoreExclude = function (serverSetting, list) {
-		if (serverSetting.exclude === undefined) {
+		if (serverSetting.exclude === undefined || serverSetting.exclude  === "") {
 			serverSetting.exclude = "";
+			return list;
 		}
+		
+		
+		function isExclude (ptnAry, filename) {
+			var _isExclude = false;
+			_.forEach(ptnAry, function (ptn) {
+				ptn = ptn.replace(/\./g, "\\.");
+				ptn = ptn.replace(/\*/g, ".*");
+				var regexp = new RegExp(ptn);
+				_isExclude = filename.match(regexp);
+				return false;
+			});
+			return _isExclude;
+		}
+		
 		var ary = serverSetting.exclude.split(",");
 		var tmp = [];
 		if (ary.length > 0) {
-			_.forEach(list, function (file) {
-				var flag = false;
-				_.forEach(ary, function (ex) {
-					if (ex === file.name) {
-						flag = true;
-						return false;
-					}
-				});
-				if (!flag) {
-					tmp.push(file);
+			_.forEach(list, function (ent) {
+				if (!isExclude(ary, ent.name)) {
+					tmp.push(ent);
 				}
 			});
 			return tmp;
@@ -89,7 +104,7 @@ define(function (require, exports, module) {
 			return list;
 		}
 	};
-
+	
 	connect = function (serverSetting) {
 		var deferred =  new $.Deferred();
 		var _rootEntity = FileTreeView.loadTreeView(serverSetting);
@@ -99,17 +114,21 @@ define(function (require, exports, module) {
 		var remoteRoot = PathManager.getRemoteRoot();
 		_domain.exec("Connect", serverSetting, remoteRoot)
 		.then(function (list) {
+			if (serverSetting.protocol === "sftp") {
+				list = _convObjectLikeFTP(list);
+			}
 			list = getListIgnoreExclude(serverSetting, list);
+			
 			return FileTreeView.setEntities(list, _rootEntity);
 		}, function (err) {
 			console.error(err);
-			throw new Error(err);
+			//throw new Error(err);
 		})
 		.then(function (list) {
 			return Project.open(serverSetting);
 		}, function (err) {
 			console.error(err);
-			throw new Error(err);
+			//throw new Error(err);
 		})
 		.then(function () {
 			_currentServerSetting = serverSetting;
@@ -117,7 +136,7 @@ define(function (require, exports, module) {
 			deferred.resolve(result);
 		}, function (err) {
 			console.error(err);
-			throw new Error(err);
+			//throw new Error(err);
 		})
 		.always(function () {
 			Panel.hideSpinner();
@@ -126,13 +145,23 @@ define(function (require, exports, module) {
 	};
 
 	getList = function (entity, serverSetting, remotePath) {
-
 		var deferred = new $.Deferred();
+		Panel.showSpinner();
 		_domain.exec("List", serverSetting, remotePath)
 			.then(function (list) {
-				list = getListIgnoreExclude(serverSetting, list);
+				if (serverSetting.protocol === "sftp") {
+					list = _convObjectLikeFTP(list);
+				}
+				_.forEach(list, function (row) {
+					console.log(row);
+				});
+				//list = getListIgnoreExclude(serverSetting, list);
 				deferred.resolve(list);
-			}, deferred.reject);
+			}, function (err) {
+				console.log(err);
+			}).always(function () {
+				Panel.hideSpinner();
+			});
 		return deferred.promise();
 	};
 
@@ -196,6 +225,76 @@ define(function (require, exports, module) {
 				deferred.resolve(true);
 			}, deferred.reject);
 		return deferred.promise();
+	};
+	
+	
+	_convObjectLikeFTP = function (ents) {
+		var list = [];
+		_.forEach(ents, function (ent) {
+			var obj = {},
+			octMode = ent.attrs.mode.toString(8),
+			owner = "";
+	
+			function getTime(ts) {
+				var timestamp = ts;
+				var date = new Date(timestamp * 1000);
+				return date.toISOString();
+			}
+			function digitToString(digit) {
+				var res = "";
+				switch (digit) {
+					case '7':
+						res = "rwx";
+						break;
+					case '6':
+						res = "rw";
+						break;
+					case '5':
+						res = "rx";
+						break;
+					case '4':
+						res = "r";
+						break;
+					case '3':
+						res = "wx";
+						break;
+					case '2':
+						res = "w";
+						break;
+					case '1':
+						res = "x";
+						break;
+					case '0':
+						res = "";
+						break;
+				}
+				return res;
+			}
+			
+			var tmp = "";
+			if (octMode.charAt(0) === "1") {
+				tmp = octMode.substr(3);
+				obj.type = "";
+			} else {
+				tmp = octMode.substr(2);
+				obj.type = "d";
+			}
+			var rights = {};
+			rights.user = digitToString(tmp.charAt(0));
+			rights.group = digitToString(tmp.charAt(1));
+			rights.other = digitToString(tmp.charAt(2));
+			
+			obj.acl = false;
+			obj.owner = ent.attrs.uid;
+			obj.group = ent.attrs.gid;
+			obj.rights = rights;
+			obj.name = ent.filename;
+			obj.size = ent.attrs.size;
+			obj.date = getTime(ent.attrs.mtime);
+			obj.sticky = false;
+			list.push(obj);
+		});
+		return list;
 	};
 
 
