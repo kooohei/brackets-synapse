@@ -8,6 +8,29 @@
 	<table>
 		<tr>
 			<th>
+			</th>
+			<td>
+				<input type="hidden" id="currentProtocol" value="ftp">
+				<div class="btn-group protocol-group">
+					<button type="button" class="btn small toggle-ftp active">FTP</button>
+					<button type="button" class="btn small toggle-sftp">SFTP</button>
+				</div>
+			</td>
+		</tr>
+		<tr class="sftp-row">
+			<th>
+				<i class="fa fa-sign-in" style="color:#c2d3e6"></i>
+			</th>
+			<td>
+				<input type="hidden" id="currentAuth" value="key">
+				<div class="btn-group auth-group">
+					<button type="button" class="btn small toggle-password">PASSWORD AUTH</button>
+					<button type="button" class="btn small toggle-key active">KEY AUTH</button>
+				</div>
+			</td>
+		</tr>
+		<tr>
+			<th>
 				<i class="fa fa-desktop"></i>
 			</th>
 			<td>
@@ -30,12 +53,35 @@
 				<input type="text" id="synapse-server-user" placeholder="{{Strings.SYNAPSE_SETTING_PH_USER}}">
 			</td>
 		</tr>
-		<tr>
+		<tr class="password-row">
+			<th>
+				<i class="fa fa-unlock"></i>
+			</th>
+			<td>
+				<input type="password" id="synapse-server-password" placeholder="{{Strings.SYNAPSE_SETTING_PH_PASSWORD}}">
+			</td>
+		</tr>
+		<tr class="sftp-row key-row">
+			<th>
+				<i class="fa fa-key"></i>
+			</th>
+			<td>
+				<div class="input-append privateKeyFileSelect">
+					<div>
+					</div>
+
+					<input type="text" class="span2 privateKeyName" readonly id="appendedInputButtons" placeholder="{{Strings.SYNAPSE_SETTING_PH_PRIVATEKEY}}" value="">
+					<button id="choosePrivateKey" class="btn" type="button"><i class="fa fa-search"></i></button>
+					<button id="resetPrivateKey" class="btn" type="button"><i class="fa fa-refresh"></i></button>
+				</div>
+			</td>
+		</tr>
+		<tr class="sftp-row passphrase-row">
 			<th>
 				<i class="fa fa-unlock-alt"></i>
 			</th>
 			<td>
-				<input type="password" id="synapse-server-password" placeholder="{{Strings.SYNAPSE_SETTING_PH_PASSWORD}}">
+				<input type="password" id="synapse-server-passphrase" placeholder="{{Strings.SYNAPSE_SETTING_PH_PASSPHRASE}}">
 			</td>
 		</tr>
 		<tr>
@@ -51,7 +97,7 @@
 				<i class="fa fa-ban"></i>
 			</th>
 			<td>
-				<input type="text" id="synapse-server-exclude" placeholder="{{Strings.SYNAPSE_SETTING_PH_EXCLUDEFILES}}"><br>
+				<input type="text" id="synapse-server-exclude" placeholder="{{Strings.SYNAPSE_SETTING_PH_EXCLUDEFILES}}" value=".,.."><br>
 			</td>
 		</tr>
 	</table>

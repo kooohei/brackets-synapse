@@ -9,6 +9,12 @@
 	background-color: rgb(22, 22, 22);
 	min-height: 200px;
 }
+#synapse .btn {
+	background-color: #3f3f3f;
+	border: 1px solid #202020;
+	color: #cccccc;
+	-webkit-box-shadow: rgba(255, 255, 255, 0.0588235) 0px 1px 0px 0px inset;
+}
 #synapse-icon {
 	background-image: url(../synapse.svg);
 }
@@ -108,7 +114,22 @@
 	padding: 3px 5px;
 	box-sizing: padding-box;
 }
-#synapse-server-setting table td input {
+#synapse-server-setting table td div.protocol-group > button {
+	border: 0;
+}
+#synapse-server-setting .input-append {
+	margin-bottom: 0;
+}
+#synapse-server-setting table td div.protocol-group > button.active {
+	background: #518dbf;
+}
+#synapse-server-setting table td div.auth-group > button.active {
+	background: #4ca263;
+}
+#synapse-server-setting table td input[type=text],
+#synapse-server-setting table td input[type=password] {
+	border: 1px solid #202020;
+	color: #fff;
 	box-sizing: padding-box;
 	padding: 3px;
 	border-radius: 2px;
@@ -155,6 +176,9 @@
 }
 #synapse-server-list button:focus {
 	border: 1px solid #222222;
+}
+#synapse-server-setting input:focus {
+	box-shadow: none;
 }
 #synapse-server-list div.synapse-server-list-header {
 	padding: 14px;
