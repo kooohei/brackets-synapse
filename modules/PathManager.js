@@ -61,7 +61,7 @@ define(function (require, exports, module) {
 	};
 
 	getRemoteRoot = function () {
-		console.log({remoteRooot: remoteRoot, isRelative: isRelative});
+		//console.log({remoteRooot: remoteRoot, isRelative: isRelative});
 		var tmp = [].concat(remoteRoot);
 		return ((isRelative) ? "" : "/") + tmp.join("/");
 	};

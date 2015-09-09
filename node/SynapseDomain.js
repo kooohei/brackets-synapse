@@ -7,6 +7,7 @@
 	var Client = require("ftp");
 	var fs = require("fs");
 	var _domainManager = null;
+	var Q = require("q");
 	var client = null,
 			init,
 			test,
@@ -17,11 +18,20 @@
 			mkdir,
 			removeDirectory,
 			deleteFile,
+			_sftpStat,
 			download,
 			logout,
 			readLocalFile,
 			
-			_getSftpOption;
+			_getSftpOption,
+			
+			_sftpReadDir,
+			_sftpCheckSymLink,
+			_sftpCheckSymLinks,
+			
+			_ftpReadDir,
+			_ftpCheckSymLink,
+			_ftpCheckSymLinks;
 
 	_getSftpOption = function (setting) {
 		var settingObj = {
@@ -40,30 +50,84 @@
 		return settingObj;
 	};
 
-	connect = function (server, remoteRoot, cb) {
-		if (server.protocol === "ftp") {
-			// FTP
-			client = new Client();
-			client.once("error", function (err) {
-				if (err) {
-					cb(err);
+	_sftpReadDir = function (sftp, remoteRoot) {
+		var q = Q.defer();
+		sftp.readdir(remoteRoot, function (err, list) {
+			if (err) {
+				q.reject(err);
+			} else {
+				q.resolve(list);
+			}
+		});
+		return q.promise;
+	};
+	_sftpCheckSymLink = function (sftp, row, basePath) {
+		var q = Q.defer();
+		if (row.longname.charAt(0) === "l") {
+			var filePath = basePath === "./" ? basePath + row.filename : basePath + "/" + row.filename;
+			sftp.stat(filePath, function (err, stat) {
+				if (err) { 
+					q.reject(err);
+				} else {
+					row.stat = stat;
+					q.resolve(row);
 				}
 			});
+		} else {
+			row.stat = null;
+			q.resolve(row);
+		}
+		return q.promise;
+	};
+	_sftpCheckSymLinks = function (sftp, basePath, list) {
+		var q = Q.defer();
+		var files = [];
+		var promises = [];
+		list.forEach(function (row) {
+			var promise = _sftpCheckSymLink(sftp, row, basePath);
+			promises.push(promise);
+
+		});
+		Q.all(promises)
+		.then(function (values) {
+			q.resolve(values);
+		}, q.reject);
+
+		return q.promise;
+	};
+	
+	_ftpReadDir = function (client, path) {
+		var q = Q.defer();
+		client.list(path, function (err, list) {
+			if (err) {
+				console.log("error triggered in the _ftpReadDir", err);
+				q.reject(err);
+			} else {
+				q.resolve(list);
+			}
+		});
+		return q.promise;
+	};
+	
+	connect = function (server, remoteRoot, cb) {
+		/* FTP */
+		if (server.protocol === "ftp") {
+			client = new Client();
+			client.once("error", cb);
 			client.once("ready", function () {
-				client.list(remoteRoot, function (err, list) {
+				_ftpReadDir(client, remoteRoot)
+				.then(function (list) {
+					cb(null, list);
+				}, cb)
+				.finally(function () {
 					logout(client);
-					if (err) {
-						cb(err);
-					} else {
-						cb(null, list);
-					}
 				});
 			});
-			server.debug = true;
 			client.connect(server);
-
-		} else if (server.protocol === "sftp") {
-			// SFTP
+		}
+		
+		/* SFTP */
+		if (server.protocol === "sftp") {
 			var setting = _getSftpOption(server);
 			client = new SSH();
 			client.on("error", function (err) {
@@ -73,16 +137,17 @@
 				client.sftp(function (err, sftp) {
 					if (err) {
 						cb(err);
-						console.error(err);
 					} else {
-						
-						sftp.readdir((remoteRoot === "" ? "./" : remoteRoot), function (err, list) {
-							if (err) {
-								cb(err);
-								console.log(["error from synapse domain", err]);
-							} else {
-								cb(null, list);
-							}
+						remoteRoot = remoteRoot === "" ? "./" : remoteRoot;
+						_sftpReadDir(sftp, remoteRoot)
+						.then(function (list) {
+							return _sftpCheckSymLinks(sftp, remoteRoot, list);
+						})
+						.then(function (files) {
+							cb(null, files);
+							client.end();
+						}, function (err) {
+							cb(err);
 							client.end();
 						});
 					}
@@ -100,6 +165,7 @@
 				console.log("unexpected error lv.666");
 			} else {
 				client = null;
+				console.log("[ Client logouted ]");
 			}
 		});
 	};
@@ -150,6 +216,7 @@
 	};
 
 	getList = function (server, path, cb) {
+		
 		if (server.protocol === "ftp") {
 			client = new Client();
 			client.once("error", function (err) {
@@ -177,12 +244,16 @@
 					if (err) {
 						cb(err);
 					} else {
-						sftp.readdir((path === "" ? "./" : path), function (err, list) {
-							if (err) {
-								cb(err);
-							} else {
-								cb(null, list);
-							}
+						path = path === "" ? "./" : path;
+						_sftpReadDir(sftp, path)
+						.then(function (list) {
+							return _sftpCheckSymLinks(sftp, path, list);
+						})
+						.then(function (files) {
+							cb(null, files);
+							client.end();
+						}, function (err) {
+							cb(err);
 							client.end();
 						});
 					}
@@ -285,7 +356,6 @@
 	removeDirectory = function (serverSetting, remotePath, cb) {
 		
 		if (serverSetting.protocol === "ftp") {
-			
 			client = new Client();
 			client.once("error", function (err) {
 				if (err) {
@@ -293,7 +363,6 @@
 					cb(err);
 				}
 			});
-
 			client.once("ready", function () {
 				client.rmdir(remotePath, true, function (err) {
 					logout(client);
@@ -305,10 +374,10 @@
 				});
 			});
 			client.connect(serverSetting);
-		} else
+		}
+		
 		if (serverSetting.protocol === "sftp") {
 			var setting = _getSftpOption(serverSetting);
-			
 			client = new SSH();
 			client.on("ready", function () {
 				client.sftp(function (err, sftp) {

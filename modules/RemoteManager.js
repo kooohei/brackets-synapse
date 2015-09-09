@@ -282,11 +282,17 @@ define(function (require, exports, module) {
 			var tmp = "";
 			if (octMode.charAt(0) === "1") {
 				tmp = octMode.substr(3);
-				obj.type = "";
+				obj.type = "-";
 			} else {
 				tmp = octMode.substr(2);
 				obj.type = "d";
 			}
+			
+			if (ent.stat !== null) {
+				// is symlink files.
+				obj.type = ent.stat.mode.toString(8).charAt(0) === "1" ? "" : "d";
+			}
+			
 			var rights = {};
 			rights.user = digitToString(tmp.charAt(0));
 			rights.group = digitToString(tmp.charAt(1));

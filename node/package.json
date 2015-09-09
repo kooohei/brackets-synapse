@@ -2,6 +2,7 @@
   "name": "brackets-synapse-domain",
   "dependencies": {
     "ftp": "0.3.10",
+    "q": "^1.4.1",
     "ssh2": "latest"
   }
 }
