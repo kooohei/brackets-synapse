@@ -96,6 +96,7 @@ define(function (require, exports, module) {
 			};
 	var Icon = {
 				file: "fa fa-file-o",
+				link: "fa fa-link",
 				folder: "fa fa-folder",
 				folder_open: "fa fa-folder-open",
 				folder_disable: "fa fa-folder-o"
@@ -125,7 +126,6 @@ define(function (require, exports, module) {
 
 
 	/* Public Methods */
-
 	init = function (domain) {
 		var deferred = new $.Deferred();
 		_domain = domain;
@@ -177,9 +177,32 @@ define(function (require, exports, module) {
 		var promises = [];
 		var params = [];
 		
+		var dirs = _.where(list, {type: "d"});
+		var files = _.where(list, {type: "-"});
+		var links = _.where(list, {type: "l"});
+		
+		_.pluck(_.sortBy(list, "name"), "name");
+		
+		list = [];
+		list = list
+						.concat(dirs)
+						.concat(files)
+						.concat(links);
+		
 		var depth = parent.depth + 1;
 		list.forEach(function (item, index) {
-			var type = (item.type === "d") ? "directory" : "file";
+			var type = "file";
+			switch (item.type) {
+				case "d":
+					type = "directory";
+					break;
+				case "l":
+					type = "symlink";
+					break;
+				default:
+					type = "file";
+					break;
+			}
 			var param = {
 				class: "treeview-" + type,
 				type: type,
@@ -263,7 +286,6 @@ define(function (require, exports, module) {
 		});
 		return deferred.promise();
 	};
-
 
 	removeFile = function () {
 		var deferred = new $.Deferred();
@@ -446,7 +468,7 @@ define(function (require, exports, module) {
 					entity = ent;
 				}
 			});
-			if (entity.type !== "file") {
+			if (entity.type !== "file" && entity.type !== "symlink") {
 				children = entity.children;
 			}
 		});
@@ -455,7 +477,7 @@ define(function (require, exports, module) {
 
 
 	/* Private Methods */
-
+	// TODO the "l" flag has entity show too.
 	_setElement = function (entity) {
 		var deferred = new $.Deferred();
 		var $parent = null;
@@ -574,6 +596,7 @@ define(function (require, exports, module) {
 		var $li = $("<li/>").addClass("treeview-entity").addClass(entity.class).attr({
 			"id": "tv-" + entity.id
 		});
+
 		var $p = $("<p/>").addClass("treeview-row");
 		var $text = $("<span/>").addClass("filename").html(entity.text);
 		var $icon = $("<i/>");
@@ -581,8 +604,11 @@ define(function (require, exports, module) {
 		if (entity.type === "directory") {
 			$li.addClass("treeview-close");
 			$icon.addClass(Icon.folder);
-		} else {
+		} else if (entity.type === "file") {
 			$icon.addClass(Icon.file);
+		} else if (entity.type === "symlink") {
+			$icon.addClass(Icon.link);
+			$li.addClass("treeview-symlink");
 		}
 		$p.append($icon)
 			.append($text);
