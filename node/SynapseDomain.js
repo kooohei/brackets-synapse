@@ -41,7 +41,7 @@
 				};
 		
 		if (setting.auth === "key") {
-			settingObj.privateKey = fs.readFileSync(setting.privateKey);
+			settingObj.privateKey = setting.privateKey;
 			settingObj.passphrase = setting.passphrase;
 		} else
 		if (setting.auth === "password") {
@@ -100,7 +100,6 @@
 		var q = Q.defer();
 		client.list(path, function (err, list) {
 			if (err) {
-				console.log("error triggered in the _ftpReadDir", err);
 				q.reject(err);
 			} else {
 				q.resolve(list);
@@ -129,6 +128,9 @@
 		/* SFTP */
 		if (server.protocol === "sftp") {
 			var setting = _getSftpOption(server);
+			
+			
+			
 			client = new SSH();
 			client.on("error", function (err) {
 				console.error(err);
@@ -162,7 +164,7 @@
 
 		client.logout(function (err, res) {
 			if (err) {
-				console.log("unexpected error lv.666");
+				console.error(err);
 			} else {
 				client = null;
 			}
@@ -291,7 +293,7 @@
 				client.sftp(function (err, sftp) {
 					if (err) {
 						cb(err);
-						console.log(err);
+						console.error(err);
 					} else {
 						sftp.rename(oldPath, newPath, function (err) {
 							if (err) {
@@ -336,7 +338,6 @@
 				client.sftp(function (err, sftp) {
 					if (err) {
 						cb(err);
-						console.log(err);
 					} else {
 						sftp.mkdir(path, function (err) {
 							if (err) {
@@ -400,7 +401,6 @@
 	deleteFile = function (serverSetting, remotePath, cb) {
 		client = new Client();
 		client.once("error", function (err) {
-			console.log("error", err);
 			logout(client);
 			if (err) {
 
@@ -477,6 +477,7 @@
 			cb(null, text);
 		});
 	};
+	
 
 	/**
 	 * initialize
@@ -650,6 +651,7 @@
 				type: "string"
 			}]
 		);
+		
 
 		/**
 		 * register events

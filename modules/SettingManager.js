@@ -1,14 +1,23 @@
-/*jslint node: true, vars: true, plusplus: true, devel: true, nomen: true, regexp: true, indent: 2, maxerr: 50 */
+/*jslint node: true, vars: true, plusplus: true, devel: true, nomen: true, regexp: true, indent: 2, maxerr: 50, boss: true */
 /*global define, $, brackets, Mustache, window, console */
 define(function (require, exports, module) {
 	"use strict";
 
 	/* region Modules */
 	var PreferencesManager = brackets.getModule("preferences/PreferencesManager");
-	var _ = brackets.getModule("thirdparty/lodash");
+	
 	var PathManager = require("modules/PathManager");
 	var FileManager = require("modules/FileManager");
 	var Panel = require("modules/Panel");
+	/**
+	 * important, should be import lodash for _.chunk function
+	 * brackets's lodash version has not chunk function
+	 */
+	var _ = require("node_modules/lodash/index");
+	/*
+	 */
+	
+	
 	/* endregion */
 
 	/* region Public Methods */
@@ -19,7 +28,9 @@ define(function (require, exports, module) {
 			reset,
 			getServerList,
 			getServerSetting,
-			deleteServerSetting;
+			deleteServerSetting,
+			uglify,
+			deuglify;
 	/* endregion */
 
 	/* region Private Methods */
@@ -32,7 +43,8 @@ define(function (require, exports, module) {
 			_hideSettingAlert,
 			_appendServerBtnState,
 			_showConnectTestSpinner,
-			_hideConnectTestSpinner;
+			_hideConnectTestSpinner
+			;
 	/* endregion */
 
 	var domain,
@@ -67,8 +79,7 @@ define(function (require, exports, module) {
 		regexp.port = new RegExp("[1-65535]");
 		regexp.unix_path = new RegExp("^$|^\\.\\/.*?|^\\/.*?");
 		regexp.win_path = new RegExp("^[a-zA-Z]\\:\\\.*?");
-		var $file = $("#synapse-server-privateKey");
-		$file.parent().html($file.parent().html());
+
 		$("input[type='text'], input[type='password']", $serverSetting).val("").removeClass("invalid");
 		$("th > i", $serverSetting).removeClass("done");
 		$("th > i.fa-plug", $serverSetting).addClass("done");
@@ -83,18 +94,17 @@ define(function (require, exports, module) {
 		
 		setting.protocol = $("#currentProtocol").val();
 		if (setting.protocol === "sftp") {
+			setting.privateKey = Panel.getCurrentPrivateKeyText();
 			setting.auth = $("#currentAuth").val();
 		}
-		
 		if (setting !== false) {
 			_appendServerBtnState("disabled");
-			FileManager.savePrivateKey(state, setting, Panel.getCurrentPrivateKeyText())
-			.then(_connectTest, function () {
-				var err = new Error("Uncaught saved private key to local file");
+			_connectTest(setting)
+			.then(function (err) {
 				deferred.reject(err);
 			})
 			.then(function () {
-				_editServerSetting(state, setting)
+				_editServerSetting(state, setting, Panel.getCurrentPrivateKeyText())
 					.then(function () {
 						Panel.showServerList();
 					}, deferred.reject);
@@ -139,6 +149,7 @@ define(function (require, exports, module) {
 		};
 
 		var currentProtocol = $("#currentProtocol").val();
+		
 		var auth = $("#currentAuth").val();
 		
 		var values = "";
@@ -414,21 +425,20 @@ define(function (require, exports, module) {
 	};
 
 	_connectTest = function (server) {
-
 		var deferred = new $.Deferred();
 		var remotePath = server.dir === "" ? "./" : server.dir;
 
 		Panel.showSpinner();
 		domain.exec("Connect", server, remotePath)
-			.done(function (list) {
-				deferred.resolve();
-			})
-			.fail(function (err) {
-				deferred.reject(err);
-			})
-			.always(function () {
-				Panel.hideSpinner();
-			});
+		.done(function (list) {
+			deferred.resolve();
+		})
+		.fail(function (err) {
+			deferred.reject(err);
+		})
+		.always(function () {
+			Panel.hideSpinner();
+		});
 		return deferred.promise();
 	};
 

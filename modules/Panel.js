@@ -262,7 +262,6 @@ define(function (require, exports, module) {
 		var deferred = new $.Deferred();
 		CommandManager.execute(Commands.FILE_CLOSE_ALL)
 		.fail(function () {
-			console.log("closeProject > FILE_CLOSE_ALL > rejected");
 			deferred.reject();
 		})
 		.done(function () {
@@ -396,7 +395,6 @@ define(function (require, exports, module) {
 		$("input[type='text']", $serverSetting).on("blur", SettingManager.validateAll);
 		$("input[type='password']", $serverSetting).on("blur", SettingManager.validateAll);
 		$("#synapse-server-privateKey").on("change", function() {
-			//console.log("ok");
 		});
 
 		// reset protocol
@@ -490,40 +488,57 @@ define(function (require, exports, module) {
 				var d = new $.Deferred();
 				
 				if (state === "update") {
-					_setCurrentPrivateKeyText(setting)
-					.then(function () {
 						
-						j.s.data("index", setting.index);
-						
-						if (setting.protocol === "sftp") {
-							$(".span2.privateKeyName").val(FileUtils.getBaseName(setting.privateKey));
-							$("#synapse-server-passphrase").val(setting.passphrase);
-							$("#currentProtocol").val("sftp");
-							$("button.toggle-ftp").removeClass("active");
-							$("button.toggle-sftp").addClass("active");
-							$(".sftp-row").show();
-						}
-						
-						$("#synapse-server-host").val(setting.host);
-						$("#synapse-server-port").val(setting.port);
-						$("#synapse-server-user").val(setting.user);
-						$("#synapse-server-password").val(setting.password);
-						$("#synapse-server-dir").val(setting.dir);
-						$("#synapse-server-exclude").val(setting.exclude);
+					j.s.data("index", setting.index);
 
-						$("button.btn-add", j.s)
-						.html(Strings.SYNAPSE_SETTING_UPDATE)
-						.css({
-							"background-color": "#5cb85c"
-						})
-						.removeClass("disabled")
-						.prop("disabled", false);
+					if (setting.protocol === "sftp") {
+						$("#currentProtocol").val("sftp");
+						$("#currentAuth").val(setting.auth);
+						$("button.toggle-ftp").removeClass("active");
+						$("button.toggle-sftp").addClass("active");
+						$(".sftp-row").show();
 						
-						d.resolve();
-					}, function () {
-						throw new Error("Uncaught exception");
-					});
-				} else {
+						if (setting.auth === "key") {
+							
+							$(".span2.privateKeyName").val("Setted");
+							$("#synapse-server-passphrase").val(setting.passphrase);
+							$("tr.password-row").hide();
+							$("tr.passphrase-row").show();
+							$("button.toggle-password").removeClass("active");
+							$("button.toggle-key").addClass("active");
+							$(".span2.privateKeyName");
+							_currentPrivateKeyText = setting.privateKey;
+						}
+						if (setting.auth === "password") {
+							$("tr.password-row").show();
+							$("tr.passphrase-row").hide();
+							$("#synapse-server-password").val(setting.password);
+						}
+					}
+					if (setting.protocol === "ftp") {
+						$("tr.sftp-row").hide();
+						$("tr.password-row").show();
+						$("#synapse-server-password").val(setting.password);
+					}
+
+					$("#synapse-server-host").val(setting.host);
+					$("#synapse-server-port").val(setting.port);
+					$("#synapse-server-user").val(setting.user);
+					$("#synapse-server-dir").val(setting.dir);
+					$("#synapse-server-exclude").val(setting.exclude);
+
+					$("button.btn-add", j.s)
+					.html(Strings.SYNAPSE_SETTING_UPDATE)
+					.css({
+						"background-color": "#5cb85c"
+					})
+					.removeClass("disabled")
+					.prop("disabled", false);
+					SettingManager.validateAll();
+					d.resolve();
+					
+				}
+				else {
 					$("button.btn-add", j.s)
 					.html(Strings.SYNAPSE_SETTING_APPEND)
 					.css({
@@ -713,19 +728,16 @@ define(function (require, exports, module) {
 			}
 		});
 
-		SettingManager.reset();
-		_currentPrivateKeyText = null;
+		//SettingManager.reset();
 
 		if ($btn.hasClass("toggle-ftp")) {
 			$("#currentProtocol").val("ftp");
 			$("tr.sftp-row").hide();
 			$("tr.password-row").show();
-			$("#synapse-server-port").val("21");
 		} else if ($btn.hasClass("toggle-sftp")) {
 			$("tr.password-row").hide();
 			$("#currentProtocol").val("sftp");
 			$("tr.sftp-row").show();
-			$("#synapse-server-port").val("22");
 		}
 		var destHeight = j.m.outerHeight() - j.h.outerHeight() - (j.s.outerHeight() + 10);
 		j.s.removeClass("hide");
@@ -734,6 +746,7 @@ define(function (require, exports, module) {
 			"top": (j.s.outerHeight() + 10) + j.h.outerHeight() + "px",
 		}, 100).promise().then(function () {
 			$btn.addClass("active");
+			SettingManager.validateAll();
 		});
 	};
 	
@@ -750,10 +763,6 @@ define(function (require, exports, module) {
 			}
 		});
 		
-		$(".span2.privateKeyName").val("");
-		$("#synapse-server-password").val("");
-		$("#synapse-server-passphrase").val("");
-		_currentPrivateKeyText = null;
 		
 		if ($btn.hasClass("toggle-key")) {
 			$("#currentAuth").val("key");
@@ -917,7 +926,8 @@ define(function (require, exports, module) {
 			SettingManager.validateAll();
 		});
 	};
-
+	
+	/* unuse */
 	_readPrivateKeyPath = function (file) {
 		var reader = new FileReader();
 		var deferred = new $.Deferred();
@@ -931,6 +941,7 @@ define(function (require, exports, module) {
 		
 		return deferred.promise();
 	};
+	
 	_readPrivateKeyFile = function (file) {
 		var reader = new FileReader();
 		var deferred = new $.Deferred();
@@ -947,19 +958,7 @@ define(function (require, exports, module) {
 	getCurrentPrivateKeyText = function () {
 		return _currentPrivateKeyText;
 	};
-	_setCurrentPrivateKeyText = function (setting) {
-		var d = new $.Deferred();
-		if (setting.protocol === "sftp") {
-			_domain.exec("ReadLocalFile", setting.privateKey)
-			.then(function (text) {
-				_currentPrivateKeyText = text;
-				d.resolve();
-			}, d.reject);
-		} else {
-			d.resolve();
-		}
-		return d.promise();
-	};
+	
 
 	
 		

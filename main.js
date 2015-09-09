@@ -3,12 +3,16 @@
 define(function (require, exports, module) {
 	"use strict";
 	
+	var VERSION = "1.1.1";
+	
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils"),
 			AppInit = brackets.getModule("utils/AppInit"),
 			NodeDomain = brackets.getModule("utils/NodeDomain"),
 			CommandManager = brackets.getModule("command/CommandManager"),
+			PreferencesManager = brackets.getModule("preferences/PreferencesManager"),
 			
 			PathManager = require("modules/PathManager"),
+			ExtensionUtility = require("modules/ExtensionUtility"),
 			Menu = require("modules/Menu"),
 			Panel = require("modules/Panel"),
 			SettingManager = require("modules/SettingManager"),
@@ -46,10 +50,10 @@ define(function (require, exports, module) {
 	
 	
 	
-	
 	AppInit.appReady(function () {
 		var domain = new NodeDomain("synapse", ExtensionUtils.getModulePath(module, "node/SynapseDomain"));
-		setAppIcon(domain)
+		ExtensionUtility.selfDiagnosis(domain)
+		.then(setAppIcon)
 		.then(Panel.init)
 		.then(PathManager.init)
 		.then(SettingManager.init)
@@ -59,7 +63,7 @@ define(function (require, exports, module) {
 		.then(function () {
 			Menu.setRootMenu();
 		}, function (err) {
-			throw new Error(["Could not initialize to Synapse main panel", err]);
+			throw new Error(["Could not initialize to Synapse", err]);
 		});
 	});
 });

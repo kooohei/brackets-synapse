@@ -23,7 +23,6 @@ define(function (require, exports, module) {
 			setRemoteRoot,
 			completionRemotePath,
 			completionLocalPath,
-			getPrivateKeysDirectoryPath,
 			getRemoteRoot,
 			getBaseDirectory,
 			getProjectDirectoryPath,
@@ -61,7 +60,6 @@ define(function (require, exports, module) {
 	};
 
 	getRemoteRoot = function () {
-		//console.log({remoteRooot: remoteRoot, isRelative: isRelative});
 		var tmp = [].concat(remoteRoot);
 		return ((isRelative) ? "" : "/") + tmp.join("/");
 	};
@@ -87,7 +85,6 @@ define(function (require, exports, module) {
 	};
 
 	getLocalRelativePath = function (path) {
-
 		if (!path || path.substr(0, _projectDir.fullPath.length) !== _projectDir.fullPath) {
 			return;
 		}
@@ -100,10 +97,7 @@ define(function (require, exports, module) {
 		}
 	};
 
-	getPrivateKeysDirectoryPath = function () {
-		var modulePath = FileUtils.getParentPath(ExtensionUtils.getModulePath(module));
-		return modulePath + "__KEYS__/";
-	};
+
 
 	getProjectDirectoryPath = function (_path) {
 		var path = _path || "";
@@ -126,7 +120,6 @@ define(function (require, exports, module) {
 	exports.init = init;
 	exports.setRemoteRoot = setRemoteRoot;
 	exports.getRemoteRoot = getRemoteRoot;
-	exports.getPrivateKeysDirectoryPath = getPrivateKeysDirectoryPath;
 	exports.completionRemotePath = completionRemotePath;
 	exports.completionLocalPath = completionLocalPath;
 	exports.getProjectDirectoryPath = getProjectDirectoryPath;

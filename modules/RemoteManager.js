@@ -58,7 +58,7 @@ define(function (require, exports, module) {
 	/* region Private method */
 	var _convObjectLikeFTP;
 	/* endretion */
-	
+
 
 	init = function (domain) {
 		_domain = domain;
@@ -70,40 +70,39 @@ define(function (require, exports, module) {
 		jq.tv.html("");
 	};
 
-	
-	
+
+
 	getListIgnoreExclude = function (serverSetting, list) {
 		if (serverSetting.exclude === undefined || serverSetting.exclude  === "") {
 			serverSetting.exclude = "";
 			return list;
 		}
-		
-		
 		function isExclude (ptnAry, filename) {
 			var _isExclude = false;
 			_.forEach(ptnAry, function (ptn) {
+				ptn = ptn.trim();
 				if (ptn !== "") {
-					ptn = ptn.trim();
 					if (ptn === "." || ptn === "..") {
-						return filename === ptn;
+						_isExclude = (ptn === filename);
 					} else {
 						ptn = ptn.replace(/\./g, "\\.");
 						ptn = ptn.replace(/\*/g, ".*");
 						var regexp = new RegExp(ptn);
-						_isExclude = filename.match(regexp);
-						return false;
+						_isExclude = regexp.test(filename);
 					}
 				}
+				if (_isExclude) return false;
 			});
-			
 			return _isExclude;
 		}
-		
+
 		var ary = serverSetting.exclude.split(",");
 		var tmp = [];
+		var match;
 		if (ary.length > 0) {
 			_.forEach(list, function (ent) {
-				if (!isExclude(ary, ent.name)) {
+				match = isExclude(ary, ent.name);
+				if (!match) {
 					tmp.push(ent);
 				}
 			});
@@ -112,7 +111,7 @@ define(function (require, exports, module) {
 			return list;
 		}
 	};
-	
+
 	connect = function (serverSetting) {
 		var deferred =  new $.Deferred();
 		var _rootEntity = FileTreeView.loadTreeView(serverSetting);
@@ -126,7 +125,7 @@ define(function (require, exports, module) {
 				list = _convObjectLikeFTP(list);
 			}
 			list = getListIgnoreExclude(serverSetting, list);
-			
+
 			return FileTreeView.setEntities(list, _rootEntity);
 		}, function (err) {
 			console.error(err);
@@ -160,13 +159,10 @@ define(function (require, exports, module) {
 				if (serverSetting.protocol === "sftp") {
 					list = _convObjectLikeFTP(list);
 				}
-				_.forEach(list, function (row) {
-					console.log(row);
-				});
-				//list = getListIgnoreExclude(serverSetting, list);
+				list = getListIgnoreExclude(serverSetting, list);
 				deferred.resolve(list);
 			}, function (err) {
-				console.log(err);
+				console.error(err);
 			}).always(function () {
 				Panel.hideSpinner();
 			});
@@ -234,15 +230,15 @@ define(function (require, exports, module) {
 			}, deferred.reject);
 		return deferred.promise();
 	};
-	
-	
+
+
 	_convObjectLikeFTP = function (ents) {
 		var list = [];
 		_.forEach(ents, function (ent) {
 			var obj = {},
 			octMode = ent.attrs.mode.toString(8),
 			owner = "";
-	
+
 			function getTime(ts) {
 				var timestamp = ts;
 				var date = new Date(timestamp * 1000);
@@ -278,7 +274,7 @@ define(function (require, exports, module) {
 				}
 				return res;
 			}
-			
+
 			var tmp = "";
 			if (octMode.charAt(0) === "1") {
 				tmp = octMode.substr(3);
@@ -287,17 +283,17 @@ define(function (require, exports, module) {
 				tmp = octMode.substr(2);
 				obj.type = "d";
 			}
-			
+
 			if (ent.stat !== null) {
 				// is symlink files.
 				obj.type = ent.stat.mode.toString(8).charAt(0) === "1" ? "" : "d";
 			}
-			
+
 			var rights = {};
 			rights.user = digitToString(tmp.charAt(0));
 			rights.group = digitToString(tmp.charAt(1));
 			rights.other = digitToString(tmp.charAt(2));
-			
+
 			obj.acl = false;
 			obj.owner = ent.attrs.uid;
 			obj.group = ent.attrs.gid;

@@ -310,8 +310,6 @@ define(function (require, exports, module) {
 		}
 		var remotePath = PathManager.completionRemotePath(_getPathArray(_ctxMenuCurrentEntity));
 		
-		console.log(remotePath);
-		
 		DialogCollection.showYesNoModal(
 				"removeDirectoryDialog",
 				"Confirm",
@@ -653,8 +651,6 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 
-	
-	
 	_rename = function (entity, cb) {
 		
 		var $input = null;
@@ -884,8 +880,6 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 
-
-	/* Handlers */
 
 	onTreeViewContextMenu = function (e, menu) {
 		if ($("#synapse-tree").hasClass("disabled")) {
