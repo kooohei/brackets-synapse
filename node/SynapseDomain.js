@@ -165,7 +165,6 @@
 				console.log("unexpected error lv.666");
 			} else {
 				client = null;
-				console.log("[ Client logouted ]");
 			}
 		});
 	};
@@ -188,10 +187,10 @@
 					} else {
 						cb(null, true);
 					}
-					client.connect(server);
+					
 				});
 			});
-			
+			client.connect(server);
 		} else 
 		if (server.protocol === "sftp") {
 			var setting = _getSftpOption(server);

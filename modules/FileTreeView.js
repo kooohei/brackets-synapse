@@ -766,14 +766,15 @@ define(function (require, exports, module) {
 				_rename(newEntity, function (ent) {
 					var localPath = _modulePath + "empty.txt";
 					var remotePath = PathManager.completionRemotePath(_getPathArray(ent));
+					
 					RemoteManager.uploadFile(_currentServerSetting, localPath, remotePath)
-						.then(function () {
-							deferred.resolve();
-						}, function (err) {
-							_deleteEntity(ent);
-							showAlert("ERROR", "New file could not upload to server.<br>" + err);
-							deferred.reject();
-						});
+					.then(function () {
+						deferred.resolve();
+					}, function (err) {
+						_deleteEntity(ent);
+						showAlert("ERROR", "New file could not upload to server.<br>" + err);
+						deferred.reject();
+					});
 				});
 			} else {
 				_rename(newEntity, function (ent) {
