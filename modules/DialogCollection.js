@@ -13,7 +13,8 @@ define(function (require, exports, module) {
 	/* endregion */
 	
 	/* region Public Methods */
-	var showYesNoModal;
+	var showAlert,
+			showYesNoModal;
 	/* endregion */
 	
 	/* Public Methods */
@@ -43,6 +44,19 @@ define(function (require, exports, module) {
 			});
 		return deferred.promise();
 	};
+	
+	showAlert = function (title, message) {
+		var d = new $.Deferred();
+		var btns = [{className: Dialogs.DIALOG_BTN_CLASS_PRIMARY,
+								id: "OK",
+								text: "OK"}];
+		var dlg = Dialogs.showModalDialog("alert", title, message, btns, true)
+			.done(function (id) {
+				d.resolve();
+			});
+		return d.promise();
+	};
 
 	exports.showYesNoModal = showYesNoModal;
+	exports.showAlert = showAlert;
 });

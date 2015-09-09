@@ -21,13 +21,11 @@ define(function (require, exports, module) {
 	
 	/* region Private Methods */
 	var _attachEvent;
-	var _createKeysDirectoryIfNotExists;
 	/* endregion */
 	
 	/* region Public Methods */
-	var init;
-	var openFile;
-	var savePrivateKey;
+	var init,
+			openFile;
 	/* endregion */
 
 	/* region Handlers */
@@ -38,27 +36,22 @@ define(function (require, exports, module) {
 	/* endregion */
 
 	/* region Private vars and methods */
+	var _domain = null;
 	var _projectState = Project.CLOSE;
 	var _modulePath = FileUtils.getParentPath(ExtensionUtils.getModulePath(module));
 	/* endregion */
-
-
+	
 	init = function (domain) {
-		var deferred = new $.Deferred();
+		var d = new $.Deferred();
+		_domain = domain;
 		_attachEvent();
-		_createKeysDirectoryIfNotExists()
-		.then(function () {
-			deferred.resolve(domain);
-		}, function (err) {
-			deferred.reject(err);
-		});
-		return deferred.promise();
+		return d.resolve().promise();
 	};
 
 	openFile = function (localPath) {
 		var deferred = new $.Deferred();
 		if (!EditorManager.canOpenPath(localPath)) {
-			console.log("could not open this file for path");
+			console.error("error");
 			return;
 		}
 		CommandManager.execute(Commands.CMD_ADD_TO_WORKINGSET_AND_OPEN, {fullPath: localPath})
@@ -67,7 +60,6 @@ define(function (require, exports, module) {
 	};
 
 	/* Private Methods */
-
 	_attachEvent = function attachEvent() {
 		Project.on(Project.PROJECT_STATE_CHANGED, function (evt, obj) {
 			_projectState = obj.state;
@@ -99,9 +91,12 @@ define(function (require, exports, module) {
 		}
 		var localPath = document.file.fullPath;
 		var remotePath = PathManager.getLocalRelativePath(localPath);
-
+		
 		RemoteManager.uploadFile(Project.getServerSetting(), localPath, remotePath)
-		.fail(function (err) {
+		.then(function () {
+			
+		},
+		function (err) {
 			var ent = FileTreeView.getEntityWithPath(remotePath);
 			ent.downloaded = false;
 			FileTreeView.showAlert("ERROR", "Could not saved file to server <br>" + err);
@@ -109,45 +104,8 @@ define(function (require, exports, module) {
 		});
 	};
 
-	savePrivateKey = function (state, setting, text) {
-		var d = new $.Deferred();
-		if (setting.protocol ==="ftp") {
-			return d.resolve(setting).promise();
-		}
-		var path = PathManager.getPrivateKeysDirectoryPath() + setting.host + "@" + setting.user + "_rsa";
-		var file = FileSystem.getFileForPath(path);
-		FileUtils.writeText(file, text, true)
-		.then(function () {
-			setting.privateKey = path;
-			d.resolve(setting);
-		}, d.reject);
-		return d.promise();
-	};
 	
-	_createKeysDirectoryIfNotExists = function () {
-		var d = new $.Deferred();
-		var keysDir = FileSystem.getDirectoryForPath(_modulePath + "__KEYS__");
-		keysDir.exists(function (err, exists) {
-			if (err) {
-				d.reject(err);
-			} else {
-				if (!exists) {
-					keysDir.create(function (err, stat) {
-						if (err) {
-							d.reject();
-						} else {
-							d.resolve();
-						}
-					});
-				} else {
-					d.resolve();
-				}
-			}
-		});
-		return d.promise();
-	};
-
-	exports.init= init;
+	
+	exports.init = init;
 	exports.openFile = openFile;
-	exports.savePrivateKey = savePrivateKey;
 });

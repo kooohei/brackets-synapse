@@ -151,11 +151,9 @@ define(function (require, exports, module) {
 				_fallbackProjectRoot = ProjectManager.getProjectRoot().fullPath;
 				return ProjectManager.openProject(_projectDir.fullPath)
 					.then(function () {
-						//console.log("promise is done when the called openProject");
 						STATE.setOpen();
 						return new $.Deferred().resolve().promise();
 					}, function (err) {
-						//console.log("promise is fail when the called openProject");
 						STATE.setClose();
 						return new $.Deferred().reject(err).promise();
 					});
@@ -366,7 +364,6 @@ define(function (require, exports, module) {
 	};
 
 	_removeContent = function (entity) {
-		//console.log("current function _removeContent");
 		var deferred = new $.Deferred();
 		entity.moveToTrash(function (err) {
 			if (err) {
