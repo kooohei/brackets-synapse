@@ -21,7 +21,7 @@ define(function (require, exports, module) {
 			_getVersionByPrefs,
 			_setRealVersionToPreference,
 			
-			selfDiagnosis,
+			start,
 			_firstLaunch,
 			_chkKeysDirectory,
 			_getDirectoryContents
@@ -60,25 +60,31 @@ define(function (require, exports, module) {
 	
 	
 	
-	selfDiagnosis = function (domain) {
+	start = function (domain) {
+		console.log(1);
 		var d = new $.Deferred();
 		var prefVer = _getVersionByPrefs();
 		_getRealVersion()
 		.then(function (realVer) {
+			console.log(realVer, prefVer);
 			if (prefVer !== realVer) {
-				return _firstLaunch();
+				_firstLaunch()
+				.then(function () {
+					return _setRealVersionToPreference();
+				})
+				.then(d.resolve, d.reject);
 			} else {
-				return new $.Deferred().resolve().promise();
+				console.log(3);
+				d.resolve();
 			}
-		})
-		.then(function () {
-			return _setRealVersionToPreference();
-		})
-		.then(function () {
-			d.resolve(domain);
-		}, d.reject);
+		}, function (err) {
+			console.log(err);
+			d.reject(err);
+		});
 		return d.promise();
 	};
+	
+	
 	_firstLaunch = function () {
 		return _chkKeysDirectory();
 	};
@@ -118,10 +124,12 @@ define(function (require, exports, module) {
 				}, function (err) {
 					d.reject(err);
 				});
+			} else {
+				d.resolve();
 			}
 		});
 		return d.promise();
 	};
 	
-	exports.selfDiagnosis = selfDiagnosis;
+	exports.start = start;
 });
