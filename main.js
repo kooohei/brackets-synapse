@@ -12,7 +12,7 @@ define(function (require, exports, module) {
 			PreferencesManager = brackets.getModule("preferences/PreferencesManager"),
 			
 			PathManager = require("modules/PathManager"),
-			ExtensionUtility = require("modules/ExtensionUtility"),
+			ExtensionDiagnosis = require("modules/ExtensionDiagnosis"),
 			Menu = require("modules/Menu"),
 			Panel = require("modules/Panel"),
 			SettingManager = require("modules/SettingManager"),
@@ -35,6 +35,7 @@ define(function (require, exports, module) {
 	
 	
 	var setAppIcon = function (_domain) {
+		console.log(_domain);
 		var d = new $.Deferred(),
 				icon = $("<a>")
 				.attr({
@@ -52,7 +53,7 @@ define(function (require, exports, module) {
 	
 	AppInit.appReady(function () {
 		var domain = new NodeDomain("synapse", ExtensionUtils.getModulePath(module, "node/SynapseDomain"));
-		ExtensionUtility.selfDiagnosis(domain)
+		ExtensionDiagnosis.start(domain)
 		.then(setAppIcon)
 		.then(Panel.init)
 		.then(PathManager.init)
@@ -60,9 +61,8 @@ define(function (require, exports, module) {
 		.then(RemoteManager.init)
 		.then(FileTreeView.init)
 		.then(FileManager.init)
-		.then(function () {
-			Menu.setRootMenu();
-		}, function (err) {
+		.then(Menu.setRootMenu)
+		.fail(function (err) {
 			throw new Error(["Could not initialize to Synapse", err]);
 		});
 	});
