@@ -74,7 +74,6 @@ define(function (require, exports, module) {
 				})
 				.then(d.resolve, d.reject);
 			} else {
-				console.log(3);
 				d.resolve();
 			}
 		}, function (err) {

@@ -20,6 +20,8 @@ define(function (require, exports, module) {
 			RemoteManager = require("modules/RemoteManager"),
 			FileManager = require("modules/FileManager"),
 			COMMAND_ID = "kohei.synapse.mainPanel";
+	
+	var _domain = null;
 			
 	var $brackets = {
 				get toolbar() {
@@ -34,8 +36,7 @@ define(function (require, exports, module) {
 			};
 	
 	
-	var setAppIcon = function (_domain) {
-		console.log(_domain);
+	var setAppIcon = function () {
 		var d = new $.Deferred(),
 				icon = $("<a>")
 				.attr({
@@ -53,7 +54,8 @@ define(function (require, exports, module) {
 	
 	AppInit.appReady(function () {
 		var domain = new NodeDomain("synapse", ExtensionUtils.getModulePath(module, "node/SynapseDomain"));
-		ExtensionDiagnosis.start(domain)
+		_domain = domain;
+		ExtensionDiagnosis.start()
 		.then(setAppIcon)
 		.then(Panel.init)
 		.then(PathManager.init)

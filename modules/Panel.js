@@ -733,9 +733,11 @@ define(function (require, exports, module) {
 		if ($btn.hasClass("toggle-ftp")) {
 			$("#currentProtocol").val("ftp");
 			$("tr.sftp-row").hide();
+			$("#synapse-server-port").val("21");
 			$("tr.password-row").show();
 		} else if ($btn.hasClass("toggle-sftp")) {
 			$("tr.password-row").hide();
+			$("#synapse-server-port").val("22");
 			$("#currentProtocol").val("sftp");
 			$("tr.sftp-row").show();
 		}
