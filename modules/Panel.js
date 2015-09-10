@@ -416,7 +416,6 @@ define(function (require, exports, module) {
 		reloadServerSettingList();
 		return new $.Deferred().resolve().promise();
 	};
-
 	/**
 	 * Initialize server list panel and some events.
 	 *
@@ -466,7 +465,6 @@ define(function (require, exports, module) {
 		return deferred.promise();
 
 	};
-
 	/**
 	 * Show the server setting form panel
 	 *
@@ -549,7 +547,7 @@ define(function (require, exports, module) {
 					$("#synapse-server-host").val("");
 					$("#synapse-server-user").val("");
 					$("#synapse-server-password").val("");
-					$("#synapse-server-exclude").val("., .., .*");
+					$("#synapse-server-exclude").val("^\.$, ^\.\.$, ^\..+$");
 					d.resolve();
 				}
 				return d.promise();
@@ -575,7 +573,6 @@ define(function (require, exports, module) {
 		}
 		return deferred.promise();
 	};
-
 	/**
 	 * Close the server setting form panel
 	 *
@@ -601,7 +598,6 @@ define(function (require, exports, module) {
 			});
 		return deferred.promise();
 	};
-
 	/**
 	 * Close the server list panel
 	 *
@@ -627,7 +623,6 @@ define(function (require, exports, module) {
 			});
 		return deferred.promise();
 	};
-
 	/**
 	 * Delete server setting object from index of list.
 	 *

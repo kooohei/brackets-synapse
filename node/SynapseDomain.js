@@ -22,6 +22,7 @@
 			download,
 			logout,
 			readLocalFile,
+			checkOpenSSL,
 			
 			_getSftpOption,
 			
@@ -478,6 +479,10 @@
 		});
 	};
 	
+	checkOpenSSL = function () {
+		
+	};
+	
 
 	/**
 	 * initialize
@@ -652,6 +657,14 @@
 			}]
 		);
 		
+		domainManager.registerCommand(
+			"synapse",
+			"CheckOpenSSL",
+			checkOpenSSL,
+			true,
+			"", [{
+			}]
+		);
 
 		/**
 		 * register events
