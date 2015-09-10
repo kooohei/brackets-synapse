@@ -61,12 +61,10 @@ define(function (require, exports, module) {
 	
 	
 	start = function (domain) {
-		console.log(1);
 		var d = new $.Deferred();
 		var prefVer = _getVersionByPrefs();
 		_getRealVersion()
 		.then(function (realVer) {
-			console.log(realVer, prefVer);
 			if (prefVer !== realVer) {
 				_firstLaunch()
 				.then(function () {
@@ -77,7 +75,6 @@ define(function (require, exports, module) {
 				d.resolve();
 			}
 		}, function (err) {
-			console.log(err);
 			d.reject(err);
 		});
 		return d.promise();
