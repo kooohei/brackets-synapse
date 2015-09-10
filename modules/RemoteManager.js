@@ -74,23 +74,20 @@ define(function (require, exports, module) {
 
 	getListIgnoreExclude = function (serverSetting, list) {
 		if (serverSetting.exclude === undefined || serverSetting.exclude  === "") {
-			serverSetting.exclude = "";
+			serverSetting.exclude = "^\.$, ^\.\.$, ^\..+$";
 			return list;
 		}
+		
 		function isExclude (ptnAry, filename) {
 			var _isExclude = false;
 			_.forEach(ptnAry, function (ptn) {
 				ptn = ptn.trim();
-				if (ptn !== "") {
-					if (ptn === "." || ptn === "..") {
-						_isExclude = (ptn === filename);
-					} else {
-						ptn = ptn.replace(/\./g, "\\.");
-						ptn = ptn.replace(/\*/g, ".*");
-						var regexp = new RegExp(ptn);
-						_isExclude = regexp.test(filename);
-					}
-				}
+				ptn = ptn.replace(/\\/g, "\\");
+				
+				var regexp = new RegExp(ptn);
+				
+				_isExclude = filename.match(regexp);
+				console.log("ptn = " + ptn + " file = " + filename + " RexExp = " + regexp + " match = " + _isExclude);
 				if (_isExclude) return false;
 			});
 			return _isExclude;
@@ -155,17 +152,17 @@ define(function (require, exports, module) {
 		var deferred = new $.Deferred();
 		Panel.showSpinner();
 		_domain.exec("List", serverSetting, remotePath)
-			.then(function (list) {
-				if (serverSetting.protocol === "sftp") {
-					list = _convObjectLikeFTP(list);
-				}
-				list = getListIgnoreExclude(serverSetting, list);
-				deferred.resolve(list);
-			}, function (err) {
-				console.error(err);
-			}).always(function () {
-				Panel.hideSpinner();
-			});
+		.then(function (list) {
+			if (serverSetting.protocol === "sftp") {
+				list = _convObjectLikeFTP(list);
+			}
+			list = getListIgnoreExclude(serverSetting, list);
+			deferred.resolve(list);
+		}, function (err) {
+			console.error(err);
+		}).always(function () {
+			Panel.hideSpinner();
+		});
 		return deferred.promise();
 	};
 
