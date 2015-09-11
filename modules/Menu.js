@@ -107,9 +107,9 @@ define(function (require, exports, module) {
 			key: "Ctrl-Shift-Alt-Enter",
 			displayKey: "Ctrl-Shift-Alt-Enter"
 		});
-		topMenu.addMenuDivider();
-		
-		setDebugMenu();
+		//topMenu.addMenuDivider();
+		//Panel.showMain();
+		//setDebugMenu();
 	};
 	
 	setDebugMenu = function () {

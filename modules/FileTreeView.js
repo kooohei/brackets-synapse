@@ -43,7 +43,6 @@ define(function (require, exports, module) {
 			_getProjectDirectoryPath,
 			_setEntity,
 			_rename,
-			_flipContainer,
 			_setElement,
 			_projectDir,
 			_makeRowElement,
@@ -122,8 +121,6 @@ define(function (require, exports, module) {
 				this.children = {};
 			};
 	/* endregion */
-
-
 
 	/* Public Methods */
 	init = function (domain) {
@@ -475,7 +472,6 @@ define(function (require, exports, module) {
 
 
 	/* Private Methods */
-	// TODO the "l" flag has entity show too.
 	_setElement = function (entity) {
 		var deferred = new $.Deferred();
 		var $parent = null;
@@ -485,7 +481,7 @@ define(function (require, exports, module) {
 			$parent = _getElementWithEntity(entity);
 		}
 		if ($parent === null || $parent === undefined) {
-			throw new Error("Unexpected Exception. could not specified element");
+			throw new Error("Unexpected Exception. could not found the element");
 		}
 
 		$parent.find("ul.treeview-contents").remove();
@@ -659,6 +655,7 @@ define(function (require, exports, module) {
 			var $parent = _getElementWithEntity(entity.parent);
 			var $current = _getElementWithEntity(entity);
 			var $span = $("p.treeview-row > span", $current).first();
+			console.log($span);
 			var $input = $("<input/>").attr({
 				type: "text",
 				"id": "synapse-treeview-rename-editor"
@@ -692,11 +689,13 @@ define(function (require, exports, module) {
 						exists = true;
 					}
 				});
+				
 				if (exists) {
 					validate(entity, cb);
 				} else {
 					$span.show().html(_$input.val());
 					entity.text = _$input.val();
+					_$input.off("keypress.synapse");
 					_$input.remove();
 					cb(entity);
 				}
@@ -823,9 +822,6 @@ define(function (require, exports, module) {
 		return _setElement(parent);
 	};
 
-	_flipContainer = function () {
-
-	};
 
 	_makeBaseDirectoryIfIsNotExists = function (localPath) {
 		var deferred = new $.Deferred();
@@ -947,9 +943,11 @@ define(function (require, exports, module) {
 			_toggleDir(entity);
 		} else {
 			_loadDirectory(entity)
-				.then(function () {
-					// success
-				});
+			.then(function () {
+				// success
+			}, function (err) {
+				throw new Error(err);
+			});
 		}
 	};
 	

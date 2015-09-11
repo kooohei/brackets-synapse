@@ -69,9 +69,9 @@
 				<div class="input-append privateKeyFileSelect">
 					<div>
 					</div>
-					<input type="text" class="span2 privateKeyName" readonly id="appendedInputButtons" placeholder="{{Strings.SYNAPSE_SETTING_PH_PRIVATEKEY}}" value="">
+					<input type="text" class="" readonly id="synapse-server-privateKey-name" placeholder="{{Strings.SYNAPSE_SETTING_PH_PRIVATEKEY}}" value="">
 					<button id="choosePrivateKey" class="btn" type="button"><i class="fa fa-search"></i></button>
-					<button id="resetPrivateKey" class="btn" type="button"><i class="fa fa-refresh"></i></button>
+					<button id="resetPrivateKey" class="btn" type="button"><i class="fa fa-undo"></i></button>
 				</div>
 			</td>
 		</tr>
@@ -96,7 +96,10 @@
 				<i class="fa fa-ban"></i>
 			</th>
 			<td>
-				<input type="text" id="synapse-server-exclude" placeholder="{{Strings.SYNAPSE_SETTING_PH_EXCLUDEFILES}}"><br>
+				<div class="input-append">
+					<input type="text" class="" id="synapse-server-exclude" placeholder="{{Strings.SYNAPSE_SETTING_PH_EXCLUDEFILES}}">
+					<button id="resetExcludeFile" class="btn" type="button"><i class="fa fa-undo"></i></button>
+				</div>
 			</td>
 		</tr>
 	</table>

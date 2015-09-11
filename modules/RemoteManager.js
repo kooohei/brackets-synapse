@@ -87,7 +87,6 @@ define(function (require, exports, module) {
 				var regexp = new RegExp(ptn);
 				
 				_isExclude = filename.match(regexp);
-				console.log("ptn = " + ptn + " file = " + filename + " RexExp = " + regexp + " match = " + _isExclude);
 				if (_isExclude) return false;
 			});
 			return _isExclude;
@@ -122,7 +121,6 @@ define(function (require, exports, module) {
 				list = _convObjectLikeFTP(list);
 			}
 			list = getListIgnoreExclude(serverSetting, list);
-
 			return FileTreeView.setEntities(list, _rootEntity);
 		}, function (err) {
 			console.error(err);

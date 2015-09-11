@@ -5,19 +5,10 @@ define(function (require, exports, module) {
 
 	/* region Modules */
 	var PreferencesManager = brackets.getModule("preferences/PreferencesManager");
-	
+	var _ = brackets.getModule("thirdparty/lodash");
 	var PathManager = require("modules/PathManager");
 	var FileManager = require("modules/FileManager");
 	var Panel = require("modules/Panel");
-	/**
-	 * important, should be import lodash for _.chunk function
-	 * brackets's lodash version has not chunk function
-	 */
-	var _ = require("node_modules/lodash/index");
-	/*
-	 */
-	
-	
 	/* endregion */
 
 	/* region Public Methods */
@@ -73,7 +64,6 @@ define(function (require, exports, module) {
 	init = function (_domain) {
 		var deferred = new $.Deferred();
 		domain = _domain;
-
 		$serverSetting = $("#synapse-server-setting");
 		regexp.host = new RegExp("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])$");
 		regexp.port = new RegExp("[1-65535]");
@@ -134,7 +124,7 @@ define(function (require, exports, module) {
 			host 				: {form: $("#synapse-server-host", $serverSetting), icon: $("i.fa-desktop"), invalid: false},
 			port 				: {form: $("#synapse-server-port", $serverSetting), icon: $("i.fa-plug"), invalid: false},
 			user 				: {form: $("#synapse-server-user", $serverSetting), icon: $("i.fa-user"), invalid: false},
-			privateKey	: {form: $(".span2.privateKeyName", $serverSetting), icon: $("i.fa-key"), invalid: false},
+			privateKey	: {form: $("#synapse-server-privateKey-name", $serverSetting), icon: $("i.fa-key"), invalid: false},
 			passphrase	: {form: $("#synapse-server-passphrase", $serverSetting), icon: $("i.fa-unlock-alt"), invalid: false},
 			dir	 				: {form: $("#synapse-server-dir", $serverSetting), icon: $("i.fa-sitemap"), invalid: false},
 			exclude			: {form: $("#synapse-server-exclude", $serverSetting), icon: $("i.fa-ban"), invalid: false}
@@ -149,7 +139,6 @@ define(function (require, exports, module) {
 		};
 
 		var currentProtocol = $("#currentProtocol").val();
-		
 		var auth = $("#currentAuth").val();
 		
 		var values = "";
@@ -279,7 +268,6 @@ define(function (require, exports, module) {
 		});
 		return res;
 	};
-
 	/* Private Methods */
 	_appendServerBtnState = function (state) {
 		var dev_null = null;
@@ -441,8 +429,6 @@ define(function (require, exports, module) {
 		});
 		return deferred.promise();
 	};
-
-	
 
 	exports.init = init;
 	exports.edit = edit;

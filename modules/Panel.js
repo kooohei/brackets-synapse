@@ -76,11 +76,12 @@ define(function (require, exports, module) {
 			onProjectStateChanged,
 			onPrivateKeySelected,
 
+			resetExcludeFile,
 			openFileSelect,
 			resetPrivateKey;
 	/* endregion */
 
-	/* region UI Parts */
+	/* region UI source */
 	var j = {
 				get sb() {
 					return $("#sidebar");
@@ -123,12 +124,12 @@ define(function (require, exports, module) {
 
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/style.css");
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/treeview.css");
-	ExtensionUtils.loadStyleSheet(module, "../node_modules/font-awesome/css/font-awesome.min.css");
-
+	//ExtensionUtils.loadStyleSheet(module, "../node_modules/font-awesome/css/font-awesome.min.css");
 	/* endregion */
 
-
-	/* Public Methods */
+	/**
+	 * Public Methods
+	 */
 
 	/**
 	 * Inittialize Panel UI and register listener.
@@ -328,7 +329,9 @@ define(function (require, exports, module) {
 		return new $.Deferred().resolve().promise();
 	};
 
-	/* Private Methods */
+	/**
+	 * PrivateMethods
+	 */
 
 	/**
 	 * the panel will fadeout when close main panel then the project files container will shown.
@@ -387,6 +390,7 @@ define(function (require, exports, module) {
 
 		$("button#choosePrivateKey").on("click", openFileSelect);
 		$("button#resetPrivateKey").on("click", resetPrivateKey);
+		$("button#resetExcludeFile").on("click", resetExcludeFile);
 		$(".protocol-group", $serverSetting).on("click", onProtocolGroup);
 		$(".auth-group", $serverSetting).on("click", onAuthGroup);
 		$(".btn-add", $serverSetting).on("click", onEdit);
@@ -394,8 +398,7 @@ define(function (require, exports, module) {
 		$(".close-btn", $serverSetting).on("click", _hideServerSetting);
 		$("input[type='text']", $serverSetting).on("blur", SettingManager.validateAll);
 		$("input[type='password']", $serverSetting).on("blur", SettingManager.validateAll);
-		$("#synapse-server-privateKey").on("change", function() {
-		});
+		//$("#synapse-server-privateKey").on("change", function() {});
 
 		// reset protocol
 		$("#currentProtocol").val("ftp");
@@ -480,15 +483,12 @@ define(function (require, exports, module) {
 			return deferred.resolve().promise();
 		}
 
-		function open() {
+		function _open() {
 			SettingManager.reset()
 			.then(function () {
 				var d = new $.Deferred();
-				
 				if (state === "update") {
-						
 					j.s.data("index", setting.index);
-
 					if (setting.protocol === "sftp") {
 						$("#currentProtocol").val("sftp");
 						$("#currentAuth").val(setting.auth);
@@ -498,13 +498,13 @@ define(function (require, exports, module) {
 						
 						if (setting.auth === "key") {
 							
-							$(".span2.privateKeyName").val("Setted");
+							$("#synapse-server-privateKey-name").val("Setted");
 							$("#synapse-server-passphrase").val(setting.passphrase);
 							$("tr.password-row").hide();
 							$("tr.passphrase-row").show();
 							$("button.toggle-password").removeClass("active");
 							$("button.toggle-key").addClass("active");
-							$(".span2.privateKeyName");
+							$("#synapse-server-privateKey-name");
 							_currentPrivateKeyText = setting.privateKey;
 						}
 						if (setting.auth === "password") {
@@ -516,15 +516,15 @@ define(function (require, exports, module) {
 					if (setting.protocol === "ftp") {
 						$("tr.sftp-row").hide();
 						$("tr.password-row").show();
+						$("button.toggle-ftp").addClass("active");
+						$("button.toggle-sftp").removeClass("active");
 						$("#synapse-server-password").val(setting.password);
 					}
-
 					$("#synapse-server-host").val(setting.host);
 					$("#synapse-server-port").val(setting.port);
 					$("#synapse-server-user").val(setting.user);
 					$("#synapse-server-dir").val(setting.dir);
 					$("#synapse-server-exclude").val(setting.exclude);
-
 					$("button.btn-add", j.s)
 					.html(Strings.SYNAPSE_SETTING_UPDATE)
 					.css({
@@ -534,9 +534,7 @@ define(function (require, exports, module) {
 					.prop("disabled", false);
 					SettingManager.validateAll();
 					d.resolve();
-					
-				}
-				else {
+				} else {
 					$("button.btn-add", j.s)
 					.html(Strings.SYNAPSE_SETTING_APPEND)
 					.css({
@@ -547,7 +545,7 @@ define(function (require, exports, module) {
 					$("#synapse-server-host").val("");
 					$("#synapse-server-user").val("");
 					$("#synapse-server-password").val("");
-					$("#synapse-server-exclude").val("^\.$, ^\.\.$, ^\..+$");
+					resetExcludeFile();
 					d.resolve();
 				}
 				return d.promise();
@@ -556,19 +554,21 @@ define(function (require, exports, module) {
 				var destHeight = j.m.outerHeight() - j.h.outerHeight() - (j.s.outerHeight() + 10);
 				j.s.removeClass("hide");
 				j.tvc.css({"border-top": "1px solid rgba(255, 255, 255, 0.05)"});
-				j.tvc.animate({
-					"top": (j.s.outerHeight() + 10) + j.h.outerHeight() + "px"
-				}, "fast").promise().done(deferred.resolve);
+				j.tvc.animate({"top": (j.s.outerHeight() + 10) + j.h.outerHeight() + "px"}, "fast").promise()
+				.done(function () {
+					deferred.resolve();
+					SettingManager.validateAll();
+				});
 			});
 			return deferred.promise();
 		}
 
 		if (!j.l.hasClass("hide")) {
 			_hideServerList()
-				.then(open)
+				.then(_open)
 				.then(deferred.resolve, deferred.reject);
 		} else {
-			open()
+			_open()
 				.then(deferred.resolve, deferred.reject);
 		}
 		return deferred.promise();
@@ -707,10 +707,7 @@ define(function (require, exports, module) {
 			$connectBtn.html(Strings.SYNAPSE_LIST_DISCONNECT);
 		}
 	};
-
 	/* Handlers */
-
-
 	onProtocolGroup = function (e) {
 		var $btn = $(e.target);
 		if (!$btn.hasClass("toggle-ftp") && !$btn.hasClass("toggle-sftp")) {
@@ -891,14 +888,18 @@ define(function (require, exports, module) {
 		if ($("#synapse-server-privateKey").length) {
 			$("#synapse-server-privateKey").remove();
 		}
-		$(".span2.privateKeyName").val("");
+		$("#synapse-server-privateKey-name").val("");
 		_currentPrivateKeyText = null;
 		SettingManager.validateAll();
+	};
+	
+	resetExcludeFile = function (e) {
+		$("#synapse-server-exclude").val("^\\.$, ^\\.\\.$, ^\\..+$");
 	};
 
 	onPrivateKeySelected = function (e) {
 		var file = $(e.target).prop("files")[0];
-		var $keyName = $(".span2.privateKeyName", j.s);
+		var $keyName = $("#synapse-server-privateKey-name", j.s);
 		
 		_readPrivateKeyFile(file)
 		.then(function(res) {
@@ -923,7 +924,6 @@ define(function (require, exports, module) {
 			SettingManager.validateAll();
 		});
 	};
-	
 	/* unuse */
 	_readPrivateKeyPath = function (file) {
 		var reader = new FileReader();
@@ -955,8 +955,6 @@ define(function (require, exports, module) {
 	getCurrentPrivateKeyText = function () {
 		return _currentPrivateKeyText;
 	};
-	
-
 	
 		
 	exports.init = init;

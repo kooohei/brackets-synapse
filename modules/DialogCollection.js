@@ -5,6 +5,7 @@ define(function (require, exports, module) {
 	
 	/* region Modules */
 	var Dialogs = brackets.getModule("widgets/Dialogs");
+	var Strings = require("strings");
 	/* endregion */
 	
 	/* region Public vars */
@@ -56,6 +57,8 @@ define(function (require, exports, module) {
 			});
 		return d.promise();
 	};
+	
+	
 
 	exports.showYesNoModal = showYesNoModal;
 	exports.showAlert = showAlert;

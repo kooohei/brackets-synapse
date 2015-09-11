@@ -50,5 +50,10 @@ define({
 	"SYNAPSE_LIST_CONNECT": "接続",
 	"SYNAPSE_LIST_DISCONNECT": "切断",
 	"SYNAPSE_LIST_EDIT": "編集",
-	"SYNAPSE_LIST_DELETE": "削除"
+	"SYNAPSE_LIST_DELETE": "削除",
+	
+	"SYNAPSE_SECURE_WARNING_TITLE": "SECURITY WARNING",
+	"SYNAPSE_SECURE_WARNING_BTN1": "設定する",
+	"SYNAPSE_SECURE_WARNING_BTN2": "後で",
+	"SYNAPSE_SECURE_WARNING_BODY": "現在設定ファイルは平文にて保存されています。\nSynapseはサーバ設定ファイルの暗号化をおすすめします。\nここで設定したパスワードは保存されることはありませんのでBracketsが起動するたびにパスワードの入力が必要となります。\nパスワードを設定しますか？"
 });
