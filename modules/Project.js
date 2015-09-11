@@ -2,7 +2,7 @@
 /*global define, $, brackets, Mustache, window, console */
 define(function (require, exports, module) {
 	"use strict";
-	
+
 	/* region Modules */
 	var PathManager = require("modules/PathManager");
 	var FileSystem = brackets.getModule("filesystem/FileSystem");
@@ -18,8 +18,8 @@ define(function (require, exports, module) {
 	var _ = brackets.getModule("thirdparty/lodash");
 	var DocumentManager = brackets.getModule("document/DocumentManager");
 	/* endregion */
-	
-	
+
+
 	/* region Public Method */
 	var open,
 			close,
@@ -31,14 +31,14 @@ define(function (require, exports, module) {
 			renameLocalEntry,
 			maxProjectHistory = 3;
 	/* endregion */
-	
+
 	/* region Private vars */
 	var
 			_initProjectContext,
 			_makeProjectDirIfIsNotExists,
 			_createDirectory;
 	/* endregion */
-	
+
 	/* region Private Methods */
 	var _currentServer,
 			_hostDir,
@@ -72,8 +72,8 @@ define(function (require, exports, module) {
 			};
 	/* endregion */
 
-	
-	
+
+
 	/**
 	 * Open the project when the success connected to server, then get files list.
 	 *
@@ -81,7 +81,7 @@ define(function (require, exports, module) {
 	 * * and this function will checked backup number via maxProjectHistory.
 	 *
 	 * @param   {Object}   server setting object
-	 * @returns {$.Promise} 
+	 * @returns {$.Promise}
 	 */
 	open = function (server) {
 		/*
@@ -126,7 +126,7 @@ define(function (require, exports, module) {
 										if (err) {
 											dd.reject(err);
 											throw new Error("could not remove old project directries", err);
-											
+
 										} else {
 											dd.resolve();
 										}
@@ -165,7 +165,7 @@ define(function (require, exports, module) {
 	/**
 	 * Erase files in the tree view then remove recent project (backup temporary directory) from preference.
 	 *
-	 * @returns {$.Promise} 
+	 * @returns {$.Promise}
 	 */
 	close = function () {
 		var deferred = new $.Deferred();
@@ -180,7 +180,7 @@ define(function (require, exports, module) {
 
 	/**
 	 * Close brackets projects then opened project, that is opend when before the connected remove
-	 * 
+	 *
 	 * @returns {$.Promise}
 	 */
 	closeProject = function () {
@@ -192,12 +192,12 @@ define(function (require, exports, module) {
 	/**
 	 * it will back boolean to caller, if it is true when opened Synapse project
 	 *
-	 * @returns {$.Promise} 
+	 * @returns {$.Promise}
 	 */
 	isOpen = function () {
 		return STATE.isOpen();
 	};
-	
+
 	/**
 	 * It open file to current editor
 	 *
@@ -214,11 +214,11 @@ define(function (require, exports, module) {
 		}
 		return deferred.resolve(tmp).promise();
 	};
-	
+
 	/**
 	 * It will be back current server setting object.
 	 *
-	 * @returns {MIX} 
+	 * @returns {MIX}
 	 */
 	getServerSetting = function () {
 		if (STATE.isOpen()) {
@@ -227,8 +227,8 @@ define(function (require, exports, module) {
 			return false;
 		}
 	};
-	
-	
+
+
 	createDirectoryIfExists = function (path) {
 		var d = new $.Deferred();
 		var dir = FileSystem.getDirectoryForPath(path);
@@ -247,8 +247,8 @@ define(function (require, exports, module) {
 		});
 		return d.promise();
 	};
-	
-	
+
+
 	renameLocalEntry = function (oldPath, newPath, type) {
 		var d = new $.Deferred();
 		var oldEntry = null,
@@ -268,17 +268,15 @@ define(function (require, exports, module) {
 						d.resolve();
 					}
 				});
-			} else {
-				console.log("does not exists");
 			}
 			d.resolve();
 		});
 		return d.promise();
 	};
-	
-	
+
+
 	/* Private Methods */
-	
+
 	_makeProjectDirIfIsNotExists = function (server) {
 		var deferred = new $.Deferred();
 		_hostDir = FileSystem.getDirectoryForPath(PathManager.getProjectDirectoryPath(server.host + "-" + server.user));
@@ -324,7 +322,7 @@ define(function (require, exports, module) {
 		});
 		return deferred.promise();
 	};
-	
+
 	_baseDirectoryIsExists = function () {
 		var deferred = new $.Deferred();
 		var directory = _projectBaseDir;
@@ -398,8 +396,8 @@ define(function (require, exports, module) {
 		return new $.Deferred().resolve().promise();
 	};
 
-	
-	
+
+
 	EventDispatcher.makeEventDispatcher(exports);
 
 	exports.open = open;
