@@ -8,7 +8,7 @@
 	var fs = require("fs");
 	var _domainManager = null;
 	var Q = require("q");
-	var CryptoJS = require("crypto-js");
+	//var CryptoJS = require("crypto-js");
 	var client = null,
 			init,
 			test,
@@ -503,7 +503,7 @@
 			cb(null, text);
 		});
 	};
-
+	/*
 	cryptor = function (state, data, pass, cb) {
 		var err = null;
 		var mode = {
@@ -530,7 +530,7 @@
 			cb(err);
 		}
 	};
-
+	*/
 	/**
 	 * initialize
 	 */
