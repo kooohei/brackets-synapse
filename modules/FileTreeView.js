@@ -173,19 +173,19 @@ define(function (require, exports, module) {
 		var deferred = new $.Deferred();
 		var promises = [];
 		var params = [];
-		
+
 		var dirs = _.where(list, {type: "d"});
 		var files = _.where(list, {type: "-"});
 		var links = _.where(list, {type: "l"});
-		
+
 		_.pluck(_.sortBy(list, "name"), "name");
-		
+
 		list = [];
 		list = list
 						.concat(dirs)
 						.concat(files)
 						.concat(links);
-		
+
 		var depth = parent.depth + 1;
 		list.forEach(function (item, index) {
 			var type = "file";
@@ -248,7 +248,7 @@ define(function (require, exports, module) {
 
 		var oldLocalPath = PathManager.completionLocalPath(_getPathArray(_ctxMenuCurrentEntity));
 		var oldRemotePath = PathManager.completionRemotePath(_getPathArray(_ctxMenuCurrentEntity));
-		
+
 		var entry = null;
 		if (_ctxMenuCurrentEntity.type === "file") {
 			entry = FileSystem.getFileForPath(oldLocalPath);
@@ -306,7 +306,7 @@ define(function (require, exports, module) {
 			return deferred.reject().promise();
 		}
 		var remotePath = PathManager.completionRemotePath(_getPathArray(_ctxMenuCurrentEntity));
-		
+
 		DialogCollection.showYesNoModal(
 				"removeDirectoryDialog",
 				"Confirm",
@@ -452,7 +452,7 @@ define(function (require, exports, module) {
 					});
 			});
 	};
-	
+
 	getEntityWithPath = function (localPath) {
 		var split = localPath.split("/");
 		var children = rootEntity.children;
@@ -648,14 +648,13 @@ define(function (require, exports, module) {
 	};
 
 	_rename = function (entity, cb) {
-		
+
 		var $input = null;
 		var showInput = function (entity) {
 			var deferred = new $.Deferred();
 			var $parent = _getElementWithEntity(entity.parent);
 			var $current = _getElementWithEntity(entity);
 			var $span = $("p.treeview-row > span", $current).first();
-			console.log($span);
 			var $input = $("<input/>").attr({
 				type: "text",
 				"id": "synapse-treeview-rename-editor"
@@ -664,13 +663,13 @@ define(function (require, exports, module) {
 			$span.hide();
 			return deferred.resolve().promise();
 		};
-		
+
 		var validate = function (entity, cb) {
 			var $current = _getElementWithEntity(entity);
 			var _$input = $("input", $current).focus().select();
 			var parent = entity.parent;
 			var $parent = _getElementWithEntity(entity.parent);
-			var $span = $("p.treeview-row > span", $current);
+			var $span = $("p.treeview-row > span", $current).first();
 
 			_$input.focus().select();
 
@@ -689,7 +688,7 @@ define(function (require, exports, module) {
 						exists = true;
 					}
 				});
-				
+
 				if (exists) {
 					validate(entity, cb);
 				} else {
@@ -701,7 +700,7 @@ define(function (require, exports, module) {
 				}
 			});
 		};
-		
+
 		showInput(entity)
 		.then(function () {
 			validate(entity, cb);
@@ -714,7 +713,7 @@ define(function (require, exports, module) {
 			return deferred.reject().promise();
 		}
 		var parent = _ctxMenuCurrentEntity;
-		
+
 		var $elem = _getElementWithEntity(_ctxMenuCurrentEntity);
 		var cnt = 0;
 		_.forEach(parent.children, function (ent, key) {
@@ -761,7 +760,7 @@ define(function (require, exports, module) {
 				_rename(newEntity, function (ent) {
 					var localPath = _modulePath + "empty.txt";
 					var remotePath = PathManager.completionRemotePath(_getPathArray(ent));
-					
+
 					RemoteManager.uploadFile(_currentServerSetting, localPath, remotePath)
 					.then(function () {
 						deferred.resolve();
@@ -860,8 +859,8 @@ define(function (require, exports, module) {
 					FileManager.openFile(localPath);
 					deferred.resolve();
 				}, function (err) {
-					
-					if (err.code === 550) {	
+
+					if (err.code === 550) {
 						showAlert("ERROR", "Permission denied");
 					} else {
 						showAlert("ERROR", "Error Code: " + err.code);
@@ -912,16 +911,16 @@ define(function (require, exports, module) {
 		_ctxMenuCurrentEntity = _getEntityWithId($elem.attr("id"));
 		menu.open(e);
 	};
-	
+
 	onClick = function (e) {
 		var $elem = $(e.target);
-		
+
 		if ($elem.hasClass("treeview-contents") || $elem.hasClass("filename") || $elem.hasClass("fa")) {
 			$elem = $elem.parent().parent();
 		} else if ($elem.hasClass("treeview-row")) {
 			$elem = $elem.parent();
 		}
-		
+
 		if ($elem.hasClass("treeview-directory") || $elem.hasClass("treeview-root")) {
 			onDirClicked($elem);
 		}
@@ -929,16 +928,16 @@ define(function (require, exports, module) {
 			onFileClicked($elem);
 		}
 	};
-	
+
 	onFileClicked = function ($elem) {
 		var entity = _getEntityWithElement($elem);
 		_openFile(entity);
 	};
-	
+
 	onDirClicked = function ($elem) {
 		var id = $elem.attr("id");
 		var entity = _getEntityWithId(id);
-		
+
 		if ($elem.hasClass("loaded")) {
 			_toggleDir(entity);
 		} else {
@@ -950,7 +949,7 @@ define(function (require, exports, module) {
 			});
 		}
 	};
-	
+
 	onProjectStateChanged = function (e, obj) {
 		if (obj.state === Project.OPEN) {
 			_projectDir = obj.directory;
