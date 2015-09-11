@@ -1,31 +1,36 @@
 /*jslint node:true, vars:true, plusplus:true, devel:true, nomen:true, regexp:true, white:true, indent:2, maxerr:50 */
 /*global define, $, brackets, Mustache, window, console */
 define(function (require, exports, module) {
-	"use strict";
-	
+	"use strict";	
+	/* region Module */
 	var PreferencesManager = brackets.getModule("preferences/PreferencesManager");
 	var FileSystem = brackets.getModule("filesystem/FileSystem");
 	var FileUtils = brackets.getModule("file/FileUtils");
+	var _ = brackets.getModule("thirdparty/lodash");
 	var Directory = brackets.getModule("filesystem/Directory");
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
 	var Async = brackets.getModule("utils/Async");
-	var _ = require("node_modules/lodash/index");
 	var DialogCollection = require("modules/DialogCollection");
 	
+	/* endregion */
 	
-	
+	/* region Privatte Vars */
 	var preference = PreferencesManager.getExtensionPrefs("brackets-synapse");
+	/* endregion */
 	
-	
+	/* region Private Methods */
 	var _getRealVersion,
 			_getVersionByPrefs,
 			_setRealVersionToPreference,
-			
-			start,
 			_firstLaunch,
 			_chkKeysDirectory,
-			_getDirectoryContents
-			;
+			_getDirectoryContents,
+			_checkPreferenceIsCrypto;
+	/* endregion */
+	
+	/* region Public Methods */
+	var start;
+	/* endregion */
 	
 	_getVersionByPrefs = function () {
 		var version = preference.get("version");
@@ -57,32 +62,12 @@ define(function (require, exports, module) {
 		});
 		return d.promise();
 	};
-	
-	
-	
-	start = function (domain) {
-		var d = new $.Deferred();
-		var prefVer = _getVersionByPrefs();
-		_getRealVersion()
-		.then(function (realVer) {
-			if (prefVer !== realVer) {
-				_firstLaunch()
-				.then(function () {
-					return _setRealVersionToPreference();
-				})
-				.then(d.resolve, d.reject);
-			} else {
-				d.resolve();
-			}
-		}, function (err) {
-			d.reject(err);
-		});
-		return d.promise();
-	};
-	
-	
-	_firstLaunch = function () {
-		return _chkKeysDirectory();
+	_firstLaunch = function (prefVer, realVer) {
+		if (prefVer !== realVer) {
+			return _chkKeysDirectory();
+		} else {
+			return new $.Deferred().resolve().promise();
+		}
 	};
 	_getDirectoryContents = function (dir) {
 		var d = $.Deferred();
@@ -123,6 +108,40 @@ define(function (require, exports, module) {
 			} else {
 				d.resolve();
 			}
+		});
+		return d.promise();
+	};
+	_checkPreferenceIsCrypto = function (domain) {
+//		var d = new $.Deferred(),
+//				settingPrefs = preference.get("server-settings");
+//				
+//		if (settingPrefs === undefined || settingPrefs === "") {
+//			return d.resolve().promise();
+//		}
+//		if (!settingPrefs.match(/"host".+?"port"/)) {
+//			return d.resolve().promise();
+//		} else {
+//			d.resolve();
+//		}
+//		return d.promise();
+	};
+	
+	start = function (domain) {
+		var d = new $.Deferred();
+		var prefVer = _getVersionByPrefs();
+		
+		_getRealVersion()
+		.then(function (realVer) {
+			return _firstLaunch(prefVer, realVer);
+		})
+		.then(function () {
+			return _setRealVersionToPreference();
+		})
+//		.then(function () {
+//			return _checkPreferenceIsCrypto(domain);
+//		})
+		.then(d.resolve, function (err) {
+			d.reject(err);
 		});
 		return d.promise();
 	};

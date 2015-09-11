@@ -262,11 +262,14 @@ define(function (require, exports, module) {
 			if (exists) {
 				oldEntry.rename(newPath, function (err) {
 					if (err) {
+						console.log(err);
 						d.reject(err);
 					} else {
 						d.resolve();
 					}
 				});
+			} else {
+				console.log("does not exists");
 			}
 			d.resolve();
 		});

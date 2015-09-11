@@ -8,6 +8,7 @@
 	var fs = require("fs");
 	var _domainManager = null;
 	var Q = require("q");
+	var CryptoJS = require("crypto-js");
 	var client = null,
 			init,
 			test,
@@ -23,13 +24,14 @@
 			logout,
 			readLocalFile,
 			checkOpenSSL,
-			
+			cryptor,
+
 			_getSftpOption,
-			
+
 			_sftpReadDir,
 			_sftpCheckSymLink,
 			_sftpCheckSymLinks,
-			
+
 			_ftpReadDir,
 			_ftpCheckSymLink,
 			_ftpCheckSymLinks;
@@ -40,7 +42,7 @@
 					port: parseInt(setting.port),
 					username: setting.user
 				};
-		
+
 		if (setting.auth === "key") {
 			settingObj.privateKey = setting.privateKey;
 			settingObj.passphrase = setting.passphrase;
@@ -67,7 +69,7 @@
 		if (row.longname.charAt(0) === "l") {
 			var filePath = basePath === "./" ? basePath + row.filename : basePath + "/" + row.filename;
 			sftp.stat(filePath, function (err, stat) {
-				if (err) { 
+				if (err) {
 					q.reject(err);
 				} else {
 					row.stat = stat;
@@ -96,7 +98,7 @@
 
 		return q.promise;
 	};
-	
+
 	_ftpReadDir = function (client, path) {
 		var q = Q.defer();
 		client.list(path, function (err, list) {
@@ -108,7 +110,7 @@
 		});
 		return q.promise;
 	};
-	
+
 	connect = function (server, remoteRoot, cb) {
 		/* FTP */
 		if (server.protocol === "ftp") {
@@ -125,13 +127,13 @@
 			});
 			client.connect(server);
 		}
-		
+
 		/* SFTP */
 		if (server.protocol === "sftp") {
 			var setting = _getSftpOption(server);
-			
-			
-			
+
+
+
 			client = new SSH();
 			client.on("error", function (err) {
 				console.error(err);
@@ -190,11 +192,11 @@
 					} else {
 						cb(null, true);
 					}
-					
+
 				});
 			});
 			client.connect(server);
-		} else 
+		} else
 		if (server.protocol === "sftp") {
 			var setting = _getSftpOption(server);
 			client = new SSH();
@@ -218,7 +220,7 @@
 	};
 
 	getList = function (server, path, cb) {
-		
+
 		if (server.protocol === "ftp") {
 			client = new Client();
 			client.once("error", function (err) {
@@ -310,9 +312,9 @@
 	};
 
 	mkdir = function (server, path, cb) {
-		
+
 		if (server.protocol === "ftp") {
-		
+
 			client = new Client();
 			client.once("error", function (err) {
 				if (err) {
@@ -355,7 +357,7 @@
 	};
 
 	removeDirectory = function (serverSetting, remotePath, cb) {
-		
+
 		if (serverSetting.protocol === "ftp") {
 			client = new Client();
 			client.once("error", function (err) {
@@ -376,7 +378,7 @@
 			});
 			client.connect(serverSetting);
 		}
-		
+
 		if (serverSetting.protocol === "sftp") {
 			var setting = _getSftpOption(serverSetting);
 			client = new SSH();
@@ -400,29 +402,52 @@
 	};
 
 	deleteFile = function (serverSetting, remotePath, cb) {
-		client = new Client();
-		client.once("error", function (err) {
-			logout(client);
-			if (err) {
-
-				cb(err);
-			}
-		});
-		client.once("ready", function () {
-			client.delete(remotePath, function (err) {
+		if (serverSetting.protocol === "ftp") {
+			client = new Client();
+			client.once("error", function (err) {
 				logout(client);
 				if (err) {
 					cb(err);
-				} else {
-					cb(null, true);
 				}
 			});
-		});
-		client.connect(serverSetting);
+			client.once("ready", function () {
+				client.delete(remotePath, function (err) {
+					logout(client);
+					if (err) {
+						cb(err);
+					} else {
+						cb(null, true);
+					}
+				});
+			});
+			client.connect(serverSetting);
+		} else
+		if (serverSetting.protocol === "sftp") {
+			var setting = _getSftpOption(serverSetting);
+			client = new SSH();
+			client.on("ready", function () {
+				client.sftp(function (err, sftp) {
+					console.log(err, sftp);
+					if (err) {
+						cb(err);
+					} else {
+
+						sftp.unlink(remotePath, function (err) {
+							if (err) {
+								cb(err);
+							} else {
+								cb(null, true);
+							}
+							client.end();
+						});
+					}
+				});
+			}).connect(setting);
+		}
 	};
 
 	download = function (serverSetting, localPath, remotePath, cb) {
-		
+
 		if (serverSetting.protocol === "ftp") {
 			client = new Client();
 			client.once("error", function (err) {
@@ -447,7 +472,7 @@
 				});
 			});
 			client.connect(serverSetting);
-		
+
 		} else if (serverSetting.protocol === "sftp") {
 			var setting = _getSftpOption(serverSetting);
 			client = new SSH();
@@ -469,7 +494,7 @@
 			}).connect(setting);
 		}
 	};
-	
+
 	readLocalFile = function (path, cb) {
 		fs.readFile(path, "utf8", function (err, text) {
 			if (err) {
@@ -478,11 +503,33 @@
 			cb(null, text);
 		});
 	};
-	
-	checkOpenSSL = function () {
-		
+
+	cryptor = function (state, data, pass, cb) {
+		var err = null;
+		var mode = {
+			mode: CryptoJS.mode.CBC,
+			keySize: 256
+		};
+
+		if (data === "" || !data) {
+			cb(new Error({message: "Error Invalid parameter were found [data]", src: [data], err: null}));
+		}
+		if (pass === "" || pass.length < 4) {
+			cb(new Error({message: "Error Invalid parameter were found [pass]", src: [pass], err: null}));
+		}
+
+		if (state === "encrypt") {
+			var cipher = CryptoJS.AES.encrypt(data, pass, mode);
+			cb(null, cipher.toString());
+		} else if (state === "decrypt") {
+			var bytes = CryptoJS.AES.decrypt(data.toString(), pass, mode),
+					decrypted = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+			cb(null, decrypted);
+		} else {
+			err = new Error({message: "Error Invalid parameter were found [state].", src: [state], err: null});
+			cb(err);
+		}
 	};
-	
 
 	/**
 	 * initialize
@@ -645,7 +692,7 @@
 				type: "boolean"
 			}]
 		);
-		
+
 		domainManager.registerCommand(
 			"synapse",
 			"ReadLocalFile",
@@ -656,7 +703,7 @@
 				type: "string"
 			}]
 		);
-		
+
 		domainManager.registerCommand(
 			"synapse",
 			"CheckOpenSSL",
@@ -666,10 +713,25 @@
 			}]
 		);
 
+		domainManager.registerCommand(
+			"synapse",
+			"cryptor",
+			cryptor,
+			true, [{
+				name: "data",
+				type: "string"
+			},{
+				name: "pass",
+				type: "string"
+			}]
+		);
+
+
+
 		/**
 		 * register events
 		 */
-//		
+//
 //		domainManager.registerEvent(
 //			"synapse",
 //			"Connected",

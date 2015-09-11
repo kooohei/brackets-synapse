@@ -99,8 +99,8 @@ define(function (require, exports, module) {
 		function (err) {
 			var ent = FileTreeView.getEntityWithPath(remotePath);
 			ent.downloaded = false;
-			FileTreeView.showAlert("ERROR", "Could not saved file to server <br>" + err);
-			throw new Error("Could not saved file to server<br>" + err);
+			FileTreeView.showAlert("ERROR", "Could not save file to server <br>" + err);
+			throw new Error("Could not save file to server<br>" + err);
 		});
 	};
 
