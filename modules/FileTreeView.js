@@ -3,7 +3,7 @@
 define(function (require, exports, module) {
 	"use strict";
 
-	/* region Modules */
+	// Modules >
 	var FileUtils = brackets.getModule("file/FileUtils");
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
 	var EventDispatcher = brackets.getModule("utils/EventDispatcher");
@@ -21,24 +21,24 @@ define(function (require, exports, module) {
 	var Project = require("modules/Project");
 	var FileManager = require("modules/FileManager");
 	var Strings = require("strings");
-	/* endregion */
+	// <
 
-	/* region Private vars */
+	// Private vars >
 	var _modulePath = FileUtils.getParentPath(ExtensionUtils.getModulePath(module)),
 			_domain,
 			_remoteRootPath = null,
 			_renameValidate,
 			_currentServerSetting = null,
 			_ctxMenuCurrentEntity = null;
-	/* endregion */
+	// <
 
-	/* region Public vars */
+	// Public vars >
 	var rootEntity,
 			offset_left = 13; // font-size
 	var PROJECT_DIR = "PROJ";
-	/* endregion */
+	// <
 
-	/* region Private methods */
+	// Private Methods >
 	var _checkPrimitive,
 			_getProjectDirectoryPath,
 			_setEntity,
@@ -60,9 +60,9 @@ define(function (require, exports, module) {
 			_getElementWithEntity,
 			_toggleDir,
 			_newFile,
-	/* endregion */
+	//<
 
-	/* region Public methods */
+	// Public methods >
 			refresh,
 			rename,
 			deleteFile,
@@ -82,9 +82,9 @@ define(function (require, exports, module) {
 			onFileClicked,
 			onTreeViewContextMenu,
 			onProjectStateChanged;
-	/* endregion */
+	//<
 
-	/* regionn objects */
+	// objects >
 	var jq = {
 				get container() {
 					return $("#synapse-tree");
@@ -120,7 +120,7 @@ define(function (require, exports, module) {
 				this.downloaded = false;
 				this.children = {};
 			};
-	/* endregion */
+	// <
 
 	/* Public Methods */
 	init = function (domain) {
@@ -821,7 +821,6 @@ define(function (require, exports, module) {
 		return _setElement(parent);
 	};
 
-
 	_makeBaseDirectoryIfIsNotExists = function (localPath) {
 		var deferred = new $.Deferred();
 		var baseDirPath = FileUtils.getDirectoryPath(localPath);
@@ -874,7 +873,6 @@ define(function (require, exports, module) {
 		}
 		return deferred.promise();
 	};
-
 
 	onTreeViewContextMenu = function (e, menu) {
 		if ($("#synapse-tree").hasClass("disabled")) {

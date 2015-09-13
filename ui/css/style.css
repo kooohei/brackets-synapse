@@ -331,3 +331,22 @@ div#synapse-tree-back {
 #synapse p.synapse-server-setting-alert-caption {
 	color: #e6e6e6;
 }
+
+/**
+ * Notify
+ */
+#synapse div#synapse-notify-container {
+	position: absolute;
+	top: 100px;
+	right: 100px;
+	width: 400px;
+	min-height: 100px;
+	height: auto;
+	box-sizing: border-box;
+}
+#synapse div.synapse-notify {
+	width: 400px;
+	height: auto;
+	padding: 10px;
+	background: #f00;
+}

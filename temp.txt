@@ -1,0 +1,376 @@
+{
+    "fonts.fontSize": "11.5px",
+    "fonts.fontFamily": "'SourceCodePro-Medium', ＭＳ ゴシック, 'MS Gothic', monospace",
+    "hirse.beautify.onSave": false,
+    "hirse.outline.enabled": false,
+    "themes.theme": "dark-theme",
+    "linting.collapsed": false,
+    "useTabChar": true,
+    "tabSize": 2,
+    "language": {
+        "javascript": {
+            "linting.prefer": "JSHint",
+            "linting.usePreferredOnly": true
+        }
+    },
+    "numberedBookmarks.bm": {
+        "C:/Users/Kohei/AppData/Roaming/Brackets/extensions/user/brackets-synapse/modules/Panel.js": [
+            null,
+            {
+                "x": 1,
+                "y": 358
+            }
+        ]
+    },
+    "debug.showErrorsInStatusBar": false,
+    "wordWrap": false,
+    "acb-bootstrap-snippets.enabled": true,
+    "brackets-snippets.defaultSnippetDirectory": "C:/Users/Kohei/AppData/Roaming/Brackets/snippets/",
+    "brackets-snippets.snippetDirectories": [
+        {
+            "fullPath": "C:/Users/Kohei/AppData/Roaming/Brackets/extensions/user/zaggino.brackets-snippets/default_snippets/angularjs/",
+            "autoLoad": true
+        },
+        {
+            "fullPath": "C:/Users/Kohei/AppData/Roaming/Brackets/extensions/user/zaggino.brackets-snippets/default_snippets/anylang/",
+            "autoLoad": true
+        },
+        {
+            "fullPath": "C:/Users/Kohei/AppData/Roaming/Brackets/extensions/user/zaggino.brackets-snippets/default_snippets/bootstrap/",
+            "autoLoad": true
+        },
+        {
+            "fullPath": "C:/Users/Kohei/AppData/Roaming/Brackets/extensions/user/zaggino.brackets-snippets/default_snippets/foundation/",
+            "autoLoad": true
+        },
+        {
+            "fullPath": "C:/Users/Kohei/AppData/Roaming/Brackets/extensions/user/zaggino.brackets-snippets/default_snippets/html/",
+            "autoLoad": true
+        },
+        {
+            "fullPath": "C:/Users/Kohei/AppData/Roaming/Brackets/extensions/user/zaggino.brackets-snippets/default_snippets/js/",
+            "autoLoad": true
+        },
+        {
+            "fullPath": "C:/Users/Kohei/AppData/Roaming/Brackets/extensions/user/zaggino.brackets-snippets/default_snippets/php/",
+            "autoLoad": true
+        }
+    ],
+    "edc.brackets-snippets.hints": [
+        {
+            "trigger": "cl",
+            "scope": "javascript",
+            "description": "console.log",
+            "tag": "VanillaJS",
+            "tagHide": true,
+            "text": "console.log(${1:obj});${2}",
+            "source": "system"
+        },
+        {
+            "trigger": "cd",
+            "scope": "javascript",
+            "description": "console.dir",
+            "tag": "VanillaJS",
+            "tagHide": true,
+            "text": "console.dir(${1:obj});${2}",
+            "source": "system"
+        },
+        {
+            "trigger": "ce",
+            "scope": "javascript",
+            "description": "console.error",
+            "tag": "VanillaJS",
+            "tagHide": true,
+            "text": "console.error(${1:obj});${2}",
+            "source": "system"
+        },
+        {
+            "trigger": "cll",
+            "scope": "javascript",
+            "description": "console.log",
+            "tag": "VanillaJS",
+            "tagHide": true,
+            "text": "console.log('${1:obj}:', ${1:obj});${2}",
+            "source": "system"
+        },
+        {
+            "trigger": "cdd",
+            "scope": "javascript",
+            "description": "console.dir",
+            "tag": "VanillaJS",
+            "tagHide": true,
+            "text": "console.dir('${1:obj}:', ${1:obj});${2}",
+            "source": "system"
+        },
+        {
+            "trigger": "cee",
+            "scope": "javascript",
+            "description": "console.error",
+            "tag": "VanillaJS",
+            "tagHide": true,
+            "text": "console.error('${1:obj}:', ${1:obj});${2}",
+            "source": "system"
+        },
+        {
+            "trigger": "ae",
+            "scope": "javascript",
+            "description": "document.addEventListener",
+            "tag": "VanillaJS",
+            "tagHide": true,
+            "text": "${1:document}.addEventListener('${2:event}', function(e) {\n  ${3}\n});",
+            "source": "system"
+        },
+        {
+            "trigger": "ac",
+            "scope": "javascript",
+            "description": "document.appendChild",
+            "tag": "VanillaJS",
+            "tagHide": true,
+            "text": "${1:document}.appendChild(${2:elem});${3}",
+            "source": "system"
+        },
+        {
+            "trigger": "rc",
+            "scope": "javascript",
+            "description": "document.removeChild",
+            "tag": "VanillaJS",
+            "tagHide": true,
+            "text": "${1:document}.removeChild(${2:elem});${3}",
+            "source": "system"
+        },
+        {
+            "trigger": "cel",
+            "scope": "javascript",
+            "description": "document.createElement",
+            "tag": "VanillaJS",
+            "tagHide": true,
+            "text": "${1:document}.createElement(${2:elem});${3}",
+            "source": "system"
+        },
+        {
+            "trigger": "gi",
+            "scope": "javascript",
+            "description": "document.getElementById",
+            "tag": "VanillaJS",
+            "tagHide": true,
+            "text": "${1:document}.getElementById('${2:id}');${3}",
+            "source": "system"
+        },
+        {
+            "trigger": "gc",
+            "scope": "javascript",
+            "description": "document.getElementsByClassName",
+            "tag": "VanillaJS",
+            "tagHide": true,
+            "text": "${1:document}.getElementsByClassName('${2:class}');${3}",
+            "source": "system"
+        },
+        {
+            "trigger": "gt",
+            "scope": "javascript",
+            "description": "document.getElementsByTagName",
+            "tag": "VanillaJS",
+            "tagHide": true,
+            "text": "${1:document}.getElementsByTagName('${2:tag}');${3}",
+            "source": "system"
+        },
+        {
+            "trigger": "qs",
+            "scope": "javascript",
+            "description": "document.querySelector",
+            "tag": "VanillaJS",
+            "tagHide": true,
+            "text": "${1:document}.querySelector('${2:selector}');${3}",
+            "source": "system"
+        },
+        {
+            "trigger": "qsa",
+            "scope": "javascript",
+            "description": "document.querySelectorAll",
+            "tag": "VanillaJS",
+            "tagHide": true,
+            "text": "${1:document}.querySelectorAll('${2:selector}');${3}",
+            "source": "system"
+        },
+        {
+            "trigger": "fe",
+            "scope": "javascript",
+            "description": "forEach",
+            "tag": "VanillaJS",
+            "tagHide": true,
+            "text": "${1:myArray}.forEach(function (${2:elem}) {\n  ${3}\n});",
+            "source": "system"
+        },
+        {
+            "trigger": "fi",
+            "scope": "javascript",
+            "description": "for in",
+            "tag": "VanillaJS",
+            "tagHide": true,
+            "text": "for (${1:prop} in ${2:obj}) {\n  if (${2:obj}.hasOwnProperty(${1:prop})) {\n    ${3}\n  }\n}",
+            "source": "system"
+        },
+        {
+            "trigger": "fn",
+            "scope": "javascript",
+            "description": "function",
+            "tag": "VanillaJS",
+            "tagHide": true,
+            "text": "function ${1:methodName} (${2:arguments}) {\n  ${3}\n}",
+            "source": "system"
+        },
+        {
+            "trigger": "afn",
+            "scope": "javascript",
+            "description": "anonymous function",
+            "tag": "VanillaJS",
+            "tagHide": true,
+            "text": "function (${1:arguments}) {\n  ${2}\n}",
+            "source": "system"
+        },
+        {
+            "trigger": "pr",
+            "scope": "javascript",
+            "description": "prototype",
+            "tag": "VanillaJS",
+            "tagHide": true,
+            "text": "${1:ClassName}.prototype.${2:methodName} = function (${3:arguments}) {\n  ${4}\n};",
+            "source": "system"
+        },
+        {
+            "trigger": "sw",
+            "scope": "javascript",
+            "description": "switch statement",
+            "tag": "VanillaJS",
+            "tagHide": true,
+            "text": "switch(${1:expression}) {\n  case ${2:value}:\n    ${3}\n    break;\n  default:\n    break;\n}",
+            "source": "system"
+        },
+        {
+            "trigger": "si",
+            "scope": "javascript",
+            "description": "setInterval",
+            "tag": "VanillaJS",
+            "tagHide": true,
+            "text": "setInterval(function() {\n  ${2}\n}, ${1:delay});",
+            "source": "system"
+        },
+        {
+            "trigger": "st",
+            "scope": "javascript",
+            "description": "setTimeout",
+            "tag": "VanillaJS",
+            "tagHide": true,
+            "text": "setTimeout(function() {\n  ${2}\n}, ${1:delay});",
+            "source": "system"
+        },
+        {
+            "trigger": "brackets",
+            "description": "getModule",
+            "scope": "javascript",
+            "text": "var ${1} = brackets.getModule(\"${2}\");",
+            "mTime": 1441504123605
+        },
+        {
+            "trigger": "define",
+            "description": "New module",
+            "scope": "javascript",
+            "text": "/*jslint node:true, vars:true, plusplus:true, devel:true, nomen:true, regexp:true, white:true, indent:2, maxerr:50 */\r\n/*global define, $, brackets, Mustache, window, console */\r\ndefine(function (require, exports, module) {\r\n\t\"use strict\";\r\n    ${1}\r\n});",
+            "mTime": 1441504203338
+        },
+        {
+            "trigger": "then",
+            "description": "promise",
+            "scope": "javascript",
+            "text": ".then(function (${1}){\n    ${2}\n}, function (${3}) {\n    ${4}\n})",
+            "mTime": 1441504448769
+        },
+        {
+            "trigger": "comment",
+            "description": "multi line comment",
+            "scope": "javascript",
+            "text": "/**\n * ${1}\n */",
+            "mTime": 1441505218619
+        },
+        {
+            "trigger": "annotation",
+            "text": "/*jslint esnext: true, node:true, vars:true, plusplus:true, devel:true, nomen:true, regexp:true, white:true, indent:2, maxerr:50 */\r\n/*global define, $, window, console */\r\n\r\n${1}",
+            "scope": "javascript",
+            "mTime": 1441665018257
+        },
+        {
+            "trigger": "defer",
+            "scope": "javascript",
+            "text": "var d = new $.Deferred();\n",
+            "mTime": 1441899544659
+        },
+        {
+            "trigger": "html5",
+            "scope": "html",
+            "text": "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n\t<meta charset=\"UTF-8\">\r\n\t<title>${1}</title>\r\n\t${2}\r\n</head>\r\n<body>\r\n\t\r\n</body>\r\n</html>",
+            "mTime": 1441660715617
+        }
+    ],
+    "closeBrackets": false,
+    "styleActiveLine": true,
+    "mikaeljorhult.bracketsTodo.enabled": false,
+    "WakaTime.ignore": [
+        "^/tmp/",
+        "^/private/"
+    ],
+    "WakaTime.apikey": "57442498-099e-46e1-828e-1617e2f7996b",
+    "brackets-git.gitPath": "C:\\Program Files\\Git\\cmd\\git.exe",
+    "brackets-git.stripWhitespaceFromCommits": true,
+    "brackets-git.addEndlineToTheEndOfFile": true,
+    "brackets-git.removeByteOrderMark": false,
+    "brackets-git.normalizeLineEndings": true,
+    "brackets-git.useGitGutter": true,
+    "brackets-git.markModifiedInTree": true,
+    "brackets-git.showBashButton": true,
+    "brackets-git.showReportBugButton": true,
+    "brackets-git.useCodeInspection": true,
+    "brackets-git.useGitFtp": false,
+    "brackets-git.useVerboseDiff": false,
+    "brackets-git.useDifftool": false,
+    "brackets-git.showTerminalIcon": true,
+    "brackets-git.clearWhitespaceOnSave": false,
+    "brackets-git.avatarType": "AVATAR_COLOR",
+    "brackets-git.dateMode": 1,
+    "brackets-git.dateFormat": null,
+    "brackets-git.enableAdvancedFeatures": false,
+    "brackets-git.panelShortcut": "Ctrl-Alt-G",
+    "brackets-git.commitCurrentShortcut": null,
+    "brackets-git.commitAllShortcut": null,
+    "brackets-git.bashShortcut": null,
+    "brackets-git.pushShortcut": null,
+    "brackets-git.pullShortcut": null,
+    "brackets-git.gotoPrevChangeShortcut": null,
+    "brackets-git.gotoNextChangeShortcut": null,
+    "brackets-git.refreshShortcut": null,
+    "brackets-git.gitTimeout": 10,
+    "brackets-git.terminalCommand": "C:\\Program Files\\Git\\git-bash.exe",
+    "brackets-git.terminalCommandArgs": "--cd=$1",
+    "brackets-git.debugMode": false,
+    "eqFTP.projectsPaths": [
+        "D:/Windows/Documents/eqFTP Projects/s2.bitglobe.net/"
+    ],
+    "eqFTP.defaultSettingsPathPref": "D:/Windows/Documents/eqFTP Projects",
+    "eqFTP.useEncryption": true,
+    "fileFilters": [
+        {
+            "name": "Synapse",
+            "patterns": [
+                "node",
+                "node_module",
+                "__PROJ__",
+                "ui"
+            ]
+        }
+    ],
+    "brackets-synapse.version": "1.1.9",
+    "brackets-synapse.server-settings": "[{\"protocol\":\"ftp\",\"host\":\"dscs.jp\",\"port\":\"21\",\"user\":\"dscs\",\"password\":\"kohei0730\",\"dir\":\"\",\"exclude\":\"^\\\\.$, ^\\\\.\\\\.$, ^\\\\..+$\",\"index\":1},{\"protocol\":\"ftp\",\"host\":\"penguin-village.jp\",\"port\":\"21\",\"user\":\"dive-g\",\"password\":\"kohei0730\",\"dir\":\"\",\"exclude\":\"^\\\\.$, ^\\\\.\\\\.$, ^\\\\..+$\",\"index\":2}]",
+    "hirse.outline.args": true,
+    "hirse.outline.unnamed": false,
+		"custom-region-fold.startRegionWord": ">",
+		"custom-region-fold.endRegionWord": "<"
+}

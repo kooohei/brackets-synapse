@@ -7,8 +7,10 @@ define(function (require, exports, module) {
 	var Menus = brackets.getModule("command/Menus");
 	var CommandManager = brackets.getModule("command/CommandManager");
 	var Commands = brackets.getModule("command/Commands");
+	var PreferencesManager = brackets.getModule("preferences/PreferencesManager");
 	var KeyBindingManager = brackets.getModule("command/KeyBindingManager");
 	var _ = brackets.getModule("thirdparty/lodash");
+	var ExtensionDiagnosis = require("modules/ExtensionDiagnosis");
 	
 	var Panel = require("modules/Panel");
 	var FileTreeView = require("modules/FileTreeView");
@@ -96,7 +98,7 @@ define(function (require, exports, module) {
 		}
 	};
 	
-	setRootMenu = function () {
+	setRootMenu = function (domain) {
 		var menu = CommandManager.register(
 			"Synapse",
 			"kohei.synapse.mainPanel",
@@ -107,9 +109,13 @@ define(function (require, exports, module) {
 			key: "Ctrl-Shift-Alt-Enter",
 			displayKey: "Ctrl-Shift-Alt-Enter"
 		});
-		//topMenu.addMenuDivider();
+		
+		//For Debug >
 		//Panel.showMain();
-		//setDebugMenu();
+		setDebugMenu();
+		// <
+		
+		
 	};
 	
 	setDebugMenu = function () {

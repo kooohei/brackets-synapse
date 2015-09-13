@@ -2,13 +2,18 @@
 /*global define, brackets: true, $, window, navigator, Mustache, jQuery, console, moment */
 (function () {
 	"use strict";
-
-	var SSH = require("ssh2").Client;
-	var Client = require("ftp");
-	var fs = require("fs");
-	var _domainManager = null;
-	var Q = require("q");
-	//var CryptoJS = require("crypto-js");
+	
+	// modules >
+	var _domainManager = null,
+			Client = require("ftp"),
+			SSH = require("ssh2").Client,
+			Q = require("q"),
+			fs = require("fs"),
+			CryptoJS = require("crypto-js"),
+			AES = require("crypto-js/aes");
+	//<
+	
+	// methods and vars >
 	var client = null,
 			init,
 			test,
@@ -19,22 +24,27 @@
 			mkdir,
 			removeDirectory,
 			deleteFile,
-			_sftpStat,
 			download,
 			logout,
 			readLocalFile,
-			checkOpenSSL,
+			
 			cryptor,
+			_getKey,
+			_getIV,
 
 			_getSftpOption,
-
 			_sftpReadDir,
 			_sftpCheckSymLink,
 			_sftpCheckSymLinks,
+			_sftpStat,
 
 			_ftpReadDir,
 			_ftpCheckSymLink,
 			_ftpCheckSymLinks;
+	
+	var ENCRYPT = "encrypt",
+			DECRYPT = "decrypt";
+	//<
 
 	_getSftpOption = function (setting) {
 		var settingObj = {
@@ -52,7 +62,7 @@
 		}
 		return settingObj;
 	};
-
+	
 	_sftpReadDir = function (sftp, remoteRoot) {
 		var q = Q.defer();
 		sftp.readdir(remoteRoot, function (err, list) {
@@ -98,7 +108,6 @@
 
 		return q.promise;
 	};
-
 	_ftpReadDir = function (client, path) {
 		var q = Q.defer();
 		client.list(path, function (err, list) {
@@ -160,7 +169,6 @@
 			}).connect(setting);
 		}
 	};
-
 	logout = function (client) {
 		client.once("close", function () {});
 		client.once("end", function () {});
@@ -173,7 +181,6 @@
 			}
 		});
 	};
-
 	upload = function (server, localPath, remotePath, cb) {
 		if (server.protocol === "ftp") {
 			client = new Client();
@@ -218,7 +225,6 @@
 			}).connect(setting);
 		}
 	};
-
 	getList = function (server, path, cb) {
 
 		if (server.protocol === "ftp") {
@@ -265,7 +271,6 @@
 			}).connect(_getSftpOption(server));
 		}
 	};
-
 	rename = function (server, oldPath, newPath, cb) {
 		if (server.protocol === "ftp") {
 			client = new Client();
@@ -310,7 +315,6 @@
 			}).connect(setting);
 		}
 	};
-
 	mkdir = function (server, path, cb) {
 
 		if (server.protocol === "ftp") {
@@ -355,7 +359,6 @@
 			}).connect(setting);
 		}
 	};
-
 	removeDirectory = function (serverSetting, remotePath, cb) {
 
 		if (serverSetting.protocol === "ftp") {
@@ -400,7 +403,6 @@
 			}).connect(setting);
 		}
 	};
-
 	deleteFile = function (serverSetting, remotePath, cb) {
 		if (serverSetting.protocol === "ftp") {
 			client = new Client();
@@ -445,7 +447,6 @@
 			}).connect(setting);
 		}
 	};
-
 	download = function (serverSetting, localPath, remotePath, cb) {
 
 		if (serverSetting.protocol === "ftp") {
@@ -494,7 +495,6 @@
 			}).connect(setting);
 		}
 	};
-
 	readLocalFile = function (path, cb) {
 		fs.readFile(path, "utf8", function (err, text) {
 			if (err) {
@@ -503,24 +503,64 @@
 			cb(null, text);
 		});
 	};
-	/*
-	cryptor = function (state, data, pass, cb) {
+	
+	
+	
+	
+	
+	
+	/**
+	 * Key	length 256bit, 
+	 * IV		length 128bit,
+	 * Iteration count: (password.length * 2000)
+	 */
+	cryptor = function (state, password, src, cb) {
+		
+		var salt 	= CryptoJS.lib.WordArray.random(128 / 8);
+		
+		console.log(salt);
+		
+		var iv	 	= _getIV(password, salt);
+		var key 	= _getKey(password, salt);
+		
+		var data = null,
+				res = {};
+		
+		console.log({
+			salt: salt, 
+			iv: iv,
+			key: key
+		});
+		
+		if (state === ENCRYPT) {
+			
+			console.log({
+				salt: salt, 
+				iv: iv,
+				key: key});
+			data = CryptoJS.AES.encrypt(src, key, {iv: iv});
+			res.cipherred = data.ciphertext.toString();
+			res.iv 	= data.iv.toString();
+			res.key = data.key.toString();
+			console.log(data, res);
+			cb(null, res);
+		}
+		/*
 		var err = null;
+		var key = pass;
 		var mode = {
 			mode: CryptoJS.mode.CBC,
-			keySize: 256
+			padding: CryptoJS.pad.Pkcs7
 		};
-
 		if (data === "" || !data) {
 			cb(new Error({message: "Error Invalid parameter were found [data]", src: [data], err: null}));
 		}
 		if (pass === "" || pass.length < 4) {
 			cb(new Error({message: "Error Invalid parameter were found [pass]", src: [pass], err: null}));
 		}
-
 		if (state === "encrypt") {
-			var cipher = CryptoJS.AES.encrypt(data, pass, mode);
-			cb(null, cipher.toString());
+			var cipher = CryptoJS.AES.encrypt(data, key, mode);
+			var settingCipher = cipher.toString();
 		} else if (state === "decrypt") {
 			var bytes = CryptoJS.AES.decrypt(data.toString(), pass, mode),
 					decrypted = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
@@ -529,11 +569,20 @@
 			err = new Error({message: "Error Invalid parameter were found [state].", src: [state], err: null});
 			cb(err);
 		}
+		*/
 	};
-	*/
-	/**
-	 * initialize
-	 */
+	_getIV = function (password, salt) {
+		return CryptoJS.PBKDF2(password, salt, {keySize: 128 / 32, iterations: 500});
+	};
+	_getKey = function (password, salt) {
+		return CryptoJS.PBKDF2(password, salt, {keySizes: 256 / 32, iterations: 1000});
+	};
+	
+	
+	
+	
+	
+	
 	init = function (domainManager, domainPath) {
 
 		if (!domainManager.hasDomain("synapse")) {
@@ -544,10 +593,7 @@
 		}
 		_domainManager = domainManager;
 
-		/**
-		 * register commands
-		 */
-
+		// FTP and SFTP functions >
 		domainManager.registerCommand(
 			"synapse",
 			"Connect",
@@ -564,7 +610,6 @@
 				type: "object"
 			}]
 		);
-
 		domainManager.registerCommand(
 			"synapse",
 			"List",
@@ -581,7 +626,6 @@
 				type: "object"
 			}]
 		);
-
 		domainManager.registerCommand(
 			"synapse",
 			"Rename",
@@ -601,7 +645,6 @@
 				type: "boolean"
 			}]
 		);
-
 		domainManager.registerCommand(
 			"synapse",
 			"Mkdir",
@@ -618,7 +661,6 @@
 				type: "boolean"
 			}]
 		);
-
 		domainManager.registerCommand(
 			"synapse",
 			"UploadFile",
@@ -638,7 +680,6 @@
 				type: "boolean"
 			}]
 		);
-
 		domainManager.registerCommand(
 			"synapse",
 			"RemoveDirectory",
@@ -655,7 +696,6 @@
 				type: "boolean"
 			}]
 		);
-
 		domainManager.registerCommand(
 			"synapse",
 			"DeleteFile",
@@ -672,7 +712,6 @@
 				type: "boolean"
 			}]
 		);
-
 		domainManager.registerCommand(
 			"synapse",
 			"Download",
@@ -692,7 +731,6 @@
 				type: "boolean"
 			}]
 		);
-
 		domainManager.registerCommand(
 			"synapse",
 			"ReadLocalFile",
@@ -703,45 +741,25 @@
 				type: "string"
 			}]
 		);
-
-		domainManager.registerCommand(
-			"synapse",
-			"CheckOpenSSL",
-			checkOpenSSL,
-			true,
-			"", [{
-			}]
-		);
-
+		//<
+		
+		// Crypto functions >
 		domainManager.registerCommand(
 			"synapse",
 			"cryptor",
 			cryptor,
 			true, [{
-				name: "data",
+				name: "state",
+				type: "string"
+			}, {
+				name: "password",
 				type: "string"
 			},{
-				name: "pass",
+				name: "src",
 				type: "string"
 			}]
 		);
-
-
-
-		/**
-		 * register events
-		 */
-//
-//		domainManager.registerEvent(
-//			"synapse",
-//			"Connected",
-//			null
-//		);
-//		domainManager.registerEvent(
-//			"synapse",
-//			"Error",
-//			null
-//		);
+		//<
 	};
 
 	exports.init = init;

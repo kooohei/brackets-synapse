@@ -9,7 +9,6 @@ define(function (require, exports, module) {
 			AppInit = brackets.getModule("utils/AppInit"),
 			NodeDomain = brackets.getModule("utils/NodeDomain"),
 			CommandManager = brackets.getModule("command/CommandManager"),
-			PreferencesManager = brackets.getModule("preferences/PreferencesManager"),
 			
 			PathManager = require("modules/PathManager"),
 			ExtensionDiagnosis = require("modules/ExtensionDiagnosis"),
@@ -55,7 +54,8 @@ define(function (require, exports, module) {
 	AppInit.appReady(function () {
 		var domain = new NodeDomain("synapse", ExtensionUtils.getModulePath(module, "node/SynapseDomain"));
 		_domain = domain;
-		ExtensionDiagnosis.start()
+		
+		ExtensionDiagnosis.start(_domain)
 		.then(setAppIcon)
 		.then(Panel.init)
 		.then(PathManager.init)
