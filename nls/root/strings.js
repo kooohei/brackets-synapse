@@ -53,7 +53,7 @@ define({
 	"SYNAPSE_LIST_DELETE": "DELETE",
 	
 	"SYNAPSE_SECURE_WARNING_TITLE": "SECURITY WARNING",
-	"SYNAPSE_SECURE_WARNING_BTN1": "I Do",
+	"SYNAPSE_SECURE_WARNING_BTN1": "Now I do that.",
 	"SYNAPSE_SECURE_WARNING_BTN2": "Later",
-	"SYNAPSE_SECURE_WARNING_BODY": "Currently, the server settings has been saved by the plain text.\nSynapse recommend the encryption of the your server settings.\nHowever, you must enter the password every time the bracket is started\nDo you input the password?"
+	"SYNAPSE_SECURE_WARNING_BODY": "Now, setting stored data is not secure."
 });

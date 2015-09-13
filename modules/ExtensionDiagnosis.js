@@ -6,6 +6,7 @@ define(function (require, exports, module) {
 	var PreferencesManager = brackets.getModule("preferences/PreferencesManager");
 	var FileSystem = brackets.getModule("filesystem/FileSystem");
 	var FileUtils = brackets.getModule("file/FileUtils");
+	var Notify = require("modules/Notify").Notify;
 	var _ = brackets.getModule("thirdparty/lodash");
 	var Directory = brackets.getModule("filesystem/Directory");
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
@@ -15,7 +16,8 @@ define(function (require, exports, module) {
 	/* endregion */
 	
 	/* region Privatte Vars */
-	var preference = PreferencesManager.getExtensionPrefs("brackets-synapse");
+	var	_domain,
+			preference = PreferencesManager.getExtensionPrefs("brackets-synapse");
 	/* endregion */
 	
 	/* region Private Methods */
@@ -25,17 +27,21 @@ define(function (require, exports, module) {
 			_firstLaunch,
 			_chkKeysDirectory,
 			_getDirectoryContents,
-			_checkPreferenceIsCrypto;
+			_checkSettingState;
 	/* endregion */
 	
 	/* region Public Methods */
-	var start;
+	var start,
+			getDomain;
 	/* endregion */
+	
+	var onClickSecureWarning;
 	
 	_getVersionByPrefs = function () {
 		var version = preference.get("version");
 		return version;
 	};
+	
 	_getRealVersion = function () {
 		var d = new $.Deferred();
 		var file = FileSystem.getFileForPath(FileUtils.getParentPath(ExtensionUtils.getModulePath(module)) + "package.json");
@@ -47,6 +53,7 @@ define(function (require, exports, module) {
 		});
 		return d.promise();
 	};
+	
 	_setRealVersionToPreference = function () {
 		var d = new $.Deferred();
 		_getRealVersion()
@@ -62,6 +69,7 @@ define(function (require, exports, module) {
 		});
 		return d.promise();
 	};
+	
 	_firstLaunch = function (prefVer, realVer) {
 		if (prefVer !== realVer) {
 			return _chkKeysDirectory();
@@ -69,6 +77,7 @@ define(function (require, exports, module) {
 			return new $.Deferred().resolve().promise();
 		}
 	};
+	
 	_getDirectoryContents = function (dir) {
 		var d = $.Deferred();
 		dir.getContents(function (err, contents, stats, statsErrors) {
@@ -80,6 +89,7 @@ define(function (require, exports, module) {
 		});
 		return d.promise();
 	};
+	
 	_chkKeysDirectory = function () {
 		var d = new $.Deferred();
 		var path = FileUtils.getParentPath(ExtensionUtils.getModulePath(module)) + "__KEYS__";
@@ -111,22 +121,41 @@ define(function (require, exports, module) {
 		});
 		return d.promise();
 	};
-	_checkPreferenceIsCrypto = function (domain) {
-//		var d = new $.Deferred(),
-//				settingPrefs = preference.get("server-settings");
-//				
-//		if (settingPrefs === undefined || settingPrefs === "") {
-//			return d.resolve().promise();
-//		}
-//		if (!settingPrefs.match(/"host".+?"port"/)) {
-//			return d.resolve().promise();
-//		} else {
-//			d.resolve();
-//		}
-//		return d.promise();
+	
+	_checkSettingState = function () {
+		var d = new $.Deferred(),
+				settingPrefs = preference.get("server-settings");
+				
+		if (settingPrefs === undefined || settingPrefs === "") {
+			return d.resolve().promise();
+		}
+		if (!settingPrefs.match(/"host".+?"port"/)) {
+			console.log("there is not found to problem.");
+			return d.resolve().promise();
+		} else {
+			console.log("not secure");
+			// there is not secured setting data.
+			var notify = new Notify("secureWarning",
+															"secureWarning",
+															"SECURE WARNING",
+															{type: 1, text1: "Now I do that", text2: "Later"},
+															onClickSecureWarning
+														).show();
+			
+		}
+		return d.promise();
+	};
+	onClickSecureWarning = function (e) {
+		if (e.data === "Now I do that") {
+			
+		}
+		if (e.data === "OK") {
+			
+		}
 	};
 	
 	start = function (domain) {
+		_domain = domain;
 		var d = new $.Deferred();
 		var prefVer = _getVersionByPrefs();
 		
@@ -137,15 +166,15 @@ define(function (require, exports, module) {
 		.then(function () {
 			return _setRealVersionToPreference();
 		})
-//		.then(function () {
-//			return _checkPreferenceIsCrypto(domain);
-//		})
+		.then(function () {
+			return _checkSettingState(domain);
+		})
 		.then(d.resolve, function (err) {
-			console.log(err);
 			d.reject(err);
 		});
 		return d.promise();
 	};
 	
 	exports.start = start;
+	exports.getDomain = getDomain;
 });

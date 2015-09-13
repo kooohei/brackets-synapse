@@ -1,8 +1,9 @@
 {
   "name": "brackets-synapse-domain",
   "dependencies": {
+    "crypto-js": "^3.1.5",
     "ftp": "0.3.10",
     "q": "^1.4.1",
-    "ssh2": "latest"
+    "ssh2": "^0.4.11"
   }
 }

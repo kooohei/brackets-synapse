@@ -3,15 +3,15 @@
 define(function (require, exports, module) {
 	"use strict";
 
-	/* region Modules */
+	// Modules >
 	var PreferencesManager = brackets.getModule("preferences/PreferencesManager");
 	var _ = brackets.getModule("thirdparty/lodash");
 	var PathManager = require("modules/PathManager");
 	var FileManager = require("modules/FileManager");
 	var Panel = require("modules/Panel");
-	/* endregion */
+	// <
 
-	/* region Public Methods */
+	// Public Methods >
 	var init,
 			edit,
 			validateAll,
@@ -22,9 +22,9 @@ define(function (require, exports, module) {
 			deleteServerSetting,
 			uglify,
 			deuglify;
-	/* endregion */
+	// <
 
-	/* region Private Methods */
+	// Private Methods >
 	var _getServerSettings,
 			_rebuildIndex,
 			_editServerSetting,
@@ -36,7 +36,7 @@ define(function (require, exports, module) {
 			_showConnectTestSpinner,
 			_hideConnectTestSpinner
 			;
-	/* endregion */
+	// <
 
 	var domain,
 			preference = PreferencesManager.getExtensionPrefs("brackets-synapse");
