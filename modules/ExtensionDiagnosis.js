@@ -141,6 +141,7 @@ define(function (require, exports, module) {
 //			return _checkPreferenceIsCrypto(domain);
 //		})
 		.then(d.resolve, function (err) {
+			console.log(err);
 			d.reject(err);
 		});
 		return d.promise();

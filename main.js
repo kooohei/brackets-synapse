@@ -65,6 +65,7 @@ define(function (require, exports, module) {
 		.then(FileManager.init)
 		.then(Menu.setRootMenu)
 		.fail(function (err) {
+			console.error(err);
 			throw new Error(["Could not initialize to Synapse", err]);
 		});
 	});
