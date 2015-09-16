@@ -53,7 +53,7 @@ define({
 	"SYNAPSE_LIST_DELETE": "DELETE",
 	
 	"SYNAPSE_SECURE_WARNING_TITLE": "SECURITY WARNING",
-	"SYNAPSE_SECURE_WARNING_BTN1": "Now I do that.",
-	"SYNAPSE_SECURE_WARNING_BTN2": "Later",
-	"SYNAPSE_SECURE_WARNING_BODY": "Now, setting stored data is not secure."
+	"SYNAPSE_SECURE_WARNING_MESSAGE": "<p>&nbsp;The server settings have been store via the plain text so far. </p><p>I recommended to do encryption to the settings.<br>(The password is just one for all settings)</p><p>However, You must be input to password when started synapse at every time.</p><p>The password is never stored.</p>",
+	"SYNAPSE_SECURE_WARNING_BTN1": "Entered",
+	"SYNAPSE_SECURE_WARNING_BTN2": "Later"
 });

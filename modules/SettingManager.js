@@ -9,6 +9,11 @@ define(function (require, exports, module) {
 	var PathManager = require("modules/PathManager");
 	var FileManager = require("modules/FileManager");
 	var Panel = require("modules/Panel");
+	var Notify = require("modules/Notify").Notify;
+	var Strings = require("strings");
+	var Utils = require("modules/Utils");
+	var CryptoManager = require("modules/CryptoManager");
+	var PreferenceManager = require("modules/PreferenceManager");
 	// <
 
 	// Public Methods >
@@ -19,11 +24,9 @@ define(function (require, exports, module) {
 			reset,
 			getServerList,
 			getServerSetting,
-			deleteServerSetting,
-			uglify,
-			deuglify;
+			deleteServerSetting;
 	// <
-
+	
 	// Private Methods >
 	var _getServerSettings,
 			_rebuildIndex,
@@ -32,14 +35,20 @@ define(function (require, exports, module) {
 			_connectTest,
 			_showSettingAlert,
 			_hideSettingAlert,
-			_appendServerBtnState,
-			_showConnectTestSpinner,
-			_hideConnectTestSpinner
+			_appendServerBtnState
 			;
 	// <
+	
+	// Private vars >
+	var _serverSettings = null;
+	//<
+	
+	// Listener >
+	var onSecureWarningDo,
+			onSecureWarningLater;
+	// <
 
-	var domain,
-			preference = PreferencesManager.getExtensionPrefs("brackets-synapse");
+	var domain;
 	var Server = function () {
 		this.protocol = "ftp";
 		this.host = null;
@@ -52,6 +61,7 @@ define(function (require, exports, module) {
 		this.exclude = null;
 	};
 	var $serverSetting = null;
+	
 	var regexp = {
 		host: null,
 		port: null,
@@ -64,6 +74,7 @@ define(function (require, exports, module) {
 	init = function (_domain) {
 		var deferred = new $.Deferred();
 		domain = _domain;
+		
 		$serverSetting = $("#synapse-server-setting");
 		regexp.host = new RegExp("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])$");
 		regexp.port = new RegExp("[1-65535]");
@@ -295,12 +306,19 @@ define(function (require, exports, module) {
 	};
 
 	_getServerSettings = function () {
-		var json = preference.get("server-settings");
-		if (typeof (json) === "undefined") {
-			preference.definePreference("server-settings", "string", JSON.stringify([]));
-			return [];
-		} else {
+		var preference = PreferencesManager.getExtensionPrefs("brackets-synapse");
+		var setting = preference.get("server-settings");
+		var isEncrypt = preference.get("use-crypt");
+		
+		if (isEncrypt) {
+			// show password form.
+			var password = "kohei0730";
+			var cipher = PreferenceManager.getServerSettings();
+			var json = CryptoManager.decrypt(password, cipher);
 			return JSON.parse(json);
+		} else {
+			_serverSettings = JSON.parse(setting);
+			return _serverSettings;
 		}
 	};
 
@@ -349,6 +367,7 @@ define(function (require, exports, module) {
 
 	_saveServerSettings = function (list) {
 		var deferred = new $.Deferred();
+		var preference = PreferencesManager.getExtensionPrefs("brackets-synapse");
 		if (!preference.set("server-settings", JSON.stringify(list))) {
 			deferred.reject("could not set server configuration to preference.");
 		} else {
@@ -399,6 +418,7 @@ define(function (require, exports, module) {
 	_rebuildIndex = function () {
 		var list = _getServerSettings();
 		var deferred = new $.Deferred();
+		var preference = PreferencesManager.getExtensionPrefs("brackets-synapse");
 		var i;
 
 		for (i = 0; i < list.length; i++) {
@@ -429,6 +449,10 @@ define(function (require, exports, module) {
 		});
 		return deferred.promise();
 	};
+	
+	
+	
+	
 
 	exports.init = init;
 	exports.edit = edit;
@@ -437,5 +461,7 @@ define(function (require, exports, module) {
 	exports.getServerList = getServerList;
 	exports.getServerSetting = getServerSetting;
 	exports.deleteServerSetting = deleteServerSetting;
-
+	exports.getModuleName = function () {
+		return module.id;
+	};
 });

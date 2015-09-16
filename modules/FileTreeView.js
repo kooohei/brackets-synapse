@@ -972,4 +972,7 @@ define(function (require, exports, module) {
 	exports.removeDirectory = removeDirectory;
 	exports.onTreeViewContextMenu = onTreeViewContextMenu;
 	exports.clearCurrentTree = clearCurrentTree;
+	exports.getModuleName = function () {
+		return module.id;
+	};
 });

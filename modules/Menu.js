@@ -112,7 +112,7 @@ define(function (require, exports, module) {
 		
 		//For Debug >
 		//Panel.showMain();
-		setDebugMenu();
+		//setDebugMenu();
 		// <
 		
 		
@@ -182,5 +182,8 @@ define(function (require, exports, module) {
 	exports.ContextMenuCommandIds = ContextMenuCommandIds;
 	exports.ContextMenuIds = ContextMenuIds;
 	exports.treeViewContextMenuState = treeViewContextMenuState;
+	exports.getModuleName = function () {
+		return module.id;
+	};
 
 });
