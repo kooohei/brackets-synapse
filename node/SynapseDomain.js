@@ -8,9 +8,7 @@
 			Client = require("ftp"),
 			SSH = require("ssh2").Client,
 			Q = require("q"),
-			fs = require("fs"),
-			CryptoJS = require("crypto-js"),
-			AES = require("crypto-js/aes");
+			fs = require("fs");
 	//<
 	
 	// methods and vars >
@@ -28,10 +26,6 @@
 			logout,
 			readLocalFile,
 			
-			cryptor,
-			_getKey,
-			_getIV,
-
 			_getSftpOption,
 			_sftpReadDir,
 			_sftpCheckSymLink,
@@ -42,8 +36,6 @@
 			_ftpCheckSymLink,
 			_ftpCheckSymLinks;
 	
-	var ENCRYPT = "encrypt",
-			DECRYPT = "decrypt";
 	//<
 
 	_getSftpOption = function (setting) {
@@ -505,84 +497,6 @@
 	};
 	
 	
-	
-	
-	
-	
-	/**
-	 * Key	length 256bit, 
-	 * IV		length 128bit,
-	 * Iteration count: (password.length * 2000)
-	 */
-	cryptor = function (state, password, src, cb) {
-		
-		var salt 	= CryptoJS.lib.WordArray.random(128 / 8);
-		
-		console.log(salt);
-		
-		var iv	 	= _getIV(password, salt);
-		var key 	= _getKey(password, salt);
-		
-		var data = null,
-				res = {};
-		
-		console.log({
-			salt: salt, 
-			iv: iv,
-			key: key
-		});
-		
-		if (state === ENCRYPT) {
-			
-			console.log({
-				salt: salt, 
-				iv: iv,
-				key: key});
-			data = CryptoJS.AES.encrypt(src, key, {iv: iv});
-			res.cipherred = data.ciphertext.toString();
-			res.iv 	= data.iv.toString();
-			res.key = data.key.toString();
-			console.log(data, res);
-			cb(null, res);
-		}
-		/*
-		var err = null;
-		var key = pass;
-		var mode = {
-			mode: CryptoJS.mode.CBC,
-			padding: CryptoJS.pad.Pkcs7
-		};
-		if (data === "" || !data) {
-			cb(new Error({message: "Error Invalid parameter were found [data]", src: [data], err: null}));
-		}
-		if (pass === "" || pass.length < 4) {
-			cb(new Error({message: "Error Invalid parameter were found [pass]", src: [pass], err: null}));
-		}
-		if (state === "encrypt") {
-			var cipher = CryptoJS.AES.encrypt(data, key, mode);
-			var settingCipher = cipher.toString();
-		} else if (state === "decrypt") {
-			var bytes = CryptoJS.AES.decrypt(data.toString(), pass, mode),
-					decrypted = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-			cb(null, decrypted);
-		} else {
-			err = new Error({message: "Error Invalid parameter were found [state].", src: [state], err: null});
-			cb(err);
-		}
-		*/
-	};
-	_getIV = function (password, salt) {
-		return CryptoJS.PBKDF2(password, salt, {keySize: 128 / 32, iterations: 500});
-	};
-	_getKey = function (password, salt) {
-		return CryptoJS.PBKDF2(password, salt, {keySizes: 256 / 32, iterations: 1000});
-	};
-	
-	
-	
-	
-	
-	
 	init = function (domainManager, domainPath) {
 
 		if (!domainManager.hasDomain("synapse")) {
@@ -741,25 +655,7 @@
 				type: "string"
 			}]
 		);
-		//<
-		
-		// Crypto functions >
-		domainManager.registerCommand(
-			"synapse",
-			"cryptor",
-			cryptor,
-			true, [{
-				name: "state",
-				type: "string"
-			}, {
-				name: "password",
-				type: "string"
-			},{
-				name: "src",
-				type: "string"
-			}]
-		);
-		//<
+		// <
 	};
 
 	exports.init = init;

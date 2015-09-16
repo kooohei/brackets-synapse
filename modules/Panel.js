@@ -2,8 +2,8 @@
 /*global define, $, brackets, Mustache, window, console */
 define(function (require, exports, module) {
 	"use strict";
-
-	/* region Modules */
+	
+	// Modules >
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
 	var Resizer = brackets.getModule("utils/Resizer");
 	var DocumentManager = brackets.getModule("document/DocumentManager");
@@ -11,7 +11,8 @@ define(function (require, exports, module) {
 	var FileUtils = brackets.getModule("file/FileUtils");
 	var Commands = brackets.getModule("command/Commands");
 	var _ = brackets.getModule("thirdparty/lodash");
-
+	
+	var Utils = require("modules/Utils");
 	var Project = require("modules/Project");
 	var DialogCollection = require("modules/DialogCollection");
 	var FileTreeView = require("modules/FileTreeView");
@@ -19,18 +20,23 @@ define(function (require, exports, module) {
 	var SettingManager = require("modules/SettingManager");
 	var RemoteManager = require("modules/RemoteManager");
 	var Strings = require("strings");
-	/* endregion */
+	var Notify = require("modules/Notify").Notify;
+	var DecryptPassword = require("modules/Notify").DecryptPassword;
+	var CryptoManager = require("modules/CryptoManager");
+	var PreferenceManager = require("modules/PreferenceManager");
+	
+	// <
 
-	/* region Private vars */
+	// Privatevars >
 	var
 			_projectState = Project.CLOSE,
 			_currentServerIndex = null,
 			_projectDir = null,
 			_domain = null,
 			_currentPrivateKeyText = null;
-	/* endregion */
+	// <
 
-	/* region Public methods */
+	// Public Methods >
 	var
 			init,
 			closeProject,
@@ -42,9 +48,9 @@ define(function (require, exports, module) {
 			getCurrentPrivateKeyText,
 			connect,
 			showServerList,
-	/* endregion */
+	// <
 
-	/* region Private methods */
+	// Private Methods >
 			_initServerSettingUI,
 			_initMainUI,
 			_initServerListUI,
@@ -62,9 +68,9 @@ define(function (require, exports, module) {
 			_readPrivateKeyFile,
 			_setCurrentPrivateKeyText,
 			_readPrivateKeyPath,
-	/* endregion */
+	// <
 
-	/* region Event handler */
+	// Listeners >
 			onProtocolGroup,
 			onAuthGroup,
 			onClickConnectBtn,
@@ -79,9 +85,9 @@ define(function (require, exports, module) {
 			resetExcludeFile,
 			openFileSelect,
 			resetPrivateKey;
-	/* endregion */
+	// <
 
-	/* region UI source */
+	// UI Src >
 	var j = {
 				get sb() {
 					return $("#sidebar");
@@ -125,12 +131,9 @@ define(function (require, exports, module) {
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/style.css");
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/treeview.css");
 	ExtensionUtils.loadStyleSheet(module, "../node_modules/font-awesome/css/font-awesome.min.css");
-	/* endregion */
+	// <
 
-	/**
-	 * Public Methods
-	 */
-
+	
 	/**
 	 * Inittialize Panel UI and register listener.
 	 *
@@ -143,7 +146,7 @@ define(function (require, exports, module) {
 		var deferred = new $.Deferred();
 		_initMainUI()
 			.then(_initServerSettingUI)
-			.then(_initServerListUI)
+			//.then(_initServerListUI)
 			.then(function () {
 				Project.on(Project.PROJECT_STATE_CHANGED, onProjectStateChanged);
 				//for Devel
@@ -153,7 +156,6 @@ define(function (require, exports, module) {
 			});
 		return deferred.resolve(domain).promise();
 	};
-
 	/**
 	 * Show Main Panel to side view.
 	 */
@@ -180,7 +182,16 @@ define(function (require, exports, module) {
 			$main.animate({
 				"opacity": 1
 			}, "fast").promise()
-			.done(_enableToolbarIcon);
+			.then(_enableToolbarIcon)
+			.then(function () {
+				return Utils.sleep(1);
+			})
+			.then(function () {
+				if (!PreferenceManager.safeSetting()) {
+					var notify = new Notify("SECURE WARNING");
+					notify.show();
+				}
+			});
 		});
 	};
 
@@ -308,7 +319,14 @@ define(function (require, exports, module) {
 			});
 			j.l.remove();
 		}
-		var list = SettingManager.getServerList();
+		
+		var list = [];
+		if (!PreferenceManager.safeSetting()) {
+			list = SettingManager.getServerList();
+		} else {
+			var form = new DecryptPassword();
+		}
+		
 		var html = Mustache.render(server_list_html, {
 			serverList: list,
 			Strings: Strings
@@ -398,7 +416,6 @@ define(function (require, exports, module) {
 		$(".close-btn", $serverSetting).on("click", _hideServerSetting);
 		$("input[type='text']", $serverSetting).on("blur", SettingManager.validateAll);
 		$("input[type='password']", $serverSetting).on("blur", SettingManager.validateAll);
-		//$("#synapse-server-privateKey").on("change", function() {});
 
 		// reset protocol
 		$("#currentProtocol").val("ftp");
@@ -416,8 +433,7 @@ define(function (require, exports, module) {
 	 * @returns {$.Promise}
 	 */
 	_initServerListUI = function () {
-		reloadServerSettingList();
-		return new $.Deferred().resolve().promise();
+		return reloadServerSettingList();
 	};
 	/**
 	 * Initialize server list panel and some events.
@@ -707,7 +723,7 @@ define(function (require, exports, module) {
 			$connectBtn.html(Strings.SYNAPSE_LIST_DISCONNECT);
 		}
 	};
-	/* Handlers */
+	
 	onProtocolGroup = function (e) {
 		var $btn = $(e.target);
 		if (!$btn.hasClass("toggle-ftp") && !$btn.hasClass("toggle-sftp")) {
@@ -904,7 +920,8 @@ define(function (require, exports, module) {
 		_readPrivateKeyFile(file)
 		.then(function(res) {
 			var text = res;
-			var reg = new RegExp(/PRIVATE KEY/g);
+			//var reg = new RegExp(/PRIVATE KEY/g);
+			var reg = new RegExp(/^$/g);
 			if (!text.match(reg)) {
 				$keyName.val("").addClass("invalid");
 				_currentPrivateKeyText = null;
@@ -956,6 +973,8 @@ define(function (require, exports, module) {
 		return _currentPrivateKeyText;
 	};
 	
+	
+	
 		
 	exports.init = init;
 	exports.showMain = showMain;
@@ -964,4 +983,7 @@ define(function (require, exports, module) {
 	exports.getCurrentPrivateKeyText = getCurrentPrivateKeyText;
 	exports.reloadServerSettingList = reloadServerSettingList;
 	exports.showServerList = showServerList;
+	exports.getModuleName = function () {
+		return module.id;
+	};
 });

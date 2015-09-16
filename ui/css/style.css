@@ -15,6 +15,15 @@
 	color: #cccccc;
 	-webkit-box-shadow: rgba(255, 255, 255, 0.0588235) 0px 1px 0px 0px inset;
 }
+#synapse .btn:hover {
+	background-color: #2e2e2e;
+}
+#synapse .btn.primary {
+	background-color: #016dc4; 
+}
+#synapse .btn.primary:hover {
+	background-color: #005191;
+}
 #synapse-icon {
 	background-image: url(../synapse.svg);
 }
@@ -132,6 +141,7 @@
 #synapse-server-setting table td div.auth-group > button.active {
 	background: #4ca263;
 }
+div.synapse-notify input[type=password],
 #synapse-server-setting table td input[type=text],
 #synapse-server-setting table td input[type=password] {
 	border: 1px solid #202020;
@@ -143,9 +153,11 @@
 	background: #333;
 	margin: 0;
 }
+div.synapse-notify input[type=password].invalid,
 #synapse-server-setting table td input.invalid {
 	box-shadow: 0 1px 1px #ad3737 inset, 0 -1px 1px #ad3737 inset;
 }
+div.synapse-notify input[type=password]::-webkig-input-placeholder,
 #synapse-server-setting table td input::-webkit-input-placeholder {
 	padding: 3px;
 	opacity: 0.7;
@@ -241,11 +253,13 @@
 	display: inline-block;
 	opacity: 0;
 }
+
 #synapse-server-list button {
 	padding: 2px 6px;
 	font-size: 11px;
 	border-radius: 0;
 }
+
 #synapse-server-list button.btn-connect:hover {
 	background-color: #016dc4;
 }
@@ -335,18 +349,101 @@ div#synapse-tree-back {
 /**
  * Notify
  */
-#synapse div#synapse-notify-container {
+div#synapse-notify-container {
 	position: absolute;
-	top: 100px;
-	right: 100px;
-	width: 400px;
-	min-height: 100px;
+	left: 0;
+	bottom: 0;
+	width: 100%;
 	height: auto;
 	box-sizing: border-box;
+	z-index: 4;
+	margin: 0;
+	padding: 0;
+	white-space: normal;
 }
-#synapse div.synapse-notify {
-	width: 400px;
+div.synapse-notify * {
+	word-wrap: break-word;
+}
+div.synapse-notify {
+	width: 100%;
 	height: auto;
+	background-color: rgba(29, 31, 36, 0.9);
+	margin: 0;
 	padding: 10px;
-	background: #f00;
+	box-sizing: border-box;
+	
+}
+div.synapse-notify > .notify-header {
+	width: 100%;
+	margin-bottom: 10px;
+}
+div.synapse-notify > .notify-header > h1 {
+	font-size: 16px;
+	margin: 0;
+	line-height: 1em;
+}
+div.synapse-notify > .notify-footer > div.btn-group > button {
+	padding: 2px 6px;
+	font-size: 11px;
+	border-radius: 0;
+}
+div.synapse-notify > .notify-footer {
+	margin-top: 10px;
+}
+div.notivy-body {
+	width: 100%;
+	height: 200px;
+}
+div.notify-message {
+	width: 100%;
+	white-space: normal;
+	line-height: 14px;
+	letter-spacing: 0.02em;
+	word-break: break-all;
+	color: #bbb;
+}
+
+
+
+/**
+ * DecryptPassword
+ */
+div#synapse-decrypt-password {
+	position: absolute;
+	display: flex;
+	width: 380px;
+	top: 0;
+	left: 0;
+	z-index: 10;
+	padding: 5px;
+	background: rgba(0, 0, 0, 1.0);
+}
+
+div#synapse-decrypt-password div {
+	margin:0;
+	padding:0;
+	display: flex;
+	align-items: center;
+}
+div#synapse-decrypt-password .colL {
+	width: 150px;
+}
+div#synapse-decrypt-password .colR {
+	width: 300px;
+	height: auto;
+}
+div#synapse-decrypt-password p.title {
+	font-weight:bold;
+	font-size: 13px; line-height: 1em;
+	margin: 0; padding: 0;
+	width: 150px;
+}
+div#synapse-decrypt-password p.title em {
+	font-weight: normal;
+	font-size: 0.8em;
+	line-height: 0.8em;
+	color: #2eb9cb;
+	font-style: italic; 
+	text-shadow: none;
+	margin: 0; padding: 0;
 }

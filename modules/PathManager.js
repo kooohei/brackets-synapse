@@ -124,4 +124,7 @@ define(function (require, exports, module) {
 	exports.completionLocalPath = completionLocalPath;
 	exports.getProjectDirectoryPath = getProjectDirectoryPath;
 	exports.getLocalRelativePath = getLocalRelativePath;
+	exports.getModuleName = function () {
+		return module.id;
+	};
 });

@@ -2,77 +2,59 @@
 /*global define, $, brackets, Mustache, window, console */
 define(function (require, exports, module) {
 	"use strict";	
-	/* region Module */
-	var PreferencesManager = brackets.getModule("preferences/PreferencesManager");
+	
+	// Modules >
 	var FileSystem = brackets.getModule("filesystem/FileSystem");
 	var FileUtils = brackets.getModule("file/FileUtils");
-	var Notify = require("modules/Notify").Notify;
+	
 	var _ = brackets.getModule("thirdparty/lodash");
 	var Directory = brackets.getModule("filesystem/Directory");
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
 	var Async = brackets.getModule("utils/Async");
 	var DialogCollection = require("modules/DialogCollection");
+	var PreferenceManager = require("modules/PreferenceManager");
+	// <
 	
-	/* endregion */
-	
-	/* region Privatte Vars */
+	// Privatte Vars >
 	var	_domain,
-			preference = PreferencesManager.getExtensionPrefs("brackets-synapse");
-	/* endregion */
+			PATH_TO_PACKAGE_JSON = FileUtils.getParentPath(ExtensionUtils.getModulePath(module)) + "package.json";
 	
-	/* region Private Methods */
-	var _getRealVersion,
-			_getVersionByPrefs,
-			_setRealVersionToPreference,
+	
+	
+	// <
+	
+	// Private Methods >
+	var _getVersionFromPackageJson,
 			_firstLaunch,
-			_chkKeysDirectory,
-			_getDirectoryContents,
-			_checkSettingState;
-	/* endregion */
+			_checkKeysDirectory,
+			_getDirectoryContents;
+	// <
 	
-	/* region Public Methods */
-	var start,
+	
+	// Public Mehtods >
+	var init,
 			getDomain;
-	/* endregion */
+	// <
 	
+	// Listener >
 	var onClickSecureWarning;
+	// <
 	
-	_getVersionByPrefs = function () {
-		var version = preference.get("version");
-		return version;
-	};
-	
-	_getRealVersion = function () {
-		var d = new $.Deferred();
-		var file = FileSystem.getFileForPath(FileUtils.getParentPath(ExtensionUtils.getModulePath(module)) + "package.json");
-		var package_json = "";
+	_getVersionFromPackageJson = function () {
+		var d							= new $.Deferred(),
+				file = FileSystem.getFileForPath(PATH_TO_PACKAGE_JSON);
+		
 		FileUtils.readAsText(file)
 		.then(function (text, time) {
-			var package_json = JSON.parse(text);
-			d.resolve(package_json.version);
+			var version = JSON.parse(text).version;
+			d.resolve(version);
 		});
 		return d.promise();
 	};
 	
-	_setRealVersionToPreference = function () {
-		var d = new $.Deferred();
-		_getRealVersion()
-		.then(function (ver) {
-			if (typeof (_getVersionByPrefs) === "undefined") {
-				preference.definePreference("version", "string", "");
-			}
-			if (!preference.set("version", ver)) {
-				throw new Error("The version number could not wrote to preference file.");
-			}
-			preference.save()
-			.then(d.resolve, d.reject);
-		});
-		return d.promise();
-	};
-	
-	_firstLaunch = function (prefVer, realVer) {
-		if (prefVer !== realVer) {
-			return _chkKeysDirectory();
+	_firstLaunch = function () {
+		if (PreferenceManager.getVersion() !== _getVersionFromPackageJson()) {
+			return _checkKeysDirectory();
 		} else {
 			return new $.Deferred().resolve().promise();
 		}
@@ -90,7 +72,7 @@ define(function (require, exports, module) {
 		return d.promise();
 	};
 	
-	_chkKeysDirectory = function () {
+	_checkKeysDirectory = function () {
 		var d = new $.Deferred();
 		var path = FileUtils.getParentPath(ExtensionUtils.getModulePath(module)) + "__KEYS__";
 		var keysdir = FileSystem.getDirectoryForPath(path);
@@ -122,52 +104,13 @@ define(function (require, exports, module) {
 		return d.promise();
 	};
 	
-	_checkSettingState = function () {
-		var d = new $.Deferred(),
-				settingPrefs = preference.get("server-settings");
-				
-		if (settingPrefs === undefined || settingPrefs === "") {
-			return d.resolve().promise();
-		}
-		if (!settingPrefs.match(/"host".+?"port"/)) {
-			console.log("there is not found to problem.");
-			return d.resolve().promise();
-		} else {
-			console.log("not secure");
-			// there is not secured setting data.
-			var notify = new Notify("secureWarning",
-															"secureWarning",
-															"SECURE WARNING",
-															{type: 1, text1: "Now I do that", text2: "Later"},
-															onClickSecureWarning
-														).show();
-			
-		}
-		return d.promise();
-	};
-	onClickSecureWarning = function (e) {
-		if (e.data === "Now I do that") {
-			
-		}
-		if (e.data === "OK") {
-			
-		}
-	};
-	
-	start = function (domain) {
+	init = function (domain) {
 		_domain = domain;
 		var d = new $.Deferred();
-		var prefVer = _getVersionByPrefs();
-		
-		_getRealVersion()
-		.then(function (realVer) {
-			return _firstLaunch(prefVer, realVer);
-		})
-		.then(function () {
-			return _setRealVersionToPreference();
-		})
-		.then(function () {
-			return _checkSettingState(domain);
+		_firstLaunch()
+		.then(_getVersionFromPackageJson)
+		.then(function (version) {
+			return PreferenceManager.setVersion(version);
 		})
 		.then(d.resolve, function (err) {
 			d.reject(err);
@@ -175,6 +118,9 @@ define(function (require, exports, module) {
 		return d.promise();
 	};
 	
-	exports.start = start;
+	exports.init = init;
 	exports.getDomain = getDomain;
+	exports.getModuleName = function () {
+		return module.id;
+	};
 });

@@ -314,4 +314,7 @@ define(function (require, exports, module) {
 	exports.download = download;
 	exports.removeDirectory = removeDirectory;
 	exports.deleteFile = deleteFile;
+	exports.getModuleName = function () {
+		return module.id;
+	};
 });
