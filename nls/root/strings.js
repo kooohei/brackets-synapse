@@ -55,5 +55,8 @@ define({
 	"SYNAPSE_SECURE_WARNING_TITLE": "SECURITY WARNING",
 	"SYNAPSE_SECURE_WARNING_MESSAGE": "<p>&nbsp;The server settings have been store via the plain text so far. </p><p>I recommended to do encryption to the settings.<br>(The password is just one for all settings)</p><p>However, You must be input to password when started synapse at every time.</p><p>The password is never stored.</p>",
 	"SYNAPSE_SECURE_WARNING_BTN1": "Now I do",
-	"SYNAPSE_SECURE_WARNING_BTN2": "Later"
+	"SYNAPSE_SECURE_WARNING_BTN2": "Later",
+	
+	"SYNAPSE_DECRYPT_PASSWORD_TITLE": "PASSWORD FOR THE DECRYPT",
+	"SYNAPSE_DECRYPT_PASSWORD_MESSAGE": "<p>Now, Your server setting is ecrypted.</p><p>You must be decrypt your setting before start up Synapse.</p>"
 });

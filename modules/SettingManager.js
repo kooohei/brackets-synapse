@@ -9,7 +9,6 @@ define(function (require, exports, module) {
 	var PathManager = require("modules/PathManager");
 	var FileManager = require("modules/FileManager");
 	var Panel = require("modules/Panel");
-	var Notify = require("modules/Notify").Notify;
 	var Strings = require("strings");
 	var Utils = require("modules/Utils");
 	var CryptoManager = require("modules/CryptoManager");

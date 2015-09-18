@@ -141,7 +141,6 @@
 #synapse-server-setting table td div.auth-group > button.active {
 	background: #4ca263;
 }
-div.synapse-notify input[type=password],
 #synapse-server-setting table td input[type=text],
 #synapse-server-setting table td input[type=password] {
 	border: 1px solid #202020;
@@ -153,11 +152,9 @@ div.synapse-notify input[type=password],
 	background: #333;
 	margin: 0;
 }
-div.synapse-notify input[type=password].invalid,
 #synapse-server-setting table td input.invalid {
 	box-shadow: 0 1px 1px #ad3737 inset, 0 -1px 1px #ad3737 inset;
 }
-div.synapse-notify input[type=password]::-webkig-input-placeholder,
 #synapse-server-setting table td input::-webkit-input-placeholder {
 	padding: 3px;
 	opacity: 0.7;
@@ -344,79 +341,6 @@ div#synapse-tree-back {
 }
 #synapse p.synapse-server-setting-alert-caption {
 	color: #e6e6e6;
-}
-
-/**
- * Notify
- */
-div#synapse-notify-container {
-	position: absolute;
-	left: 0;
-	bottom: 0;
-	width: 100%;
-	height: auto;
-	min-height: auto;
-	box-sizing: border-box;
-	z-index: 4;
-	margin: 0;
-	padding: 0;
-	white-space: normal;
-}
-div.synapse-notify * {
-	word-wrap: break-word;
-}
-div.synapse-notify {
-	width: 100%;
-	height: auto;
-	background-color: rgba(29, 31, 36, 0.9);
-	margin: 0;
-	padding: 10px;
-	box-sizing: border-box;
-	
-}
-div.synapse-notify > .notify-header {
-	width: 100%;
-	margin-bottom: 10px;
-	display: flex;
-}
-div.synapse-notify > .notify-header > h1 {
-	font-size: 16px;
-	margin: 0;
-	line-height: 1em;
-	flex: 1;
-}
-div.synapse-notify > .notify-header > div.right {
-	text-align: right;
-	width: 50px;
-}
-div.synapse-notify div.notify-header button.close {
-	background-color: rgba(0, 0, 0, 1);
-	color: #fff;
-	font-size: 12px;
-	line-height: 12px;
-	font-weight: normal;
-	border: none;
-}
-
-div.synapse-notify > .notify-footer > div.btn-group > button {
-	padding: 2px 6px;
-	font-size: 11px;
-	border-radius: 0;
-}
-div.synapse-notify > .notify-footer {
-	margin-top: 10px;
-}
-div.notivy-body {
-	width: 100%;
-	height: 200px;
-}
-div.notify-message {
-	width: 100%;
-	white-space: normal;
-	line-height: 14px;
-	letter-spacing: 0.02em;
-	word-break: break-all;
-	color: #bbb;
 }
 
 

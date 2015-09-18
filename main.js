@@ -19,7 +19,8 @@ define(function (require, exports, module) {
 			RemoteManager = require("modules/RemoteManager"),
 			FileManager = require("modules/FileManager"),
 			PreferenceManager = require("modules/PreferenceManager"),
-			StateManager = require("modules/StateManager");
+			StateManager = require("modules/StateManager"),
+			Notify = require("modules/Notify");
 			
 			
 			
@@ -70,6 +71,9 @@ define(function (require, exports, module) {
 		promises.push(p);
 		
 		p = Panel.init(domain);
+		promises.push(p);
+		
+		p = Notify.init(domain);
 		promises.push(p);
 		
 		p = PathManager.init(domain);
