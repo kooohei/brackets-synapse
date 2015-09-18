@@ -1,0 +1,87 @@
+/**
+ * Common
+ */
+div#synapse-notify-container {
+	position: absolute;
+	left: 0;
+	width: 100%;
+	height: auto;
+	min-height: auto;
+	box-sizing: border-box;
+	z-index: 4;
+	background: rgba(29, 31, 36, 0.9);
+	margin: 0;
+	padding: 0;
+	white-space: normal;
+	transition-property: bottom;
+	transition-duration: 0.2s;
+}
+
+div#synapse-notify-container * {
+	box-sizing: border-box;
+	line-height: 1em;
+}
+div.synapse-notify {
+	width: 100%;
+	height: auto;
+	margin: 0;
+	padding: 10px;
+}
+div.synapse-notify > .notify-header {
+	width: 100%;
+	margin-bottom: 10px;
+	display: flex;
+}
+div.synapse-notify > .notify-header > h1 {
+	font-size: 15px;
+	margin: 0;
+	flex: 1;
+}
+div.synapse-notify > .notify-header > div.right {
+	text-align:right;
+	width: 50px;
+}
+div.synapse-notify div.notify-header button.close {
+	background-color: rgba(0, 0, 0, 0);
+	color: #fff;
+	font-size: 12px;
+	line-height: 12px;
+	font-weight: normal;
+	border: none;
+}
+div.synapse-notify > div.notify-footer {
+	margin-top: 10px;
+}
+div.syanpse-notify > div.notify-message {
+	width: 100%;
+	line-height: 14px;
+	letter-spacing: 0.02em;
+	word-break: break-all;
+	color: #bbb;
+}
+div.synapse-notify > div.notify-content {
+	width: 100%;
+}
+
+div.synapse-notify input[type=password] {
+	border: 1px solid #202020;
+	color: #fff;
+	box-sizing: padding-box;
+	padding: 4px;
+	height: 24px;
+	border-radius: 2px;
+	background: #333;
+	margin: 0;
+}
+div.synapse-notify input[type=password].invalid {
+	box-shadow: 0 1px 1px #ad3737 inset, 0 -1px 1px #ad3737 inset;
+}
+div.synapse-notify input[type=password]::-webkit-input-placeholder {
+	padding: 3px;
+	opacity: 0.7;
+	font-size: 12px;
+	line-height: 12px;
+}
+/**
+ * 
+ */

@@ -21,8 +21,6 @@ define(function (require, exports, module) {
 	var RemoteManager = require("modules/RemoteManager");
 	var Strings = require("strings");
 	var Notify = require("modules/Notify");
-	var SecureWarning = require("modules/Notify").SecureWarning;
-	var DecryptPassword = require("modules/Notify").DecryptPassword;
 	var CryptoManager = require("modules/CryptoManager");
 	var PreferenceManager = require("modules/PreferenceManager");
 	
@@ -34,9 +32,7 @@ define(function (require, exports, module) {
 			_currentServerIndex = null,
 			_projectDir = null,
 			_domain = null,
-			_currentPrivateKeyText = null,
-			_secureWarning,
-			_decryptPassword;
+			_currentPrivateKeyText = null;
 		
 			
 	// <
@@ -170,7 +166,6 @@ define(function (require, exports, module) {
 	 * Show Main Panel to side view.
 	 */
 	showMain = function () {
-		console.log(0);
 		if ($("#synapse-icon").hasClass("enabled")) {
 			return;
 		}
@@ -179,19 +174,28 @@ define(function (require, exports, module) {
 		
 		(function () {
 			var d = new $.Deferred();
-			console.log(PreferenceManager.safeSetting());
+			if (!PreferenceManager.safeSetting()) {
+				Notify.show("SecureWarning");
+				d.reject();
+			} else {
+				return d.resolve();
+			}
+			return d.promise();
+		}())
+		.then(function () {
+			var d = new $.Deferred();
 			if (_mainFirstOpen) {
 				if (PreferenceManager.safeSetting()) {
-					_decryptPassword.show();
+					Notify.show("DecryptPassword");
 				}
-				return d.resolve().promise();
+				return d.reject().promise();
 			} else {
 				return d.resolve().promise();
 			}
-		}())
+			
+		})
 		.then(function () {
 			
-			console.log("1");
 			var def = new $.Deferred();
 			var $main = j.m;
 			var $ph_pcChild = $("#project-files-header, #project-files-container > *");
@@ -212,12 +216,6 @@ define(function (require, exports, module) {
 					"opacity": 1
 				}, "fast").promise()
 				.then(_enableToolbarIcon)
-				.then(function () {
-					if (!PreferenceManager.safeSetting()) {
-						_secureWarning.show();
-					}
-					return def.resolve().promise();
-				})
 				.then(function () {
 					_mainFirstOpen = false;
 					d.resolve();
@@ -415,9 +413,6 @@ define(function (require, exports, module) {
 		var $main = $(html);
 		var $pc = j.pc;
 		
-		_secureWarning = new SecureWarning();
-		_decryptPassword = new DecryptPassword();
-
 		if ($pc.length) {
 			$pc.after($main);
 		} else {
