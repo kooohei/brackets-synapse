@@ -129,8 +129,7 @@ define(function (require, exports, module) {
 		_attachEvent();
 		Menu.initTreeViewContextMenu();
 		Project.on(Project.PROJECT_STATE_CHANGED, onProjectStateChanged);
-		deferred.resolve(domain);
-		return deferred.promise();
+		return deferred.resolve(domain).promise();
 	};
 
 	loadTreeView = function (serverSetting) {

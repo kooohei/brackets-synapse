@@ -20,7 +20,8 @@ define(function (require, exports, module) {
 	var SettingManager = require("modules/SettingManager");
 	var RemoteManager = require("modules/RemoteManager");
 	var Strings = require("strings");
-	var Notify = require("modules/Notify").Notify;
+	var Notify = require("modules/Notify");
+	var SecureWarning = require("modules/Notify").SecureWarning;
 	var DecryptPassword = require("modules/Notify").DecryptPassword;
 	var CryptoManager = require("modules/CryptoManager");
 	var PreferenceManager = require("modules/PreferenceManager");
@@ -28,12 +29,16 @@ define(function (require, exports, module) {
 	// <
 
 	// Privatevars >
-	var
+	var _mainFirstOpen = true,
 			_projectState = Project.CLOSE,
 			_currentServerIndex = null,
 			_projectDir = null,
 			_domain = null,
-			_currentPrivateKeyText = null;
+			_currentPrivateKeyText = null,
+			_secureWarning,
+			_decryptPassword;
+		
+			
 	// <
 
 	// Public Methods >
@@ -141,9 +146,11 @@ define(function (require, exports, module) {
 	 * @returns {$.Promise}
 	 */
 	init = function (domain) {
+		var deferred = new $.Deferred();
+		
 		_domain = domain;
 		_projectState = Project.CLOSE;
-		var deferred = new $.Deferred();
+		
 		_initMainUI()
 			.then(_initServerSettingUI)
 			//.then(_initServerListUI)
@@ -152,7 +159,10 @@ define(function (require, exports, module) {
 				//for Devel
 				//showMain();
 				//brackets.app.showDeveloperTools();
-				return new $.Deferred().resolve().promise();
+				deferred.resolve(domain);
+			})
+			.fail(function (err) {
+				deferred.reject(err);
 			});
 		return deferred.resolve(domain).promise();
 	};
@@ -160,39 +170,65 @@ define(function (require, exports, module) {
 	 * Show Main Panel to side view.
 	 */
 	showMain = function () {
+		console.log(0);
 		if ($("#synapse-icon").hasClass("enabled")) {
 			return;
 		}
-
-		var $main = j.m;
-		var $ph_pcChild = $("#project-files-header, #project-files-container > *");
-		var $ph_pc = $("#project-files-header, #project-files-container");
-
-		$ph_pcChild.animate({
-			"opacity": 0
-		}, "fast").promise()
-		.done(function () {
-			$ph_pc.css({
-				"display": "none"
-			});
-			$main.removeClass("hide");
-			$main.css({
-				"opacity": 0
-			});
-			$main.animate({
-				"opacity": 1
-			}, "fast").promise()
-			.then(_enableToolbarIcon)
-			.then(function () {
-				return Utils.sleep(1);
-			})
-			.then(function () {
-				if (!PreferenceManager.safeSetting()) {
-					var notify = new Notify("SECURE WARNING");
-					notify.show();
+		
+		var d = new $.Deferred();
+		
+		(function () {
+			var d = new $.Deferred();
+			console.log(PreferenceManager.safeSetting());
+			if (_mainFirstOpen) {
+				if (PreferenceManager.safeSetting()) {
+					_decryptPassword.show();
 				}
+				return d.resolve().promise();
+			} else {
+				return d.resolve().promise();
+			}
+		}())
+		.then(function () {
+			
+			console.log("1");
+			var def = new $.Deferred();
+			var $main = j.m;
+			var $ph_pcChild = $("#project-files-header, #project-files-container > *");
+			var $ph_pc = $("#project-files-header, #project-files-container");
+
+			$ph_pcChild.animate({
+				"opacity": 0
+			}, "fast").promise()
+			.then(function () {
+				$ph_pc.css({
+					"display": "none"
+				});
+				$main.removeClass("hide");
+				$main.css({
+					"opacity": 0
+				});
+				$main.animate({
+					"opacity": 1
+				}, "fast").promise()
+				.then(_enableToolbarIcon)
+				.then(function () {
+					if (!PreferenceManager.safeSetting()) {
+						_secureWarning.show();
+					}
+					return def.resolve().promise();
+				})
+				.then(function () {
+					_mainFirstOpen = false;
+					d.resolve();
+				}, function (err) {
+					d.reject(err);
+				});
+			}, function (err) {
+				d.reject(err);
 			});
 		});
+		return d.promise();
 	};
 
 	/**
@@ -321,11 +357,7 @@ define(function (require, exports, module) {
 		}
 		
 		var list = [];
-		if (!PreferenceManager.safeSetting()) {
-			list = SettingManager.getServerList();
-		} else {
-			var form = new DecryptPassword();
-		}
+		list = SettingManager.getServerList();
 		
 		var html = Mustache.render(server_list_html, {
 			serverList: list,
@@ -382,12 +414,16 @@ define(function (require, exports, module) {
 		});
 		var $main = $(html);
 		var $pc = j.pc;
+		
+		_secureWarning = new SecureWarning();
+		_decryptPassword = new DecryptPassword();
 
 		if ($pc.length) {
 			$pc.after($main);
 		} else {
 			j.sb.append($main);
 		}
+		
 		$("span.list-btn", $main).on("click", showServerList);
 		$("span.close-btn", $main).on("click", hideMain);
 		$("span.add-btn", $main).on("click", function (e) {

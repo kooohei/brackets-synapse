@@ -115,7 +115,7 @@ define(function (require, exports, module) {
 		//setDebugMenu();
 		// <
 		
-		
+		return new $.Deferred().resolve(domain).promise();
 	};
 	
 	setDebugMenu = function () {

@@ -13,11 +13,15 @@ define(function (require, exports, module) {
 				count = 0;
 		var timer = setInterval(function () {
 			count++;
+			
+			
 			if (count === sec) {
 				clearInterval(timer);
 				d.resolve();
 			}
-		}, sec * 1000);
+			console.log("count: " + count);
+			
+		}, 1000);
 		return d.promise();
 	};
 	

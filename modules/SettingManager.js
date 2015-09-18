@@ -85,8 +85,8 @@ define(function (require, exports, module) {
 		$("th > i", $serverSetting).removeClass("done");
 		$("th > i.fa-plug", $serverSetting).addClass("done");
 		$("button.btn-add").addClass("disabled");
-		deferred.resolve(domain);
-		return deferred.promise();
+		
+		return deferred.resolve(domain).promise();
 	};
 
 	edit = function (state) {
