@@ -10,6 +10,7 @@ define(function (require, exports, module) {
 			CommandManager = brackets.getModule("command/CommandManager"),
 			PathManager = require("modules/PathManager"),
 			ExtensionDiagnosis = require("modules/ExtensionDiagnosis"),
+			Async = brackets.getModule("utils/Async"),
 			Menu = require("modules/Menu"),
 			Panel = require("modules/Panel"),
 			CryptoManager = require("modules/CryptoManager"),
@@ -38,7 +39,7 @@ define(function (require, exports, module) {
 				}
 			};
 	
-	var setAppIcon = function () {
+	var setAppIcon = function (domain) {
 		var d = new $.Deferred(),
 				icon = $("<a>")
 				.attr({
@@ -52,53 +53,46 @@ define(function (require, exports, module) {
 		return d.resolve(_domain).promise();
 	};
 	
-	
-	
 	AppInit.appReady(function () {
 		var domain = new NodeDomain("synapse", ExtensionUtils.getModulePath(module, "node/SynapseDomain"));
 		_domain = domain;
 		
+		var promises = [];
+		var p;
 		
-		PreferenceManager.init(domain)
-		.then(function (data) {
-			return StateManager.appendDoneInitModule(PreferenceManager.getModuleName(), data);
-		})
-		.then(ExtensionDiagnosis.init)
-		.then(function (data) {
-			return StateManager.appendDoneInitModule(ExtensionDiagnosis.getModuleName(), data);
-		})
-		.then(setAppIcon)
-		.then(Panel.init)
-		.then(function (data) {
-			return StateManager.appendDoneInitModule(Panel.getModuleName(), data);
-		})
-		.then(PathManager.init)
-		.then(function (data) {
-			return StateManager.appendDoneInitModule(PathManager.getModuleName(), data);
-		})
-		.then(SettingManager.init)
-		.then(function (data) {
-			return StateManager.appendDoneInitModule(SettingManager.getModuleName(), data);
-		})
-		.then(RemoteManager.init)
-		.then(function (data) {
-			return StateManager.appendDoneInitModule(RemoteManager.getModuleName(), data);
-		})
-		.then(FileTreeView.init)
-		.then(function (data) {
-			return StateManager.appendDoneInitModule(FileTreeView.getModuleName(), data);
-		})
-		.then(FileManager.init)
-		.then(function (data) {
-			return StateManager.appendDoneInitModule(FileManager.getModuleName(), data);
-		})
-		.then(Menu.setRootMenu)
-		.then(function (data) {
-			return StateManager.appendDoneInitModule(Menu.getModuleName(), data);
-		})
-		.fail(function (err) {
-			console.error(err);
-			throw new Error(["Could not initialize to Synapse", err]);
+		p = PreferenceManager.init(domain);
+		promises.push(p);
+		
+		p = ExtensionDiagnosis.init(domain);
+		promises.push(p);
+		
+		p = setAppIcon(domain);
+		promises.push(p);
+		
+		p = Panel.init(domain);
+		promises.push(p);
+		
+		p = PathManager.init(domain);
+		promises.push(p);
+		
+		p = SettingManager.init(domain);
+		promises.push(p);
+		
+		p = RemoteManager.init(domain);
+		promises.push(p);
+		
+		p = FileTreeView.init(domain);
+		promises.push(p);
+
+		p = FileManager.init(domain);
+		promises.push(p);
+		
+		p = Menu.setRootMenu(domain);
+		promises.push(p);
+		
+		Async.waitForAll(promises, true)
+		.then(function () {
+			console.log("Brackets Synapse initialized.");
 		});
 	});
 });

@@ -1,18 +1,16 @@
-<div id="{{id}}" class="{{class}} synapse-notify">
-	<div class="notify-header">
+<div id="{{id}}" class="synapse-notify {{class}}">
+	<div class="notify-header"> 
 		<h1 class="notify-title">{{title}}</h1>
+		<div class="right">
+			<button class="close"><i class="fa fa-close"></i></button>
+		</div>
 	</div>
 	<div class="notify-body">
 		<div class="notify-message">{{{message}}}</div>
 	</div>
-	{{#secureWarning}}
-	<div class="notify-form">
-		<input type="password" id="cryptoPass" placeholder="PASSWORD" value="kohei0730"><br>
-		<input type="password" id="re-cryptoPass" placeholder="RE-ENTER" value="kohei0730"><br>
-		<p class="validateMessage"></p>
-		<em>4 more characters</em>
+	<div class="notify-content">
+		{{{content}}}
 	</div>
-	{{/secureWarning}}
 	<div class="notify-footer clearfix">
 		<div class="btn-group pull-right"></div>
 	</div>

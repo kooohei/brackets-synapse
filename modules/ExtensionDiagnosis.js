@@ -18,9 +18,6 @@ define(function (require, exports, module) {
 	// Privatte Vars >
 	var	_domain,
 			PATH_TO_PACKAGE_JSON = FileUtils.getParentPath(ExtensionUtils.getModulePath(module)) + "package.json";
-	
-	
-	
 	// <
 	
 	// Private Methods >
@@ -109,10 +106,11 @@ define(function (require, exports, module) {
 		var d = new $.Deferred();
 		_firstLaunch()
 		.then(_getVersionFromPackageJson)
-		.then(function (version) {
-			return PreferenceManager.setVersion(version);
+		.then(PreferenceManager.setVersion)
+		.then(function () {
+			d.resolve();
 		})
-		.then(d.resolve, function (err) {
+		.fail(function (err) {
 			d.reject(err);
 		});
 		return d.promise();

@@ -11,130 +11,150 @@ define(function (require, exports, module) {
 	var close;
 	var PreferenceManager = require("modules/PreferenceManager");
 	var CryptoManager = require("modules/CryptoManager");
+	var Notify;
 	
-	function Notify(TYPE) {
-		var source = require("../text!ui/notify.html");
-		this.type = TYPE;
-		var _buttons, params;
-		var self = this;
-		
-		if (TYPE === "SECURE WARNING") {
-			params = {
-				id: "secureWarning",
-				class: "secureWarning",
-				title: Strings.SYNAPSE_SECURE_WARNING_TITLE,
-				message: Strings.SYNAPSE_SECURE_WARNING_MESSAGE,
-				secureWarning: true,
-				_buttons : {
-					type: 1,
-					text1: Strings.SYNAPSE_SECURE_WARNING_BTN1,
-					text2: Strings.SYNAPSE_SECURE_WARNING_BTN2
-				}
-			};
+	var SecureWarning,
+			DecryptPassword;
+	
+	
+	Notify = function (params) {
+		if ($("#" + params.id).length) {
+			throw new Error("ID: " + params.id + " is already exists.");
 		}
-		
-		
-		var html = $(Mustache.render(source, params));
-		this.$synapse = $("#synapse");
+		EventDispatcher.makeEventDispatcher(this);
+		var source = require("../text!ui/notify.html");
+		var self = this;
+		this.params = params;
+		var html = Mustache.render(source, params);
+		this.$html = $(html);
+		var $sidebar = $("#sidebar");
 		if (!$("#synapse-notify-container").length) {
-			$("<div>").attr("id", "synapse-notify-container").appendTo(this.$synapse);
+			$("<div>").attr("id", "synapse-notify-container").appendTo($sidebar);
 		}
 		this.$container = $("div#synapse-notify-container");
-		this.$container.append($(html).hide());
-		this.$html = $("#" + params.id);
 		
-		EventDispatcher.makeEventDispatcher(this);
-		
-		if (params._buttons.type === 0) {
-			var $btn0 = $("<button>").addClass("btn blue")
-									.html(params._buttons.text1 || "OK")
-									.on("click", function (e) {
-										self.close(e, params._buttons.type);
-									});
-			$("div.notify-footer > div.btn-group", this.$html).html($btn0);
-		}
-		if (params._buttons.type === 1) {
-			var $btn1 = $("<button>").addClass("btn primary")
-									.html(params._buttons.text1 || "Yes")
-									.on("click", function (e) {
-										self.indivisuals()
-										.then(function () {
-											self.close(e, params._buttons.type, this.type);
-										});
-									});
-			var $btn2 = $("<button>").addClass("btn default")
-									.html(params._buttons.text2 || "No")
-									.on("click", function (e) {
-										self.close(e, params._buttons.type, this.type);
-									});
-			$("div.notify-footer > div.btn-group", this.$html).html($btn1).append($btn2);
-		}
-	}
+		this.$container.append(this.$html.hide());
+		$(".notify-header button.close", this.$html).on("click", function (e) {
+			self.close(e);
+		});
+	};
 	
+	Notify.prototype.appendButton = function (className, text) {
+		console.log("appendButton called");
+		var $btn = $("<button>").addClass(className).html(text);
+		$("div.notify-footer > div.btn-group", this.$html).append($btn);
+		return $btn;
+	};
 	
 	Notify.prototype.updatePos = function () {
-		this.$container.css({"bottom": (this.$container.outerHeight * -1) + "px"});
+		var offsetHeight = $("#" + this.params.id) + "px";
+		this.$container.css({"height": offsetHeight,"bottom": "-" + offsetHeight});
 	};
 	
 	Notify.prototype.show = function () {
 		var self = this;
 		if (this.$html.is(":hidden")) {
-			this.updatePos();
 			this.$html.show();
-			this.$container.animate({"bottom": 0}, "fast").promise()
-			.then(function () {
-				self.trigger("shown", self);
+			this.updatePos();
+			this.$container.animate({"bottom": 0}, 300).promise()
+			.done(function () {
+				self.trigger("shown");
 			});
 		}
 	};
 	
-	Notify.prototype.close = function (e, btnType, notificateType) {
+	Notify.prototype.close = function () {
 		var self = this;
-		if (this.$html.is(":visible")) {
-			this.$container.animate({"bottom": (this.$container.outerHeight() * -1) + "px"}, "fast").promise()
+		if (self.$html.is(":visible")) {
+			self.$container.animate({"bottom": (self.$container.outerHeight() * -1) + "px"}, "fast").promise()
 			.then(function () {
-				$(e.target).off("click");
-				self.$html.remove();
-				self.trigger("closed", self);
+				self.$html.hide();
+				self.trigger("closed");
 			});
 		}
 	};
 	
-	Notify.prototype.indivisuals = function () {
-		var d = new $.Deferred();
-		if (this.type === "SECURE WARNING") {
-			var password = $("#cryptoPass").val();
-			var repasswd = $("#re-cryptoPass").val();
-			if (password === "" || repasswd === "" || (password !== repasswd) || password.length < 4) {
-				$("#cryptoPass", this.$html).addClass("invalid");
-				$("#re-cryptoPass", this.$html).addClass("invalid");
-				$("p.validateMessage", this.$html).html("<b><i>Invalid password.</i></b>");
-				d.reject();
-				
-			} else {
-				$("p.validateMessage", this.$html).html("<b><i>OK</i></b>");
-				var settings = PreferenceManager.getServerSettings();
-				var cipher = CryptoManager.encrypt(password, settings);
-				PreferenceManager.setServerSettings(cipher);
-				d.resolve();
-			}
+	
+	SecureWarning = function () {
+		var src = require("../text!ui/secureWarning.html");
+		var content = Mustache.render(src);
+		var $content = $(content);
+		var self = this;
+		var close = function () {
+			this.close();
+		};
+		this.params = {
+			id: "secure-warning",
+			class: "secure-warning",
+			title: Strings.SYNAPSE_SECURE_WARNING_TITLE,
+			message: Strings.SYNAPSE_SECURE_WARNING_MESSAGE,
+			content: content
+		};
+		Notify.call(this, this.params);
+		
+		
+		this.appendButton("btn primary", Strings.SYNAPSE_SECURE_WARNING_BTN1).on("click", function (e) {
+			self.setPassword();
+		});
+		this.appendButton("btn", Strings.SYNAPSE_SECURE_WARNING_BTN2).on("click", function (e) {
+			self.close();
+		});
+		
+		
+	};
+	SecureWarning.prototype = Object.create(Notify.prototype);
+	SecureWarning.prototype.constructor = SecureWarning;
+	
+	SecureWarning.prototype.setPassword = function () {
+		var password = $("#cryptoPass").val();
+		var repasswd = $("#re-cryptoPass").val();
+		if (password === "" || repasswd === "" || (password !== repasswd) || password.length < 4) {
+			$("#cryptoPass", this.$html).addClass("invalid");
+			$("#re-cryptoPass", this.$html).addClass("invalid");
+			$("p.validateMessage", this.$html).html("<b><i>Invalid password.</i></b>");
+
+		} else {
+			$("p.validateMessage", this.$html).html("<b><i>OK</i></b>");
+			var settings = PreferenceManager.getServerSettings();
+			var cipher = CryptoManager.encrypt(password, settings);
+			PreferenceManager.setServerSettings(cipher);
+			
+			this.close();
 		}
-		else {
-			d.resolve();
-		}
-		return d.promise();
 	};
 	
+	DecryptPassword = function () {
+		var src = require("../text!ui/decryptPassword.html");
+		var content = Mustache.render(src);
+		var $content = $(content);
+		var self = this;
+		this.params = {
+			id: "synapse-decrypt-password",
+			class: "synapse-decrypt-password",
+			title: "Synapse Notify",
+			content: $content.html(),
+			message: "Password for Settings"
+		};
+		Notify.call(this, this.params);
+		
+		this.on("shown", function () {
+			$("#decrypt-password-input").focus();
+			$("button#btn-decrypt").on("click", self.tryDecrypt);
+		});
+	};
 	
-	function DecryptPassword() {
-		var source = require("../text!ui/decryptPassword.html");
-		var html = Mustache.render(source);
-		console.log(html);
-		var $html = $(html);
-		console.log("constructor of DecryptPasswrord called");
-		$("div#editor-holder").append($html);
-	}
+	DecryptPassword.prototype = Object.create(Notify.prototype);
 	
-	exports.Notify = Notify;
+	DecryptPassword.prototype.constructor = DecryptPassword;
+	
+	DecryptPassword.prototype.tryDecrypt = function() {
+		var password = $("#decrypt-password-input").val();
+		var cipher = PreferenceManager.getServerSettings();
+		var settings = CryptoManager.decrypt(password, cipher);
+		console.log(settings);
+		
+	};
+	
+	exports.SecureWarning = SecureWarning;
 	exports.DecryptPassword = DecryptPassword;
 });

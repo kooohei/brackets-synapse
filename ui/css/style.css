@@ -355,6 +355,7 @@ div#synapse-notify-container {
 	bottom: 0;
 	width: 100%;
 	height: auto;
+	min-height: auto;
 	box-sizing: border-box;
 	z-index: 4;
 	margin: 0;
@@ -376,12 +377,27 @@ div.synapse-notify {
 div.synapse-notify > .notify-header {
 	width: 100%;
 	margin-bottom: 10px;
+	display: flex;
 }
 div.synapse-notify > .notify-header > h1 {
 	font-size: 16px;
 	margin: 0;
 	line-height: 1em;
+	flex: 1;
 }
+div.synapse-notify > .notify-header > div.right {
+	text-align: right;
+	width: 50px;
+}
+div.synapse-notify div.notify-header button.close {
+	background-color: rgba(0, 0, 0, 1);
+	color: #fff;
+	font-size: 12px;
+	line-height: 12px;
+	font-weight: normal;
+	border: none;
+}
+
 div.synapse-notify > .notify-footer > div.btn-group > button {
 	padding: 2px 6px;
 	font-size: 11px;
@@ -404,46 +420,3 @@ div.notify-message {
 }
 
 
-
-/**
- * DecryptPassword
- */
-div#synapse-decrypt-password {
-	position: absolute;
-	display: flex;
-	width: 380px;
-	top: 0;
-	left: 0;
-	z-index: 10;
-	padding: 5px;
-	background: rgba(0, 0, 0, 1.0);
-}
-
-div#synapse-decrypt-password div {
-	margin:0;
-	padding:0;
-	display: flex;
-	align-items: center;
-}
-div#synapse-decrypt-password .colL {
-	width: 150px;
-}
-div#synapse-decrypt-password .colR {
-	width: 300px;
-	height: auto;
-}
-div#synapse-decrypt-password p.title {
-	font-weight:bold;
-	font-size: 13px; line-height: 1em;
-	margin: 0; padding: 0;
-	width: 150px;
-}
-div#synapse-decrypt-password p.title em {
-	font-weight: normal;
-	font-size: 0.8em;
-	line-height: 0.8em;
-	color: #2eb9cb;
-	font-style: italic; 
-	text-shadow: none;
-	margin: 0; padding: 0;
-}
