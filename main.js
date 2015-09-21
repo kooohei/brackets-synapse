@@ -22,7 +22,7 @@ define(function (require, exports, module) {
 			StateManager = require("modules/StateManager"),
 			Notify = require("modules/Notify");
 			
-			
+	var Test = require("modules/Test");
 			
 	var COMMAND_ID = "kohei.synapse.mainPanel";
 	

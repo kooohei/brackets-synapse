@@ -3,8 +3,11 @@
 define(function (require, exports, module) {
 	"use strict";
 
-	var sleep;
+	var _ = brackets.getModule("thirdparty/lodash");
 	
+	var sleep,
+			l;
+	var debug = true;
 	
 	sleep = function (sec) {
 		if (sec === 0)
@@ -25,7 +28,19 @@ define(function (require, exports, module) {
 		return d.promise();
 	};
 	
+	l = function () {
+		var argLength = arguments.length;
+		if (argLength > 1) {
+			var args = {};
+			_.forEach(arguments, function (arg) {
+				args.push(arg);
+			});
+			console.log(args);
+		} else {
+			console.log(arguments[0]);
+		}
+	};
 	
-	
+	exports.l = l;
 	exports.sleep = sleep;
 });

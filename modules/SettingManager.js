@@ -13,6 +13,8 @@ define(function (require, exports, module) {
 	var Utils = require("modules/Utils");
 	var CryptoManager = require("modules/CryptoManager");
 	var PreferenceManager = require("modules/PreferenceManager");
+	var Notify = require("modules/Notify");
+	var l = require("modules/Utils").l;
 	// <
 
 	// Public Methods >
@@ -23,12 +25,13 @@ define(function (require, exports, module) {
 			reset,
 			getServerList,
 			getServerSetting,
+			getServerSettingsCache,
+			setServerSettings,
 			deleteServerSetting;
 	// <
 	
 	// Private Methods >
-	var _getServerSettings,
-			_rebuildIndex,
+	var	_rebuildIndex,
 			_editServerSetting,
 			_saveServerSettings,
 			_connectTest,
@@ -38,9 +41,33 @@ define(function (require, exports, module) {
 			;
 	// <
 	
-	// Private vars >
-	var _serverSettings = null;
-	//<
+	// Observer
+	var firstNotice = true;
+	var _serverSettings = [];
+	var observerNotice = function (changes) {
+		console.log(changes);
+		if (firstNotice) {
+			firstNotice = true;
+			return;
+		}
+		var state = "";
+		if (changes.type === "splice") {
+			_.forEach(changes, function (change) {
+				if (change.addedCount > 0)
+					state = "add";
+				if (change.removed.length > 0) {
+					state = "remove";
+				}
+			});
+			if (state === "add") {
+			
+			}
+			if (state === "remove") {
+				
+			}
+		}
+	};
+	Array.observe(_serverSettings, observerNotice);
 	
 	// Listener >
 	var onSecureWarningDo,
@@ -253,23 +280,32 @@ define(function (require, exports, module) {
 
 	deleteServerSetting = function (index) {
 		var deferred = new $.Deferred();
-		var slist = getServerList();
+		var slist = getServerSettingsCache();
+		
+		_serverSettings.splice(index, 1);
+		/*
 		var result = getServerSetting(index);
 		var list = _.filter(slist, function (item, idx, ary) {
 			return item.index !== index;
 		});
+		setServerSettings(list);
+		deferred.resolve();
+		*/
+		/*
 		_saveServerSettings(list)
 		.then(deferred.resolve);
-
+		*/
 		return deferred.promise();
 	};
 
-	getServerList = function () {
-		return _getServerSettings();
+	setServerSettings = function (settings) {
+		_.forEach(settings, function (obj) {
+			_serverSettings.push(obj);
+		});
 	};
-
+	
 	getServerSetting = function (index) {
-		var list = _getServerSettings();
+		var list = getServerSettingsCache();
 		var res = null;
 		list.forEach(function (item) {
 			if (item.index === index) {
@@ -304,25 +340,32 @@ define(function (require, exports, module) {
 		}
 	};
 
-	_getServerSettings = function () {
-		var preference = PreferencesManager.getExtensionPrefs("brackets-synapse");
-		var setting = preference.get("server-settings");
-		var isEncrypt = preference.get("use-crypt");
+	getServerSettingsCache = function () {
 		
-		if (isEncrypt) {
-			// show password form.
-			var password = "kohei0730";
-			var cipher = PreferenceManager.getServerSettings();
-			var json = CryptoManager.decrypt(password, cipher);
-			return JSON.parse(json);
+		return _serverSettings;
+		
+		/*
+		var preference = PreferencesManager.getExtensionPrefs("brackets-synapse");
+		var settings = preference.get("server-settings");
+		
+		var storedPassword = CryptoManager.getSessionPassword();
+		if (PreferenceManager.safeSetting()) {
+			if (storedPassword) {
+				var decrypted = CryptoManager.decrypt(storedPassword, settings);
+				console.log(decrypted);
+				_serverSettings = JSON.parse(decrypted);
+			} else {
+				return "LOCKED";
+			}
 		} else {
-			_serverSettings = JSON.parse(setting);
-			return _serverSettings;
+			_serverSettings = JSON.parse(settings);
 		}
+		return _serverSettings;
+		*/
 	};
 
 	_editServerSetting = function (state, setting) {
-		var list = _getServerSettings(),
+		var list = getServerSettingsCache(),
 				deferred = new $.Deferred(),
 				index,
 				temp = [];
@@ -357,10 +400,14 @@ define(function (require, exports, module) {
 		} else {
 			list.push(setting);
 		}
+		
+		setServerSettings(list);
+		/*
 		_saveServerSettings(list)
 			.then(function () {
 				deferred.resolve(setting);
 			}, deferred.reject);
+		*/
 		return deferred.promise();
 	};
 
@@ -415,7 +462,7 @@ define(function (require, exports, module) {
 	};
 
 	_rebuildIndex = function () {
-		var list = _getServerSettings();
+		var list = getServerSettingsCache();
 		var deferred = new $.Deferred();
 		var preference = PreferencesManager.getExtensionPrefs("brackets-synapse");
 		var i;
@@ -459,6 +506,8 @@ define(function (require, exports, module) {
 	exports.reset = reset;
 	exports.getServerList = getServerList;
 	exports.getServerSetting = getServerSetting;
+	exports.setServerSettings = setServerSettings;
+	exports.getServerSettingsCache = getServerSettingsCache;
 	exports.deleteServerSetting = deleteServerSetting;
 	exports.getModuleName = function () {
 		return module.id;

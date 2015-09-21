@@ -58,5 +58,5 @@ define({
 	"SYNAPSE_SECURE_WARNING_BTN2": "Later",
 	
 	"SYNAPSE_DECRYPT_PASSWORD_TITLE": "PASSWORD FOR THE DECRYPT",
-	"SYNAPSE_DECRYPT_PASSWORD_MESSAGE": "<p>Now, Your server setting is ecrypted.</p><p>You must be decrypt your setting before start up Synapse.</p>"
+	"SYNAPSE_DECRYPT_PASSWORD_MESSAGE": "<p>Settings must have been crypto before the synapse is activated.</p>"
 });

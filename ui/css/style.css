@@ -1,3 +1,9 @@
+.CodeMirror {
+	font-size: 10.5px;
+	line-height: 1.4;
+	letter-spacing: 1.1;
+}
+
 #synapse {
 	-webkit-box-flex: 1;
 	-webkit-font-smoothing: antialiased;
