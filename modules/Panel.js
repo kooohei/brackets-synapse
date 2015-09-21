@@ -23,12 +23,12 @@ define(function (require, exports, module) {
 	var Notify = require("modules/Notify");
 	var CryptoManager = require("modules/CryptoManager");
 	var PreferenceManager = require("modules/PreferenceManager");
+	var l = require("modules/Utils").l;
 	
 	// <
 
-	// Privatevars >
-	var _mainFirstOpen = true,
-			_projectState = Project.CLOSE,
+	// Private vars >
+	var _projectState = Project.CLOSE,
 			_currentServerIndex = null,
 			_projectDir = null,
 			_domain = null,
@@ -54,7 +54,6 @@ define(function (require, exports, module) {
 	// Private Methods >
 			_initServerSettingUI,
 			_initMainUI,
-			_initServerListUI,
 			_reloadServerSettingListWhenDelete,
 			_hideServerSetting,
 			_hideServerList,
@@ -149,7 +148,6 @@ define(function (require, exports, module) {
 		
 		_initMainUI()
 			.then(_initServerSettingUI)
-			//.then(_initServerListUI)
 			.then(function () {
 				Project.on(Project.PROJECT_STATE_CHANGED, onProjectStateChanged);
 				//for Devel
@@ -171,28 +169,24 @@ define(function (require, exports, module) {
 		}
 		
 		var d = new $.Deferred();
-		
 		(function () {
 			var d = new $.Deferred();
-			if (!PreferenceManager.safeSetting()) {
-				Notify.show("SecureWarning");
-				d.reject();
+			if (PreferenceManager.safeSetting()) {
+				return Notify.show("DecryptPassword");
 			} else {
-				return d.resolve();
+				SettingManager.setServerSettings(PreferenceManager.loadServerSettings());
+				d.resolve();
 			}
 			return d.promise();
 		}())
 		.then(function () {
 			var d = new $.Deferred();
-			if (_mainFirstOpen) {
-				if (PreferenceManager.safeSetting()) {
-					Notify.show("DecryptPassword");
-				}
-				return d.reject().promise();
+			if (!PreferenceManager.safeSetting()) {
+				return Notify.show("SecureWarning");
 			} else {
-				return d.resolve().promise();
+				d.resolve();
 			}
-			
+			return d.promise();
 		})
 		.then(function () {
 			
@@ -217,7 +211,6 @@ define(function (require, exports, module) {
 				}, "fast").promise()
 				.then(_enableToolbarIcon)
 				.then(function () {
-					_mainFirstOpen = false;
 					d.resolve();
 				}, function (err) {
 					d.reject(err);
@@ -250,9 +243,10 @@ define(function (require, exports, module) {
 	 */
 	showServerList = function () {
 		var deferred = new $.Deferred();
-		if (!j.l.hasClass("hide")) {
+		if (j.l.is(":visible")) {
 			return deferred.resolve().promise();
 		}
+		
 		function open(state) {
 			if (state === Project.CLOSE) {
 				reloadServerSettingList()
@@ -354,8 +348,7 @@ define(function (require, exports, module) {
 			j.l.remove();
 		}
 		
-		var list = [];
-		list = SettingManager.getServerList();
+		var list = SettingManager.getServerSettingsCache();
 		
 		var html = Mustache.render(server_list_html, {
 			serverList: list,
@@ -459,14 +452,6 @@ define(function (require, exports, module) {
 	};
 
 	/**
-	 * Initialize server list panel (see reloadServerSettingList)
-	 *
-	 * @returns {$.Promise}
-	 */
-	_initServerListUI = function () {
-		return reloadServerSettingList();
-	};
-	/**
 	 * Initialize server list panel and some events.
 	 *
 	 * @returns {$.Promise}
@@ -486,9 +471,10 @@ define(function (require, exports, module) {
 				"mouseleave": onLeaveListBtns
 			});
 		}
-		var list = SettingManager.getServerList();
+		var list = PreferenceManager.loadServerSettings();
+		
 		var html = Mustache.render(server_list_html, {
-			serverList: list,
+			serverList: JSON.parse(list),
 			Strings: Strings
 		});
 		var $html = $(html);
@@ -885,7 +871,7 @@ define(function (require, exports, module) {
 						})
 						.then(_reloadServerSettingListWhenDelete)
 						.then(function () {
-							var list = SettingManager.getServerList();
+							var list = SettingManager.getServerSettingsCache();
 							if (list.length === 0) {
 								return _hideServerList();
 							}
