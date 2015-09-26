@@ -2,22 +2,18 @@
 /*global define, $, brackets, Mustache, window, console */
 define(function (require, exports, module) {
 	"use strict";
-
-	/* region Modules */
+	
+	// HEADER >>
 	var EventDispatcher = brackets.getModule("utils/EventDispatcher");
 	var FileTreeView = require("modules/FileTreeView");
 	var PathManager = require("modules/PathManager");
 	var Panel = require("modules/Panel");
 	var Project = require("modules/Project");
 	var _ = brackets.getModule("thirdparty/lodash");
-	/* endregion */
 
-	/* region Private vars */
 	var _domain,
 			_currentServerSetting;
-	/* endregion */
 
-	/* region Public methods */
 	var init,
 			clear,
 			connect,
@@ -30,9 +26,7 @@ define(function (require, exports, module) {
 			removeDirectory,
 			deleteFile
 			;
-	/* endregion */
 
-	/* region Static vars */
 	var ONLINE = true,
 			OFFLINE = false,
 			CONNECTION_CHANGED = "CONNECTION_CHAGNED",
@@ -52,13 +46,9 @@ define(function (require, exports, module) {
 			jq = {
 				tv : $("#synapse-tree")
 			};
-	/* endregion */
 
-
-	/* region Private method */
 	var _convObjectLikeFTP;
-	/* endretion */
-
+	//<<
 
 	init = function (domain) {
 		_domain = domain;
@@ -69,8 +59,6 @@ define(function (require, exports, module) {
 	clear = function () {
 		jq.tv.html("");
 	};
-
-
 
 	getListIgnoreExclude = function (serverSetting, list) {
 		if (serverSetting.exclude === undefined || serverSetting.exclude  === "") {
@@ -122,23 +110,18 @@ define(function (require, exports, module) {
 			}
 			list = getListIgnoreExclude(serverSetting, list);
 			return FileTreeView.setEntities(list, _rootEntity);
-		}, function (err) {
-			console.error(err);
-			//throw new Error(err);
-		})
+		}, function (err) { console.error(err); })
 		.then(function (list) {
 			return Project.open(serverSetting);
-		}, function (err) {
-			console.error(err);
-			//throw new Error(err);
-		})
+		}, function (err) { console.error(err); })
 		.then(function () {
 			_currentServerSetting = serverSetting;
 			State.mode = ONLINE;
 			deferred.resolve(result);
-		}, function (err) {
+		})
+		.fail(function (err) {
+			// TODO: 接続に失敗。
 			console.error(err);
-			//throw new Error(err);
 		})
 		.always(function () {
 			Panel.hideSpinner();

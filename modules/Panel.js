@@ -2,16 +2,17 @@
 /*global define, $, brackets, Mustache, window, console */
 define(function (require, exports, module) {
 	"use strict";
-	
-	// Modules >
+
+	// HEADER >>
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
 	var Resizer = brackets.getModule("utils/Resizer");
+	var MainViewManager = brackets.getModule("view/MainViewManager");
 	var DocumentManager = brackets.getModule("document/DocumentManager");
 	var CommandManager = brackets.getModule("command/CommandManager");
 	var FileUtils = brackets.getModule("file/FileUtils");
 	var Commands = brackets.getModule("command/Commands");
 	var _ = brackets.getModule("thirdparty/lodash");
-	
+
 	var Utils = require("modules/Utils");
 	var Project = require("modules/Project");
 	var DialogCollection = require("modules/DialogCollection");
@@ -21,131 +22,117 @@ define(function (require, exports, module) {
 	var RemoteManager = require("modules/RemoteManager");
 	var Strings = require("strings");
 	var Notify = require("modules/Notify");
+	var Log = require("modules/Log");
 	var CryptoManager = require("modules/CryptoManager");
 	var PreferenceManager = require("modules/PreferenceManager");
 	var l = require("modules/Utils").l;
-	
-	// <
 
-	// Private vars >
 	var _projectState = Project.CLOSE,
-			_currentServerIndex = null,
-			_projectDir = null,
-			_domain = null,
-			_currentPrivateKeyText = null;
-		
-			
-	// <
+		_currentServerIndex = null,
+		_projectDir = null,
+		_domain = null,
+		_currentPrivateKeyText = null;
 
-	// Public Methods >
 	var
-			init,
-			closeProject,
-			reloadServerSettingList,
-			hideMain,
-			showSpinner,
-			hideSpinner,
-			showMain,
-			getCurrentPrivateKeyText,
-			connect,
-			showServerList,
-	// <
+		init,
+		closeProject,
+		reloadServerSettingList,
+		hideMain,
+		showSpinner,
+		hideSpinner,
+		showMain,
+		getCurrentPrivateKeyText,
+		connect,
+		showServerList,
 
-	// Private Methods >
-			_initServerSettingUI,
-			_initMainUI,
-			_reloadServerSettingListWhenDelete,
-			_hideServerSetting,
-			_hideServerList,
-			_showServerSetting,
-			_enableToolbarIcon,
-			_disableToolbarIcon,
-			_flipAnimation,
-			_fadeOutMain,
-			_closeProject,
-			_toggleConnectBtn,
-			_removeServerSettingListRow,
-			_readPrivateKeyFile,
-			_setCurrentPrivateKeyText,
-			_readPrivateKeyPath,
-	// <
+		_initServerSettingUI,
+		_initMainUI,
+		_reloadServerSettingListWhenDelete,
+		_hideServerSetting,
+		_hideServerList,
+		_showServerSetting,
+		_enableToolbarIcon,
+		_disableToolbarIcon,
+		_fadeOutMain,
+		_closeProject,
+		_toggleConnectBtn,
+		_removeServerSettingListRow,
+		_readPrivateKeyFile,
+		_setCurrentPrivateKeyText,
+		_readPrivateKeyPath,
 
-	// Listeners >
-			onProtocolGroup,
-			onAuthGroup,
-			onClickConnectBtn,
-			onClickDeleteBtn,
-			onLeaveListBtns,
-			onEdit,
-			onEnterListBtns,
-			onClickEditBtn,
-			onProjectStateChanged,
-			onPrivateKeySelected,
+		onProtocolGroup,
+		onAuthGroup,
+		onClickConnectBtn,
+		onClickDeleteBtn,
+		onLeaveListBtns,
+		onEdit,
+		onEnterListBtns,
+		onClickEditBtn,
+		onProjectStateChanged,
+		onPrivateKeySelected,
 
-			resetExcludeFile,
-			openFileSelect,
-			resetPrivateKey;
-	// <
+		_attachWorkingSetStateChanged,
+		_detachWorkingSetStateChanged,
 
-	// UI Src >
+		resetExcludeFile,
+		openFileSelect,
+		resetPrivateKey;
+
 	var j = {
-				get sb() {
-					return $("#sidebar");
-				},
-				get w() {
-					return $("#working-set-list-container");
-				},
-				get ph() {
-					return $("#project-files-header");
-				},
-				get pc() {
-					return $("#project-files-container");
-				},
-				get m() {
-					return $("#synapse");
-				},
-				get h() {
-					return $("#synapse-header");
-				},
-				get s() {
-					return $("#synapse-server-setting");
-				},
-				get l() {
-					return $("#synapse-server-list");
-				},
-				get tvc() {
-					return $("#synapse-treeview-container");
-				},
-				get t() {
-					return $("#synapse-tree");
-				},
-				get tb() {
-					return $("#synapse-tree-back");
-				}
+			get sb() {
+				return $("#sidebar");
 			},
-	main_html = require("../text!ui/main.html"),
-	server_setting_html = require("../text!ui/serverSetting.html"),
-	server_list_html = require("../text!ui/serverList.html"),
-	$sidebar = $("#sidebar");
+			get w() {
+				return $("#working-set-list-container");
+			},
+			get ph() {
+				return $("#project-files-header");
+			},
+			get pc() {
+				return $("#project-files-container");
+			},
+			get m() {
+				return $("#synapse");
+			},
+			get h() {
+				return $("#synapse-header");
+			},
+			get s() {
+				return $("#synapse-server-setting");
+			},
+			get l() {
+				return $("#synapse-server-list");
+			},
+			get tvc() {
+				return $("#synapse-treeview-container");
+			},
+			get t() {
+				return $("#synapse-tree");
+			}
+		},
+		main_html = require("text!../ui/main.html"),
+		server_setting_html = require("text!../ui/serverSetting.html"),
+		server_list_html = require("text!../ui/serverList.html"),
+		$sidebar = $("#sidebar");
 
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/style.css");
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/treeview.css");
 	ExtensionUtils.loadStyleSheet(module, "../node_modules/font-awesome/css/font-awesome.min.css");
-	// <
+	// <<
 
-	
+
 	/**
-	 * Inittialize Panel UI and register listener.
+	 * Initialize to module.
 	 *
-	 * @param   {DomainManager} domain
-	 * @returns {$.Promise}
+	 * @param   {NodeDomain} domain
+	 * @returns {$.Promise} never rejected.
 	 */
 	init = function (domain) {
-		var deferred = new $.Deferred();
-		
+		var d = new $.Deferred();
 		_domain = domain;
 		_projectState = Project.CLOSE;
-		
+
 		_initMainUI()
 			.then(_initServerSettingUI)
 			.then(function () {
@@ -153,12 +140,9 @@ define(function (require, exports, module) {
 				//for Devel
 				//showMain();
 				//brackets.app.showDeveloperTools();
-				deferred.resolve(domain);
-			})
-			.fail(function (err) {
-				deferred.reject(err);
+				d.resolve(domain);
 			});
-		return deferred.resolve(domain).promise();
+		return d.promise();
 	};
 	/**
 	 * Show Main Panel to side view.
@@ -167,50 +151,54 @@ define(function (require, exports, module) {
 		if ($("#synapse-icon").hasClass("enabled")) {
 			return;
 		}
-		
+
 		var d = new $.Deferred();
 		(function () {
 			var d = new $.Deferred();
 			if (PreferenceManager.safeSetting()) {
-				return Notify.show("DecryptPassword");
+				return Notify.showDecryptPassword();
 			} else {
-				SettingManager.setServerSettings(PreferenceManager.loadServerSettings());
 				d.resolve();
 			}
-			return d.promise();
+			return new $.Deferred().resolve().promise();
 		}())
 		.then(function () {
 			var d = new $.Deferred();
 			if (!PreferenceManager.safeSetting()) {
-				return Notify.show("SecureWarning");
+				var list = PreferenceManager.loadServerSettings();
+				if (list.length > 0) {
+					return Notify.showSecureWarning();
+				} else {
+					d.resolve();
+				}
 			} else {
 				d.resolve();
 			}
 			return d.promise();
 		})
+		.then(function (obj) {
+			// this hook, I have to write something. but im forgot lol.
+			return new $.Deferred().resolve().promise();
+		})
 		.then(function () {
-			
+
 			var def = new $.Deferred();
-			var $main = j.m;
 			var $ph_pcChild = $("#project-files-header, #project-files-container > *");
 			var $ph_pc = $("#project-files-header, #project-files-container");
 
-			$ph_pcChild.animate({
-				"opacity": 0
-			}, "fast").promise()
+			$ph_pcChild.animate({"opacity": 0}, "fast").promise()
 			.then(function () {
 				$ph_pc.css({
 					"display": "none"
 				});
-				$main.removeClass("hide");
-				$main.css({
+				j.m.removeClass("hide");
+				j.m.css({
 					"opacity": 0
 				});
-				$main.animate({
-					"opacity": 1
-				}, "fast").promise()
+				j.m.animate({"opacity": 1}, "fast").promise()
 				.then(_enableToolbarIcon)
 				.then(function () {
+					FileTreeView.updateTreeviewContainerSize();
 					d.resolve();
 				}, function (err) {
 					d.reject(err);
@@ -246,20 +234,22 @@ define(function (require, exports, module) {
 		if (j.l.is(":visible")) {
 			return deferred.resolve().promise();
 		}
-		
+
 		function open(state) {
-			if (state === Project.CLOSE) {
-				reloadServerSettingList()
-					.then(function () {
-						var destHeight = j.m.outerHeight() - j.h.outerHeight() - (j.l.outerHeight() + 10);
-						j.l.removeClass("hide");
-						j.tvc.css({"border-top": "1px solid rgba(255, 255, 255, 0.05)"});
-						j.tvc.animate({
-							"top": j.h.outerHeight() + (j.l.outerHeight() + 10) +  "px",
-							//"height": destHeight + "px"
-						}, "fast").promise().then(deferred.resolve);
+			reloadServerSettingList()
+				.then(function () {
+					var top = j.h.outerHeight() + j.l.outerHeight() + 9;
+					j.l.removeClass("hide");
+					j.tvc.css({
+						"border-top": "1px solid rgba(255, 255, 255, 0.05)"
 					});
-			}
+					j.tvc.animate({
+						"top": top + "px",
+						"bottom": 0
+					}, "fast").promise().then(function () {
+						deferred.resolve();
+					});
+				});
 			return deferred.promise();
 		}
 
@@ -301,31 +291,20 @@ define(function (require, exports, module) {
 		var tvcHeight = j.tvc.outerHeight() + "px";
 		var deferred = new $.Deferred();
 		CommandManager.execute(Commands.FILE_CLOSE_ALL)
-		.fail(function () {
-			deferred.reject();
-		})
-		.done(function () {
-			Project.closeProject()
-			.then(function() {
-				$("#synapse-tree").css({"height": tvcHeight});
-				$("#synapse-tree-back").css({"height": tvcHeight});
-				j.t.css({"border": "1px solid rgba(255, 255, 255, 0.15)"});
-				j.tvc.toggleClass("flip").on("webkitTransitionEnd", function () {
-					j.tvc.off("webkitTransitionEnd");
-					j.t.css({"border": 0});
-					Project.close()
-					.then(function () {
-						j.tb.css({"border": "1px solid rgba(255, 255, 255, 0.15)"});
-						j.tvc.toggleClass("flip").on("webkitTransitionEnd", function () {
-							j.tb.css({"border": 0});
-							$("#synapse-tree").css("height", "");
-							$("#synapse-tree-back").css("height", "");
-							deferred.resolve();
-						});
-					});
-				});
+			.then(function () {
+				return Project.closeProject();
+			})
+			.then(function () {
+				return Project.close();
+			})
+			.then(function () {
+				// TODO: プロジェクトを終了しました。
+				deferred.resolve();
+			})
+			.fail(function (err) {
+				// TODO: プロジェクトの終了処理でエラーが発生ました。
+				deferred.reject(err);
 			});
-		});
 		return deferred.promise();
 	};
 
@@ -347,9 +326,9 @@ define(function (require, exports, module) {
 			});
 			j.l.remove();
 		}
-		
+
 		var list = SettingManager.getServerSettingsCache();
-		
+
 		var html = Mustache.render(server_list_html, {
 			serverList: list,
 			Strings: Strings
@@ -383,15 +362,19 @@ define(function (require, exports, module) {
 		var $ph_pc = $("#project-files-header, #project-files-container");
 
 		$main.animate({
-			"opacity": 0,
-		}, "slow").promise()
-		.done(function () {
-			_toggleConnectBtn();
-			$(this).addClass("hide");
-			$ph_pc.css({"display": "block"});
-			$ph_pcChild.animate({"opacity": 1}, "slow").promise()
-			.done(_disableToolbarIcon);
-		});
+				"opacity": 0,
+			}, "slow").promise()
+			.done(function () {
+				_toggleConnectBtn();
+				$(this).addClass("hide");
+				$ph_pc.css({
+					"display": "block"
+				});
+				$ph_pcChild.animate({
+						"opacity": 1
+					}, "slow").promise()
+					.done(_disableToolbarIcon);
+			});
 	};
 
 	/**
@@ -400,34 +383,41 @@ define(function (require, exports, module) {
 	 * @returns {$.Promise}
 	 */
 	_initMainUI = function () {
-		var html = Mustache.render(main_html, {
+		var source = Mustache.render(main_html, {
 			Strings: Strings
 		});
-		var $main = $(html);
+		var $main = $(source);
 		var $pc = j.pc;
-		
+
 		if ($pc.length) {
 			$pc.after($main);
 		} else {
 			j.sb.append($main);
 		}
-		
+
 		$("span.list-btn", $main).on("click", showServerList);
 		$("span.close-btn", $main).on("click", hideMain);
 		$("span.add-btn", $main).on("click", function (e) {
-			_showServerSetting(e, "insert", null);
+			if (!Project.STATE.isOpen()) {
+				_showServerSetting(e, "insert", null);
+			}
 		});
+
+		_attachWorkingSetStateChanged();
+
 		return new $.Deferred().resolve().promise();
 	};
 
 	/**
 	 * Initialize server setting panel and some events;
 	 *
-	 * @returns {$.Promise}
+	 * @returns {$.Promise} never rejected.
 	 */
 	_initServerSettingUI = function () {
-		var html = Mustache.render(server_setting_html, {Strings: Strings});
-		var $serverSetting = $(html);
+		var source = Mustache.render(server_setting_html, {
+			Strings: Strings
+		});
+		var $serverSetting = $(source);
 		j.h.after($serverSetting);
 
 		$("button#choosePrivateKey").on("click", openFileSelect);
@@ -445,7 +435,7 @@ define(function (require, exports, module) {
 		$("#currentProtocol").val("ftp");
 		$("button.toggle-ftp").addClass("active");
 		$("button.toggle-sftp").removeClass("active");
-		// show ftp row
+		// show row for ftp
 		$(".sftp-row").hide();
 
 		return new $.Deferred().resolve().promise();
@@ -457,7 +447,6 @@ define(function (require, exports, module) {
 	 * @returns {$.Promise}
 	 */
 	_reloadServerSettingListWhenDelete = function () {
-
 		var deferred = new $.Deferred();
 		if (!j.l.length) {
 			return deferred.reject().promise();
@@ -472,14 +461,13 @@ define(function (require, exports, module) {
 			});
 		}
 		var list = PreferenceManager.loadServerSettings();
-		
-		var html = Mustache.render(server_list_html, {
-			serverList: JSON.parse(list),
+
+		var source = Mustache.render(server_list_html, {
+			serverList: list,
 			Strings: Strings
 		});
-		var $html = $(html);
-		j.l.addClass("hide");
-		j.l.remove();
+		var $html = $(source);
+		j.l.addClass("hide").remove();
 		j.s.after($html);
 		j.l.removeClass("hide");
 		$("button.btn-connect", j.l).on("click", onClickConnectBtn);
@@ -490,9 +478,9 @@ define(function (require, exports, module) {
 			"mouseenter": onEnterListBtns,
 			"mouseleave": onLeaveListBtns
 		});
-		var destHeight = j.m.outerHeight() - j.h.outerHeight() - (j.l.outerHeight() + 10);
 		j.tvc.animate({
-			"top": j.h.outerHeight() + (j.l.outerHeight() + 10) + "px"
+			"top": j.h.outerHeight() + (j.l.outerHeight() + 10) + "px",
+			"bottom": 0
 		}, 400).promise().then(function () {
 			$("#synapse-server-list div.list").addClass("quiet-scrollbars");
 			deferred.resolve();
@@ -518,81 +506,85 @@ define(function (require, exports, module) {
 
 		function _open() {
 			SettingManager.reset()
-			.then(function () {
-				var d = new $.Deferred();
-				if (state === "update") {
-					j.s.data("index", setting.index);
-					if (setting.protocol === "sftp") {
-						$("#currentProtocol").val("sftp");
-						$("#currentAuth").val(setting.auth);
-						$("button.toggle-ftp").removeClass("active");
-						$("button.toggle-sftp").addClass("active");
-						$(".sftp-row").show();
-						
-						if (setting.auth === "key") {
-							
-							$("#synapse-server-privateKey-name").val("Setted");
-							$("#synapse-server-passphrase").val(setting.passphrase);
-							$("tr.password-row").hide();
-							$("tr.passphrase-row").show();
-							$("button.toggle-password").removeClass("active");
-							$("button.toggle-key").addClass("active");
-							$("#synapse-server-privateKey-name");
-							_currentPrivateKeyText = setting.privateKey;
+				.then(function () {
+					var d = new $.Deferred();
+					if (state === "update") {
+						j.s.data("index", setting.index);
+						if (setting.protocol === "sftp") {
+							$("#currentProtocol").val("sftp");
+							$("#currentAuth").val(setting.auth);
+							$("button.toggle-ftp").removeClass("active");
+							$("button.toggle-sftp").addClass("active");
+							$(".sftp-row").show();
+
+							if (setting.auth === "key") {
+								$("#synapse-server-privateKey-name").val("Setted");
+								$("#synapse-server-passphrase").val(setting.passphrase);
+								$("tr.password-row").hide();
+								$("tr.passphrase-row").show();
+								$("button.toggle-password").removeClass("active");
+								$("button.toggle-key").addClass("active");
+								$("#synapse-server-privateKey-name");
+								_currentPrivateKeyText = setting.privateKey;
+							}
+							if (setting.auth === "password") {
+								$("tr.password-row").show();
+								$("tr.passphrase-row").hide();
+								$("#synapse-server-password").val(setting.password);
+							}
 						}
-						if (setting.auth === "password") {
+						if (setting.protocol === "ftp") {
+							$("tr.sftp-row").hide();
 							$("tr.password-row").show();
-							$("tr.passphrase-row").hide();
+							$("button.toggle-ftp").addClass("active");
+							$("button.toggle-sftp").removeClass("active");
 							$("#synapse-server-password").val(setting.password);
 						}
+						$("#synapse-server-host").val(setting.host);
+						$("#synapse-server-port").val(setting.port);
+						$("#synapse-server-user").val(setting.user);
+						$("#synapse-server-setting-name").val(setting.name);
+						$("#synapse-server-dir").val(setting.dir);
+						$("#synapse-server-exclude").val(setting.exclude);
+						$("button.btn-add", j.s)
+							.html(Strings.SYNAPSE_SETTING_UPDATE)
+							.css({
+								"background-color": "#5cb85c"
+							})
+							.removeClass("disabled")
+							.prop("disabled", false);
+						SettingManager.validateAll();
+						d.resolve();
+					} else {
+						$("button.btn-add", j.s)
+							.html(Strings.SYNAPSE_SETTING_APPEND)
+							.css({
+								"background-color": "#016dc4"
+							});
+						$("#synapse-server-port").val("21");
+						// berow code when debug only
+						$("#synapse-server-host").val("");
+						$("#synapse-server-user").val("");
+						$("#synapse-server-password").val("");
+						resetExcludeFile();
+						d.resolve();
 					}
-					if (setting.protocol === "ftp") {
-						$("tr.sftp-row").hide();
-						$("tr.password-row").show();
-						$("button.toggle-ftp").addClass("active");
-						$("button.toggle-sftp").removeClass("active");
-						$("#synapse-server-password").val(setting.password);
-					}
-					$("#synapse-server-host").val(setting.host);
-					$("#synapse-server-port").val(setting.port);
-					$("#synapse-server-user").val(setting.user);
-					$("#synapse-server-dir").val(setting.dir);
-					$("#synapse-server-exclude").val(setting.exclude);
-					$("button.btn-add", j.s)
-					.html(Strings.SYNAPSE_SETTING_UPDATE)
-					.css({
-						"background-color": "#5cb85c"
-					})
-					.removeClass("disabled")
-					.prop("disabled", false);
-					SettingManager.validateAll();
-					d.resolve();
-				} else {
-					$("button.btn-add", j.s)
-					.html(Strings.SYNAPSE_SETTING_APPEND)
-					.css({
-						"background-color": "#016dc4"
+					return d.promise();
+				})
+				.then(function () {
+					j.s.removeClass("hide");
+					j.tvc.css({
+						"border-top": "1px solid rgba(255, 255, 255, 0.05)"
 					});
-					$("#synapse-server-port").val("21");
-					// berow code when debug only
-					$("#synapse-server-host").val("");
-					$("#synapse-server-user").val("");
-					$("#synapse-server-password").val("");
-					resetExcludeFile();
-					d.resolve();
-				}
-				return d.promise();
-			})
-			.then(function () {
-				var destHeight = j.m.outerHeight() - j.h.outerHeight() - (j.s.outerHeight() + 10);
-				j.s.removeClass("hide");
-				j.tvc.css({"border-top": "1px solid rgba(255, 255, 255, 0.05)"});
-				j.tvc.animate({"top": (j.s.outerHeight() + 10) + j.h.outerHeight() + "px"}, "fast").promise()
-				.done(function () {
-					deferred.resolve();
-					SettingManager.validateAll();
+					j.tvc.animate({
+							"top": (j.s.outerHeight() + 10) + j.h.outerHeight() + "px",
+							"bottom": 0
+						}, "fast").promise()
+						.done(function () {
+							deferred.resolve();
+							SettingManager.validateAll();
+						});
 				});
-			});
 			return deferred.promise();
 		}
 
@@ -616,17 +608,18 @@ define(function (require, exports, module) {
 		if (j.s.hasClass("hide")) {
 			return deferred.resolve().promise();
 		}
-		
+
 		hideSpinner();
-		
-		var destHeight = j.m.outerHeight() - j.h.outerHeight();
+
 		j.tvc.animate({
 				"top": j.h.outerHeight() + "px",
-				//"height": destHeight + "px"
+				"bottom": 0
 			}, "fast").promise()
 			.done(function () {
 				j.s.addClass("hide");
-				j.tvc.css({"border-top": "none"});
+				j.tvc.css({
+					"border-top": "none"
+				});
 				deferred.resolve();
 			});
 		return deferred.promise();
@@ -641,17 +634,18 @@ define(function (require, exports, module) {
 		if (j.l.hasClass("hide")) {
 			return deferred.reject("unexpected error").promise();
 		}
-		
+
 		hideSpinner();
-		
-		var destHeight = j.m.outerHeight() - j.h.outerHeight();
+
 		j.tvc.animate({
 				"top": j.h.outerHeight() + "px",
-				"height": destHeight + "px"
+				"bottom": 0
 			}, "fast").promise()
 			.done(function () {
 				j.l.addClass("hide");
-				j.tvc.css({"border-top": "none"});
+				j.tvc.css({
+					"border-top": "none"
+				});
 				deferred.resolve();
 			});
 		return deferred.promise();
@@ -690,57 +684,56 @@ define(function (require, exports, module) {
 
 	_enableToolbarIcon = function () {
 		$("#synapse-icon").removeClass("disabled").addClass("enabled");
-		$("#synapse-icon").css({"background-position": "0 -24px"});
+		$("#synapse-icon").css({
+			"background-position": "0 -24px"
+		});
 	};
 
 	_disableToolbarIcon = function () {
 		$("#synapse-icon").removeClass("enabled").addClass("disabled");
-		$("#synapse-icon").css({"background-position": "0 0"});
+		$("#synapse-icon").css({
+			"background-position": "0 0"
+		});
 	};
 
 	_toggleConnectBtn = function () {
-		var $connectBtn = null;
-		var $editBtn = null;
-		var $deleteBtn = null;
-		var $btnGrp = $(".synapse-server-list-user .btn-group button");
-		_.forEach($btnGrp, function (button) {
-			var $btn = $(button);
-			if ($btn.hasClass("connection-btn") && $btn.data("index") === _currentServerIndex) {
-				$connectBtn = $btn;
-			}
-			if ($btn.hasClass("btn-edit") && $btn.data("index") === _currentServerIndex) {
-				$editBtn = $btn;
-			}
-			if ($btn.hasClass("btn-delete") && $btn.data("index") === _currentServerIndex) {
-				$deleteBtn = $btn;
+		var $currentBtn = {};
+		var $btnGrp = $(".synapse-server-list-info .btn-group button");
+		var $btnGrps = $(".synapse-server-list-info .btn-group");
+
+		_.forEach($btnGrps, function (grp) {
+			var $grp = $(grp);
+			if ($grp.data("index") === _currentServerIndex) {
+				$currentBtn.connect = $(".connection-btn", $grp);
+				$currentBtn.edit = $(".btn-edit", $grp);
+				$currentBtn.delete = $(".btn-delete", $grp);
+
+				$grp.animate({"opacity": 1}, 200);
 			}
 		});
 
-
-		if ($connectBtn === null) {
+		if ($currentBtn.connect === null || typeof ($currentBtn.connect) === "undefined") {
 			return;
 		}
 
 		if (_projectState === Project.CLOSE) {
-			$connectBtn.removeClass("btn-disconnect");
-			$connectBtn.addClass("btn-connect");
-			$connectBtn.html(Strings.SYNAPSE_LIST_CONNECT);
-
-			$editBtn.prop("disabled", false);
-			$deleteBtn.prop("disabled", false);
-
+			$currentBtn.connect.removeClass("btn-disconnect");
+			$currentBtn.connect.addClass("btn-connect");
+			$currentBtn.connect.html(Strings.SYNAPSE_LIST_CONNECT);
+			$currentBtn.edit.prop("disabled", false);
+			$currentBtn.delete.prop("disabled", false);
 			_currentServerIndex = null;
 		} else {
-			$connectBtn.removeClass("btn-connect");
-			$connectBtn.addClass("btn-disconnect");
+			$currentBtn.connect.removeClass("btn-connect");
+			$currentBtn.connect.addClass("btn-disconnect");
+			$currentBtn.edit.prop("disabled", true);
+			$currentBtn.delete.prop("disabled", true);
+			$currentBtn.connect.html(Strings.SYNAPSE_LIST_DISCONNECT);
 
-			$editBtn.prop("disabled", true);
-			$deleteBtn.prop("disabled", true);
 
-			$connectBtn.html(Strings.SYNAPSE_LIST_DISCONNECT);
 		}
 	};
-	
+
 	onProtocolGroup = function (e) {
 		var $btn = $(e.target);
 		if (!$btn.hasClass("toggle-ftp") && !$btn.hasClass("toggle-sftp")) {
@@ -766,37 +759,39 @@ define(function (require, exports, module) {
 			$("#currentProtocol").val("sftp");
 			$("tr.sftp-row").show();
 		}
-		var destHeight = j.m.outerHeight() - j.h.outerHeight() - (j.s.outerHeight() + 10);
 		j.s.removeClass("hide");
-		j.tvc.css({"border-top": "1px solid rgba(255, 255, 255, 0.05)"});
+		j.tvc.css({
+			"border-top": "1px solid rgba(255, 255, 255, 0.05)"
+		});
 		j.tvc.animate({
 			"top": (j.s.outerHeight() + 10) + j.h.outerHeight() + "px",
+			"bottom": 0
 		}, 100).promise().then(function () {
 			$btn.addClass("active");
 			SettingManager.validateAll();
 		});
 	};
-	
+
 	onAuthGroup = function (e) {
 		var $btn = $(e.target);
 		if (!$btn.hasClass("toggle-key") && !$btn.hasClass("toggle-password")) {
 			return;
 		}
-		
+
 		var childs = $(".auth-group", j.s).children();
 		_.forEach(childs, function (item) {
 			if ($(item).hasClass("toggle-key") || $(item).hasClass("toggle-password")) {
 				$(item).removeClass("active");
 			}
 		});
-		
-		
+
+
 		if ($btn.hasClass("toggle-key")) {
 			$("#currentAuth").val("key");
 			$("tr.key-row").show();
 			$("tr.passphrase-row").show();
 			$("tr.password-row").hide();
-			
+
 		} else if ($btn.hasClass("toggle-password")) {
 			$("#currentAuth").val("password");
 			$("tr.password-row").show();
@@ -817,23 +812,28 @@ define(function (require, exports, module) {
 		var index = $btn.data("index");
 		var server = SettingManager.getServerSetting(index);
 
+		// if the following code will be called, there is problem at somewhere the state change function.
+		// i.e. "Project.OPEN" must be false here
 		if (_projectState === Project.OPEN) {
 			if ($(this).data("index") === _currentServerIndex) {
 				closeProject()
-				.then(function () {
-					_toggleConnectBtn();
-				});
+					.then(function () {
+						_toggleConnectBtn();
+					});
 				return;
 			}
+			
+			// this is deprecated function. showAlert instead to Log.
+			// TODO: プロジェクトはすでに開いています。
 			FileTreeView.showAlert("Project is already opened.", "Please close current project before open other project.");
 			return;
 		}
 
 		RemoteManager.connect(server)
-		.then(function () {
-			_currentServerIndex = index;
-			_toggleConnectBtn();
-		});
+			.then(function () {
+				_currentServerIndex = index;
+				_toggleConnectBtn();
+			});
 	};
 
 	onClickEditBtn = function (e) {
@@ -852,50 +852,55 @@ define(function (require, exports, module) {
 		var deferred = new $.Deferred();
 
 		if (_projectState === Project.OPEN) {
-			FileTreeView.showAlert("Failed.", "Could not delete setting because project is open");
+			FileTreeView.showAlert("Failed.", "Could not delete setting when the project is openning");
 			return deferred.reject().promise();
 		}
 
 		//show confirm dialog
 		DialogCollection.showYesNoModal(
 				"error-dialog",
-				"I will ask you.",
-				"It will remove a server that has been selected",
+				"- Synapse - NOTE",
+				"It will remove a server setting that has been selected",
 				"OK",
 				"CANCEL")
 			.then(function (res) {
 				if (res === "OK") {
 					SettingManager.deleteServerSetting(idx)
 						.then(function () {
-							return _removeServerSettingListRow(idx);
-						})
-						.then(_reloadServerSettingListWhenDelete)
-						.then(function () {
-							var list = SettingManager.getServerSettingsCache();
-							if (list.length === 0) {
-								return _hideServerList();
-							}
-						})
-						.then(deferred.resolve);
+							_removeServerSettingListRow(idx)
+								.then(_reloadServerSettingListWhenDelete)
+								.then(function () {
+									var list = SettingManager.getServerSettingCache();
+									if (list.length === 0) {
+										return _hideServerList();
+									} else {
+										return new $.Deferred().resolve().promise();
+									}
+								})
+								.then(deferred.resolve, deferred.reject);
+						}, function (err) {
+							deferred.reject(err);
+						});
+
 				} else {
-					deferred.resolve().promise();
+					deferred.resolve();
 				}
 			});
 		return deferred.promise();
 	};
 
 	onEnterListBtns = function (e) {
-		if (_projectState === Project.OPEN) {
-			if ($(this).data("index") !== _currentServerIndex) {
-				return;
-			}
-		}
+		if (_projectState === Project.OPEN) return;
+
 		$(this).find(".btn-group").animate({
 			"opacity": 1
 		}, 200);
 	};
 
 	onLeaveListBtns = function (e) {
+
+		if (_projectState === Project.OPEN) return;
+
 		$(this).find(".btn-group").animate({
 			"opacity": 0
 		}, 200);
@@ -904,14 +909,19 @@ define(function (require, exports, module) {
 	onProjectStateChanged = function (evt, obj) {
 		_projectState = obj.state;
 		_projectDir = obj.directory;
+		// TODO: stateによってログの切り替え　ONLINE OFFLINE
 	};
 
 	openFileSelect = function (e) {
 		if ($("#synapse-server-privateKey").length) {
 			$("#synapse-server-privateKey").remove();
 		}
-		var $input = $("<input>").attr({type: "file", id: "synapse-server-privateKey"}).css({
-		"display": "none"});
+		var $input = $("<input>").attr({
+			type: "file",
+			id: "synapse-server-privateKey"
+		}).css({
+			"display": "none"
+		});
 		$("div.privateKeyFileSelect > div").html($input);
 		$input.on("change", onPrivateKeySelected);
 		$input.click();
@@ -925,7 +935,7 @@ define(function (require, exports, module) {
 		_currentPrivateKeyText = null;
 		SettingManager.validateAll();
 	};
-	
+
 	resetExcludeFile = function (e) {
 		$("#synapse-server-exclude").val("^\\.$, ^\\.\\.$, ^\\..+$");
 	};
@@ -933,30 +943,29 @@ define(function (require, exports, module) {
 	onPrivateKeySelected = function (e) {
 		var file = $(e.target).prop("files")[0];
 		var $keyName = $("#synapse-server-privateKey-name", j.s);
-		
 		_readPrivateKeyFile(file)
-		.then(function(res) {
-			var text = res;
-			//var reg = new RegExp(/PRIVATE KEY/g);
-			var reg = new RegExp(/^$/g);
-			if (!text.match(reg)) {
+			.then(function (res) {
+				var text = res;
+				//var reg = new RegExp(/PRIVATE KEY/g);
+				var reg = new RegExp(/^$/g);
+				if (text.match(reg)) {
+					$keyName.val("").addClass("invalid");
+					_currentPrivateKeyText = null;
+				} else {
+					$keyName.removeClass("invalid");
+					$keyName.val(file.name);
+					_currentPrivateKeyText = res;
+				}
+			}, function () {
+				if ($("#synapse-server-privateKey").length) {
+					$("#synapse-server-privateKey").remove();
+				}
 				$keyName.val("").addClass("invalid");
 				_currentPrivateKeyText = null;
-			} else {
-				$keyName.removeClass("invalid");
-				$keyName.val(file.name);
-				_currentPrivateKeyText = res;
-			}
-		}, function () {
-			if ($("#synapse-server-privateKey").length) {
-				$("#synapse-server-privateKey").remove();
-			}
-			$keyName.val("").addClass("invalid");
-			_currentPrivateKeyText = null;
-			console.error("error");
-		}).always(function () {
-			SettingManager.validateAll();
-		});
+				console.error("error");
+			}).always(function () {
+				SettingManager.validateAll();
+			});
 	};
 	/* unuse */
 	_readPrivateKeyPath = function (file) {
@@ -965,14 +974,13 @@ define(function (require, exports, module) {
 		reader.onload = function (e) {
 			deferred.resolve(e.target.result);
 		};
-		reader.onerror= function () {
+		reader.onerror = function () {
 			deferred.reject();
 		};
 		reader.readAsDataURL(file);
-		
+
 		return deferred.promise();
 	};
-	
 	_readPrivateKeyFile = function (file) {
 		var reader = new FileReader();
 		var deferred = new $.Deferred();
@@ -985,14 +993,15 @@ define(function (require, exports, module) {
 		reader.readAsText(file);
 		return deferred.promise();
 	};
-
 	getCurrentPrivateKeyText = function () {
 		return _currentPrivateKeyText;
 	};
-	
-	
-	
-		
+	_attachWorkingSetStateChanged = function () {
+		MainViewManager.on("workingSetAdd workingSetAddList workingSetRemove workingSetRemoveList workingSetUpdate", function () {
+			FileTreeView.updateTreeviewContainerSize();
+		});
+	};
+
 	exports.init = init;
 	exports.showMain = showMain;
 	exports.showSpinner = showSpinner;

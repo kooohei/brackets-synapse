@@ -8,17 +8,20 @@
 	<div class="list">
 	{{#serverList}}
 		<div class="item" data-index="{{index}}">
-			<div class="synapse-server-list-host">
-				<i class="fa fa-cloud"></i>
-				<span>{{host}}</span>
-			</div>
-			<div class="synapse-server-list-user">
-				<i class="fa fa-user"></i>
-				<span>{{user}}</span>
-				<div class="btn-group pull-right">
-					<button class="btn small btn-connect connection-btn" data-index="{{index}}">{{Strings.SYNAPSE_LIST_CONNECT}}</button>
-					<button class="btn small btn-edit" data-index="{{index}}">{{Strings.SYNAPSE_LIST_EDIT}}</button>
-					<button class="btn small btn-delete" data-index="{{index}}">{{Strings.SYNAPSE_LIST_DELETE}}</button>
+			<div class="wrapper">
+				<div class="synapse-server-list-name">
+					<p>{{name}}</p>
+					<i class="fa fa-cloud"></i>
+					<span>{{host}}</span>
+					<i class="fa fa-user"></i>
+					<span>{{user}}</span>
+				</div>
+				<div class="synapse-server-list-info clearfix">
+					<div class="btn-group pull-right" data-index="{{index}}">
+						<button class="btn small btn-connect connection-btn" data-index="{{index}}">{{Strings.SYNAPSE_LIST_CONNECT}}</button>
+						<button class="btn small btn-edit" data-index="{{index}}">{{Strings.SYNAPSE_LIST_EDIT}}</button>
+						<button class="btn small btn-delete" data-index="{{index}}">{{Strings.SYNAPSE_LIST_DELETE}}</button>
+					</div>
 				</div>
 			</div>
 		</div>

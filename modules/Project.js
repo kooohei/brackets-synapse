@@ -3,7 +3,7 @@
 define(function (require, exports, module) {
 	"use strict";
 
-	/* region Modules */
+	// HEADER >>
 	var PathManager = require("modules/PathManager");
 	var FileSystem = brackets.getModule("filesystem/FileSystem");
 	var ProjectManager = brackets.getModule("project/ProjectManager");
@@ -17,10 +17,7 @@ define(function (require, exports, module) {
 	var moment = require("node_modules/moment/moment");
 	var _ = brackets.getModule("thirdparty/lodash");
 	var DocumentManager = brackets.getModule("document/DocumentManager");
-	/* endregion */
 
-
-	/* region Public Method */
 	var open,
 			close,
 			closeProject,
@@ -30,16 +27,12 @@ define(function (require, exports, module) {
 			createDirectoryIfExists,
 			renameLocalEntry,
 			maxProjectHistory = 3;
-	/* endregion */
 
-	/* region Private vars */
 	var
 			_initProjectContext,
 			_makeProjectDirIfIsNotExists,
 			_createDirectory;
-	/* endregion */
 
-	/* region Private Methods */
 	var _currentServer,
 			_hostDir,
 			_projectDir,
@@ -50,9 +43,7 @@ define(function (require, exports, module) {
 			_removeDirectoryContents,
 			_removeContent,
 			_removeProjectDirectoryFromRecent;
-	/* endregionn */
 
-	/* region Static vars */
 	var OPEN = true,
 			CLOSE = false,
 			PROJECT_STATE_CHANGED = "PROJECT_STATE_CHANGED",
@@ -70,8 +61,7 @@ define(function (require, exports, module) {
 					exports.trigger(PROJECT_STATE_CHANGED, {state: CLOSE, directory: _projectDir});
 				}
 			};
-	/* endregion */
-
+	//<<
 
 
 	/**
@@ -92,11 +82,14 @@ define(function (require, exports, module) {
 		_currentServer = server;
 		var deferred = new $.Deferred();
 		_initProjectContext()
-			.then(_baseDirectoryIsExists)
+			.then(_baseDirectoryIsExists,
+						function (err) {console.error(err); deferred.reject(err);})
 			.then(function () {
 				return _makeProjectDirIfIsNotExists(_currentServer);
-			})
-			.then(_getDirectoryContents)
+			},
+						function (err) {console.error(err); deferred.reject(err);})
+			.then(_getDirectoryContents,
+						function (err) {console.error(err); deferred.reject(err);})
 			.then(function (contents) {
 				var d = new $.Deferred();
 				var m = moment();
@@ -105,9 +98,9 @@ define(function (require, exports, module) {
 					FileSystem.getDirectoryForPath(
 						PathManager.getProjectDirectoryPath(server.host + "-" + server.user + "/" + now));
 
-				_projectDir.create(function (err, res) {
+				_projectDir.create(function (err, stats) {
 					if (err) {
-						d.reject("could not create current time directory");
+						d.reject("could not create current time directory").promise();
 					} else {
 						var tmp = [];
 						if ((contents.length + 1) > maxProjectHistory) {
@@ -119,25 +112,25 @@ define(function (require, exports, module) {
 							});
 							var offset = (contents.length + 1) - maxProjectHistory;
 							var i = 0;
-							var _moveToTrash = function (server, dir) {
+							
+							var _moveToTrash = function (server, dirNames) {
 								var dd = new $.Deferred();
-								FileSystem.getDirectoryForPath(PathManager.getProjectDirectoryPath(server.host + "-" + server.user + "/" + dir))
-									.moveToTrash(function (err) {
-										if (err) {
-											dd.reject(err);
-											throw new Error("could not remove old project directries", err);
-
-										} else {
-											dd.resolve();
-										}
-									});
+								var item = FileSystem.getDirectoryForPath(PathManager.getProjectDirectoryPath(server.host + "-" + server.user + "/" + dirNames));
+								
+								ProjectManager.deleteItem(item)
+								.then(dd.resolve, function (err) {
+									dd.reject(err);
+									throw new Error(err);
+								});
 								return dd.promise();
 							};
+							
 							var promises = [];
 							for (; i < offset; i++) {
-								var dir = dirs.shift();
-								promises.push(_moveToTrash(server, dir));
+								var dirNames = dirs.shift();
+								promises.push(_moveToTrash(server, dirNames));
 							}
+							
 							Async.waitForAll(promises, true, 3000)
 							.then(d.resolve, d.reject);
 						} else {
@@ -146,19 +139,25 @@ define(function (require, exports, module) {
 					}
 				});
 				return d.promise();
-			})
+			},
+						function (err) {console.error(err); deferred.reject(err);})
 			.then(function () {
+				var d = new $.Deferred();
 				_fallbackProjectRoot = ProjectManager.getProjectRoot().fullPath;
-				return ProjectManager.openProject(_projectDir.fullPath)
-					.then(function () {
-						STATE.setOpen();
-						return new $.Deferred().resolve().promise();
-					}, function (err) {
-						STATE.setClose();
-						return new $.Deferred().reject(err).promise();
-					});
-			})
-			.then(deferred.resolve, deferred.reject);
+				
+				ProjectManager.openProject(_projectDir.fullPath)
+				.then(function () {
+					STATE.setOpen();
+					d.resolve();
+				}, function (err) {
+					STATE.setClose();
+					d.reject(err);
+				});
+				return d.promise();
+			},
+						function (err) {console.error(err); deferred.reject(err);})
+			.then(deferred.resolve,
+						function (err) {console.error(err); deferred.reject(err);});
 		return deferred.promise();
 	};
 
@@ -238,6 +237,7 @@ define(function (require, exports, module) {
 			} else {
 				dir.create(function (err) {
 					if (err) {
+						// TODO: ディレクトリの作成に失敗しました。
 						d.reject(err);
 					} else {
 						d.resolve();
@@ -262,7 +262,7 @@ define(function (require, exports, module) {
 			if (exists) {
 				oldEntry.rename(newPath, function (err) {
 					if (err) {
-						console.log(err);
+						// TODO: ファイル名の変更に失敗しました。
 						d.reject(err);
 					} else {
 						d.resolve();

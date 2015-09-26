@@ -1,54 +1,47 @@
 /*jslint node:true, vars:true, plusplus:true, devel:true, nomen:true, regexp:true, white:true, indent:2, maxerr:50 */
 /*global define, $, brackets, Mustache, window, console */
 define(function (require, exports, module) {
-	"use strict";	
+	"use strict";
+
 	
-	// Modules >
+	// Modules >>
 	var FileSystem = brackets.getModule("filesystem/FileSystem");
 	var FileUtils = brackets.getModule("file/FileUtils");
-	
+
 	var _ = brackets.getModule("thirdparty/lodash");
 	var Directory = brackets.getModule("filesystem/Directory");
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
 	var Async = brackets.getModule("utils/Async");
 	var DialogCollection = require("modules/DialogCollection");
 	var PreferenceManager = require("modules/PreferenceManager");
-	// <
+	var Utils = require("modules/Utils");
 	
-	// Privatte Vars >
 	var	_domain,
 			PATH_TO_PACKAGE_JSON = FileUtils.getParentPath(ExtensionUtils.getModulePath(module)) + "package.json";
-	// <
-	
-	// Private Methods >
 	var _getVersionFromPackageJson,
 			_firstLaunch,
 			_checkKeysDirectory,
 			_getDirectoryContents;
-	// <
-	
-	
-	// Public Mehtods >
 	var init,
 			getDomain;
-	// <
-	
-	// Listener >
 	var onClickSecureWarning;
-	// <
+	// <<
+
 	
 	_getVersionFromPackageJson = function () {
 		var d							= new $.Deferred(),
 				file = FileSystem.getFileForPath(PATH_TO_PACKAGE_JSON);
-		
+
 		FileUtils.readAsText(file)
 		.then(function (text, time) {
 			var version = JSON.parse(text).version;
 			d.resolve(version);
+		}, function (err) {
+			throw Utils.getError("", "ExtensionDiagnosis", "_getVersionFromPackageJson", err);
 		});
 		return d.promise();
 	};
-	
+
 	_firstLaunch = function () {
 		if (PreferenceManager.getVersion() !== _getVersionFromPackageJson()) {
 			return _checkKeysDirectory();
@@ -56,7 +49,7 @@ define(function (require, exports, module) {
 			return new $.Deferred().resolve().promise();
 		}
 	};
-	
+
 	_getDirectoryContents = function (dir) {
 		var d = $.Deferred();
 		dir.getContents(function (err, contents, stats, statsErrors) {
@@ -68,7 +61,7 @@ define(function (require, exports, module) {
 		});
 		return d.promise();
 	};
-	
+
 	_checkKeysDirectory = function () {
 		var d = new $.Deferred();
 		var path = FileUtils.getParentPath(ExtensionUtils.getModulePath(module)) + "__KEYS__";
@@ -85,10 +78,16 @@ define(function (require, exports, module) {
 									user = tmp[1];
 							message += "Host @ User : " + host + " @ " + user + "<br>";
 						});
-						keysdir.moveToTrash();
+						keysdir.moveToTrash(function (err) {
+							if (err) {
+								d.reject(err);
+							}
+						});
 						DialogCollection.showAlert("Alert", message);
 					} else {
-						keysdir.moveToTrash();
+						keysdir.moveToTrash(function (err) {
+							d.reject(err);
+						});
 					}
 					d.resolve();
 				}, function (err) {
@@ -100,6 +99,7 @@ define(function (require, exports, module) {
 		});
 		return d.promise();
 	};
+
 	
 	init = function (domain) {
 		_domain = domain;
@@ -115,10 +115,7 @@ define(function (require, exports, module) {
 		});
 		return d.promise();
 	};
-	
+
 	exports.init = init;
 	exports.getDomain = getDomain;
-	exports.getModuleName = function () {
-		return module.id;
-	};
 });

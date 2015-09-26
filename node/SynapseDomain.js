@@ -2,16 +2,14 @@
 /*global define, brackets: true, $, window, navigator, Mustache, jQuery, console, moment */
 (function () {
 	"use strict";
-	
-	// modules >
+
+	// HEADER >>
 	var _domainManager = null,
 			Client = require("ftp"),
 			SSH = require("ssh2").Client,
 			Q = require("q"),
 			fs = require("fs");
-	//<
 	
-	// methods and vars >
 	var client = null,
 			init,
 			test,
@@ -35,9 +33,8 @@
 			_ftpReadDir,
 			_ftpCheckSymLink,
 			_ftpCheckSymLinks;
+	//<<
 	
-	//<
-
 	_getSftpOption = function (setting) {
 		var settingObj = {
 					host: setting.host,
@@ -202,10 +199,12 @@
 			client.on("ready", function () {
 				client.sftp(function (err, sftp) {
 					if (err) {
+						console.error(err);
 						cb(err);
 					} else {
 						sftp.fastPut(localPath, remotePath, function (err) {
 							if (err) {
+								console.error(err);
 								cb(err);
 							} else {
 								cb(null, true);
@@ -421,7 +420,6 @@
 			client = new SSH();
 			client.on("ready", function () {
 				client.sftp(function (err, sftp) {
-					console.log(err, sftp);
 					if (err) {
 						cb(err);
 					} else {

@@ -3,7 +3,7 @@
 define(function (require, exports, module) {
 	"use strict";
 
-	// Modules >
+	// HEADER >>
 	var FileUtils = brackets.getModule("file/FileUtils");
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
 	var EventDispatcher = brackets.getModule("utils/EventDispatcher");
@@ -21,24 +21,18 @@ define(function (require, exports, module) {
 	var Project = require("modules/Project");
 	var FileManager = require("modules/FileManager");
 	var Strings = require("strings");
-	// <
 
-	// Private vars >
 	var _modulePath = FileUtils.getParentPath(ExtensionUtils.getModulePath(module)),
 			_domain,
 			_remoteRootPath = null,
 			_renameValidate,
 			_currentServerSetting = null,
 			_ctxMenuCurrentEntity = null;
-	// <
 
-	// Public vars >
 	var rootEntity,
 			offset_left = 13; // font-size
 	var PROJECT_DIR = "PROJ";
-	// <
 
-	// Private Methods >
 	var _checkPrimitive,
 			_getProjectDirectoryPath,
 			_setEntity,
@@ -60,9 +54,7 @@ define(function (require, exports, module) {
 			_getElementWithEntity,
 			_toggleDir,
 			_newFile,
-	//<
 
-	// Public methods >
 			refresh,
 			rename,
 			deleteFile,
@@ -77,20 +69,34 @@ define(function (require, exports, module) {
 			open,
 			loadTreeView,
 			showAlert,
+			updateTreeviewContainerSize,
 			onClick,
 			onDirClicked,
 			onFileClicked,
 			onTreeViewContextMenu,
 			onProjectStateChanged;
-	//<
 
-	// objects >
-	var jq = {
+	var j = {
 				get container() {
 					return $("#synapse-tree");
 				},
 				get root_ul() {
 					return $("#synapse-tree > ul");
+				},
+				get m() {
+					return $("#synapse");
+				},
+				get h() {
+					return $("#synapse-header");
+				},
+				get tvc() {
+					return $("#synapse-treeview-container");
+				},
+				get l() {
+					return $("#synapse-server-list");
+				},
+				get s() {
+					return $("#synapse-server-setting");
 				}
 			};
 	var Icon = {
@@ -120,9 +126,11 @@ define(function (require, exports, module) {
 				this.downloaded = false;
 				this.children = {};
 			};
-	// <
 
-	/* Public Methods */
+	//<<
+
+
+
 	init = function (domain) {
 		var deferred = new $.Deferred();
 		_domain = domain;
@@ -137,11 +145,11 @@ define(function (require, exports, module) {
 		_remoteRootPath = _currentServerSetting.dir;
 		PathManager.setRemoteRoot(_remoteRootPath);
 
-		jq.root_ul.remove();
+		j.root_ul.remove();
 		var param = {
 			class: "treeview-root",
 			type: "directory",
-			text: _currentServerSetting.host + "@" + _currentServerSetting.user,
+			text: _currentServerSetting.name,
 			opt: {},
 			parent: null,
 			children: {},
@@ -161,7 +169,7 @@ define(function (require, exports, module) {
 		var deferred = new $.Deferred();
 		_currentServerSetting = null;
 		_remoteRootPath = null;
-		jq.root_ul.remove();
+		j.root_ul.remove();
 		return deferred.resolve().promise();
 	};
 
@@ -235,7 +243,10 @@ define(function (require, exports, module) {
 		$("#tv-" + _ctxMenuCurrentEntity.id + " > ul.treeview-contents").remove();
 
 		_loadDirectory(_ctxMenuCurrentEntity)
-			.then(deferred.resolve, deferred.reject);
+			.then(deferred.resolve, function (err) {
+				// TODO: ファイル一覧の更新が失敗しました。。
+				deferred.reject();
+			});
 		return deferred.promise();
 	};
 
@@ -339,6 +350,7 @@ define(function (require, exports, module) {
 					newDirectory();
 					return;
 				}, function () {
+					// TODO: ファイル一覧の取得に失敗しました。
 					deferred.reject();
 				});
 			} else {
@@ -354,6 +366,7 @@ define(function (require, exports, module) {
 	newFile = function () {
 		var deferred = new $.Deferred();
 		if (_ctxMenuCurrentEntity === null || _ctxMenuCurrentEntity.type !== "directory") {
+			// TODO: 選択されたカレントディレクトリでファイルの作成はできません。
 			deferred.reject();
 			return deferred.promise();
 		}
@@ -367,11 +380,15 @@ define(function (require, exports, module) {
 					newFile();
 					return;
 				}, function (err) {
+					//　ファイル一覧の取得に失敗しました。
 					deferred.reject(err);
 				});
 			} else {
 				_newFile("file")
-				.then(deferred.resolve, deferred.reject);
+				.then(deferred.resolve, function (err) {
+					// TODO: ファイルの作成に失敗しました。
+					deferred.reject();
+				});
 			}
 		} else {
 			deferred.resolve();
@@ -396,6 +413,8 @@ define(function (require, exports, module) {
 							_deleteEntity(_ctxMenuCurrentEntity);
 							deferred.resolve();
 						}, function (err) {
+							// TODO: showAlert is deprecated instead Log.q
+							// TODO: サーバファイルの削除に失敗しました。
 							showAlert("ERROR", "Could not delete file from server");
 							deferred.reject(err);
 						});
@@ -520,11 +539,11 @@ define(function (require, exports, module) {
 	};
 
 	_attachEvent = function () {
-		jq.container.on("click", onClick);
+		j.container.on("click", onClick);
 	};
 
 	_detachEvent = function () {
-		jq.container.off("click", onClick);
+		j.container.off("click", onClick);
 	};
 
 	_checkPrimitive = function (param) {
@@ -581,7 +600,7 @@ define(function (require, exports, module) {
 	};
 
 	_getElementWithEntity = function (entity) {
-		return $("#tv-" + entity.id, jq.container);
+		return $("#tv-" + entity.id, j.container);
 	};
 
 	_makeRowElement = function (entity, $parent, $ul) {
@@ -955,6 +974,17 @@ define(function (require, exports, module) {
 		}
 	};
 
+	updateTreeviewContainerSize = function () {
+		var top = j.tvc.css("top");
+		if (j.l.is(":visible")) {
+			top = j.h.outerHeight() + j.l.outerHeight() + 10;
+		}
+		if (j.s.is(":visible")) {
+			top = j.h.outerHeight() + j.s.outerHeight() + 10;
+		}
+		j.tvc.css({"top": top + "px", bottom: 0});
+	};
+
 	exports.init = init;
 	exports.setEntities = setEntities;
 	exports.rootEntity = rootEntity;
@@ -971,6 +1001,7 @@ define(function (require, exports, module) {
 	exports.removeDirectory = removeDirectory;
 	exports.onTreeViewContextMenu = onTreeViewContextMenu;
 	exports.clearCurrentTree = clearCurrentTree;
+	exports.updateTreeviewContainerSize = updateTreeviewContainerSize;
 	exports.getModuleName = function () {
 		return module.id;
 	};

@@ -6,7 +6,8 @@ define(function (require, exports, module) {
 	var _ = brackets.getModule("thirdparty/lodash");
 	
 	var sleep,
-			l;
+			l,
+			getError;
 	var debug = true;
 	
 	sleep = function (sec) {
@@ -22,7 +23,6 @@ define(function (require, exports, module) {
 				clearInterval(timer);
 				d.resolve();
 			}
-			console.log("count: " + count);
 			
 		}, 1000);
 		return d.promise();
@@ -41,6 +41,23 @@ define(function (require, exports, module) {
 		}
 	};
 	
+	
+	getError = function (message, moduleName, methodName, err) {
+		var error = new Error();
+		var obj = {
+			message: message,
+			module: moduleName,
+			mthod: methodName,
+			err: err
+		};
+		if (message === "") {
+			obj.message = err.message || "EMPTY";
+		}
+		error.message = JSON.stringify(obj);
+		return error;
+	};
+	
 	exports.l = l;
 	exports.sleep = sleep;
+	exports.getError = getError;
 });
