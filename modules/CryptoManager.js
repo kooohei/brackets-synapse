@@ -6,36 +6,33 @@ define(function (require, exports, module) {
 	var _ = brackets.getModule("thirdparty/lodash");
 	var CryptoJS = require("../node_modules/crypto-js/crypto-js");
 
-	var observeData = {
-		currentSessionPassword: false,
-		
-		notice: function (changes) {
-			console.log(changes);
-			if (changes.name === "currentSessionPassword") {
-				if (changes.type === "add") {
-					console.log("add");
-				}
-				if (changes.type === "update") {
-					console.log("update");
-				}
-			}
-		}
-	};
-	Object.observe(observeData, observeData.notice);
+
+	var	_currentSessionPassword = false;
+
 	
 	
 	var getSessionPassword,
-		_getKey,
-		_getIV,
-		encrypt,
-		decrypt;
+			setSessionPassword,
+			_getKey,
+			_getIV,
+			encrypt,
+			decrypt;
 	
 	encrypt = function (password, settings) {
 		var	salt = CryptoJS.lib.WordArray.random(128/8),
 				key = _getKey(password, salt),
 				iv = _getIV(password, salt);
 		var options = {mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7, iv: iv},
-				F = CryptoJS.AES.encrypt(settings, key, options);
+				F = null;
+		
+		try {
+			F = CryptoJS.AES.encrypt(settings, key, options);
+			setSessionPassword(password);
+			
+		} catch (e) {
+			setSessionPassword(false);
+			return false;
+		}
 		var obj = {
 			prefix: CryptoJS.enc.Utf8.parse("SYNAPSE_").toString(CryptoJS.enc.Base64),
 			salt: salt.toString(CryptoJS.enc.Base64),
@@ -54,15 +51,15 @@ define(function (require, exports, module) {
 		};
 		var key = _getKey(_password, obj.salt),
 				iv = _getIV(_password, obj.salt),
-				options = {mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7, iv: iv},
-				decrypted = CryptoJS.AES.decrypt({ciphertext: obj.cipher}, key, options);
+				options = {mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7, iv: iv};
+				
 		try {
-			observeData.currentSessionPassword = _password;
+			var decrypted = CryptoJS.AES.decrypt({ciphertext: obj.cipher}, key, options);
 			var res = decrypted.toString(CryptoJS.enc.Utf8);
+			setSessionPassword(_password);
 			return res;
 		} catch(e) {
-			console.error(e);
-			observeData.currentSessionPassword = false;
+			setSessionPassword(false);
 			return false;
 		}
 	};
@@ -75,10 +72,14 @@ define(function (require, exports, module) {
 	};
 
 	getSessionPassword = function () {
-		return observeData.currentSessionPassword;
+		return _currentSessionPassword;
+	};
+	setSessionPassword = function (password) {
+		_currentSessionPassword = password;
 	};
 	
 	exports.encrypt = encrypt;
 	exports.decrypt = decrypt;
 	exports.getSessionPassword = getSessionPassword;
+	exports.setSessionPassword = setSessionPassword;
 });

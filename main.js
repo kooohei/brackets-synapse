@@ -2,8 +2,8 @@
 /*global define, location, $, brackets, Mustache, window, appshell*/
 define(function (require, exports, module) {
 	"use strict";
-	
-	
+
+
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils"),
 			AppInit = brackets.getModule("utils/AppInit"),
 			NodeDomain = brackets.getModule("utils/NodeDomain"),
@@ -19,15 +19,13 @@ define(function (require, exports, module) {
 			RemoteManager = require("modules/RemoteManager"),
 			FileManager = require("modules/FileManager"),
 			PreferenceManager = require("modules/PreferenceManager"),
-			StateManager = require("modules/StateManager"),
-			Notify = require("modules/Notify");
-			
-	var Test = require("modules/Test");
-			
+			Notify = require("modules/Notify"),
+			Log = require("modules/Log");
+
 	var COMMAND_ID = "kohei.synapse.mainPanel";
-	
+
 	var _domain = null;
-			
+
 	var $brackets = {
 				get toolbar() {
 					return $("#main-toolbar .buttons");
@@ -39,13 +37,13 @@ define(function (require, exports, module) {
 					return $("#sidebar");
 				}
 			};
-	
+
 	var setAppIcon = function (domain) {
 		var d = new $.Deferred(),
 				icon = $("<a>")
 				.attr({
 					id:"synapse-icon",
-					"href": "#", 
+					"href": "#",
 					"title": "Synapse"
 				})
 				.addClass("diabled")
@@ -53,50 +51,57 @@ define(function (require, exports, module) {
 				.appendTo($brackets.toolbar);
 		return d.resolve(_domain).promise();
 	};
-	
+
 	AppInit.appReady(function () {
 		var domain = new NodeDomain("synapse", ExtensionUtils.getModulePath(module, "node/SynapseDomain"));
 		_domain = domain;
-		
+
 		var promises = [];
 		var p;
-		
-		p = PreferenceManager.init(domain);
-		promises.push(p);
-		
-		p = ExtensionDiagnosis.init(domain);
-		promises.push(p);
-		
-		p = setAppIcon(domain);
-		promises.push(p);
-		
-		p = Panel.init(domain);
-		promises.push(p);
-		
-		p = Notify.init(domain);
-		promises.push(p);
-		
-		p = PathManager.init(domain);
-		promises.push(p);
-		
-		p = SettingManager.init(domain);
-		promises.push(p);
-		
-		p = RemoteManager.init(domain);
-		promises.push(p);
-		
-		p = FileTreeView.init(domain);
-		promises.push(p);
 
-		p = FileManager.init(domain);
-		promises.push(p);
-		
-		p = Menu.setRootMenu(domain);
-		promises.push(p);
-		
-		Async.waitForAll(promises, true)
+		Log.initView()
 		.then(function () {
-			console.log("Brackets Synapse initialized.");
+			p = PreferenceManager.init(domain);
+			promises.push(p);
+
+			p = ExtensionDiagnosis.init(domain);
+			promises.push(p);
+
+			p = SettingManager.init(domain);
+			promises.push(p);
+
+			p = Panel.init(domain);
+			promises.push(p);
+
+			p = Notify.init(domain);
+			promises.push(p);
+
+			p = PathManager.init(domain);
+			promises.push(p);
+
+			p = RemoteManager.init(domain);
+			promises.push(p);
+
+			p = FileTreeView.init(domain);
+			promises.push(p);
+
+			p = FileManager.init(domain);
+			promises.push(p);
+
+			p = setAppIcon(domain);
+			promises.push(p);
+
+			p = Menu.setRootMenu(domain);
+			promises.push(p);
+
+			Async.waitForAll(promises, true)
+			.then(function () {
+				Log.q("Synapse initialized done.");
+			}, function (err) {
+				throw new Error(err);
+			});
+		}, function (err) {
+			console.error("Initialize Log module failed.");
 		});
 	});
 });

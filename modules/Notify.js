@@ -3,39 +3,33 @@
 define(function (require, exports, module) {
 	"use strict";
 	
-	// Modules >
+	// HEADER >>
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
 	var EventDispatcher = brackets.getModule("utils/EventDispatcher");
 	var FileSystem = brackets.getModule("filesystem/FileSystem");
 	var _ = brackets.getModule("thirdparty/lodash");
-	var Strings = require("strings");
+	var Strings = require("Strings");
 	var PreferenceManager = require("modules/PreferenceManager");
 	var CryptoManager = require("modules/CryptoManager");
 	var SettingManager = require("modules/SettingManager");
-	// <
+	var Log = require("modules/Log");
+	var Utils = require("modules/Utils");
 	
-	var _base = require("../text!ui/notify/base.html"),
-			_secureWarning = require("../text!ui/notify/secureWarning.html"),
-			_decryptPassword = require("../text!ui/notify/decryptPassword.html");
-	
-	
-	// Private Vars >
+	var _base = require("text!../ui/notify/base.html"),
+			_secureWarning = require("text!../ui/notify/secureWarning.html"),
+			_decryptPassword = require("text!../ui/notify/decryptPassword.html");
 	var domain;
-	// <
-	
-	// Public Methods >
 	var init,
+			_reposition,
+			_resetSecureWarning,
+			_getLeft,
 			show,
+			showSecureWarning,
+			showDecryptPassword,
 			close;
-	//<
-	
-	// Private Methods >
 	var _getBase,
-			_getSecureWarning,
 			_getDecryptPassword;
-	// <
-	
-	
+	// <<
 	
 	/**
 	 * HTML structure
@@ -46,154 +40,160 @@ define(function (require, exports, module) {
 	 * 			 		 └ div#(dependency)
 	 *
 	 */
-
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/notify.css");
 	
-	// Must be called only once at main.js
 	init = function (_domain) {
 		domain = _domain;
-		var d = new $.Deferred();
-		if ($("#synapse-notify-container").length) {
-			return d.resolve(_domain).promise();
-		}
-		var $container = $("<div>").attr({"id": "synapse-notify-container"}).hide();
-		$container.appendTo($("#sidebar"));
-		return d.resolve(_domain).promise();
+		var $container = $("<div>")
+				.attr({"id": "synapse-notify-container"})
+				.appendTo($("div.main-view")).hide();
+		
+		$(window).on("resize", function () {
+			_reposition();
+		});
+		return new $.Deferred().resolve().promise();
 	};
-	_getBase = function (title, $content) {
-		var src = Mustache.render(_base, {title: title, content: $content}),
+	
+	_getBase = function (id, title, $content) {
+		var src = Mustache.render(_base, {id: id, title: title, content: $content}),
 				$base = $(src);
-		$("button.close", $base).one("click", close);
+		$("button.close", $base).on("click", close);
 		return $base;
 	};
-	// get dependencies.
-	_getSecureWarning = function () {
-		var src = Mustache.render(_secureWarning, {Strings: Strings});
-		var $notify = _getBase(Strings.SYNAPSE_SECURE_WARNING_TITLE, src);
-		return $notify;
-	};
 	
-	_getDecryptPassword = function () {
-		var d = new $.Deferred();
-		var src = Mustache.render(_decryptPassword, {Strings: Strings});
-		var $notify = _getBase(Strings.SYNAPSE_DECRYPT_PASSWORD_TITLE, src);
-		return $notify;
-	};
-	
-	// Public Command
-	show = function (dependency) {
-		var $container = $("#synapse-notify-container");
+	showDecryptPassword = function () {
+		Log.q("Enter the passowrd to decrypt the settings.", false);
 		var d = new $.Deferred(),
-				$notify;
+				src = Mustache.render(_decryptPassword, {Strings: Strings}),
+				$base = _getBase("synapse-decrypt-password-notify", Strings.SYNAPSE_DECRYPT_PASSWORD_TITLE, src),
+				$container = $("#synapse-notify-container");
 		
-		if (dependency === "SecureWarning") {
-			$notify = _getSecureWarning();
-		}
-		if (dependency === "DecryptPassword") {
-			$notify = _getDecryptPassword();
-		}
-		$container.html($notify).css({"bottom": "-" + $container.outerHeight() + "px"});
-		$container.show();
-		$container.css({"bottom": 0});
-		$container.one("transitionend", function () {
-			if (dependency === "SecureWarning") {
+		$container.html($base).css({"left": _getLeft()}).show();
+		
+		var $notify = $("#synapse-decrypt-password-notify"),
+				$password = $("#synapse-decrypt-password-input", $notify),
+				$btn1 = $("#synapse-decrypt-password-btn1", $notify),
+				$validMessage = $("p.validateMessage", $notify);
+		
+		$btn1.on("click", function (e) {
+			Log.q("Trying decription to the useable data.");
+			var password = $password.val();
+			if (password === "") {
+				$password.addClass("invalid");
+				$validMessage.html("Password is required");
+			} else {
+				CryptoManager.setSessionPassword(password);
+				var settings = null;
+				try {
+					settings = PreferenceManager.loadServerSettings();
+				} catch (e) {
+					throw e;
+				}
 				
-				$("#synapse-secure-warning-btn1", $notify).off("click");
-				
-				$("#synapse-secure-warning-btn1", $notify).on("click", function () {
-
-					var $password = $("#crypt-password", $notify),
-							$rePasswd = $("#re-password", $notify),
-							$valid_mess = $("p.validateMessage", $notify);
-
-					if ($password.val() !== $rePasswd.val() ||
-						 $password.val() === "" || $password.val().length < 4) {
-
-						$password.addClass("invalid");
-						$rePasswd.addClass("invalid");
-						$valid_mess.html("Invalid Password");
-
-					} else {
-
-						$password.removeClass("invalid");
-						$rePasswd.removeClass("invalid");
-						$valid_mess.html("OK");
-
-						var settings = PreferenceManager.loadServerSettings();
-						var encrypted = CryptoManager.encrypt($password.val(), settings);																									
-
-						PreferenceManager.saveServerSettings(encrypted)
-							.then(function () {
-								PreferenceManager.setUseCrypt(true);
-								return close();
-							})
-							.then(function () {
-								d.resolve({state: "COMPLETE_ENCRYPT"});
-							}, function (err) {
-								d.reject(err);
-							});
-					}
-				});
-				$("#synapse-secure-warning-btn2", $notify).one("click", function (e) {
+				if (!settings) {
+					$password.addClass("invalid");
+					$validMessage.html("Failed, It is invalid password.");
+					Log.q("Failed, It is invalid password.", false);
+					$password.val("");
+					$password.focus();
+				} else {
+					$password.removeClass("invalid");
+					$validMessage.html("");
 					close()
 					.then(function () {
-						d.resolve({state: "NOTIFY_CLOSED"});
+						$btn1.off("click");
+						Log.q("Success. The server setting was decrypted. ", false);
+						d.resolve();
 					});
-				});
-				$("#crypt-password", $notify).focus();
-			}
-			
-			if (dependency === "DecryptPassword") {
-				
-				$("#synapse-decrypt-password-btn1", $notify).on("click", function (e) {
-					var $password = $("#synapse-decrypt-password-input", $notify),
-							value = $password.val(),
-							$validateMessage = $("p.validateMessage", $notify);
-
-					if (value === "" || value.length < 4) {
-						$password.addClass("invalid");
-						$validateMessage.html("Invalid Password");
-					}
-					var encrypted = PreferenceManager.loadServerSettings();
-					var decrypted = CryptoManager.decrypt($password.val(), encrypted);
-					if (!decrypted) {
-						d.reject("CRYPTED FAILED");
-					} else {
-						close()
-						.then(function () {
-							SettingManager.setServerSettings(JSON.parse(decrypted));
-							d.resolve({state: "COMPLETE_DECRYPT", decrypted: JSON.parse(decrypted)});
-						});
-					}
-				});
-				
-				$("#synapse-decrypt-password-input", $notify).focus();
+				}
 			}
 		});
-		return d.promise();
-	};
-	close = function () {
-		var	d = new $.Deferred(),
-				$container = $("#synapse-notify-container"),
-				outerHeight = $container.outerHeight();
 		
-		$container.css({"bottom": "-" + outerHeight + "px"});
-		$container.one("transitionend", function () {
-			$container.html("");
-			$container.hide();
-			d.resolve();
+		$container.css({"top": "-" + $container.outerHeight() + "px"});
+		$container.animate({"top": 0}, "fast").promise()
+		.then(function () {
+			$("#synapse-decrypt-password-input", $notify).focus();
 		});
 		return d.promise();
 	};
 	
+	showSecureWarning = function () {
+		var d = new $.Deferred(),
+				src = Mustache.render(_secureWarning, {Strings: Strings}),
+				$base = _getBase("synapse-secure-warning-notify", Strings.SYNAPSE_SECURE_WARNING_TITLE, src),
+				$container = $("#synapse-notify-container");
+		$container.html($base).css({"left": _getLeft()}).show();
+		
+		var $notify = $("#synapse-secure-warning-notify"),
+				$btn1 = $("#synapse-secure-warning-btn1", $notify),
+				$btn2 = $("#synapse-secure-warning-btn2", $notify);
+		
+		$btn1.on("click", function (e) {
+			var $password = $("#crypt-password", $notify),
+					$repassword = $("#re-password", $notify),
+					$validMessage = $("p.validateMessage");
+			if ($password.val() === "" || $password.val() !== $repassword.val() || $password.val().length < 4) {
+				$password.addClass("invalid"); $repassword.addClass("invalid");
+				$validMessage.html("INPUT PASSWORD IS INVALID.");
+			} else {
+				$password.removeClass("invalid");
+				$repassword.removeClass("invalid");
+				$validMessage.html("OK");
+				
+				var settings = [];
+				try {
+					settings = PreferenceManager.loadServerSettings();
+				} catch(e) {
+					console.error(e);
+					Log.q("The server settings could not load from Preference files", true);
+				}
+				CryptoManager.setSessionPassword($password.val());
+				PreferenceManager.setUseCrypt(true);
+				
+				PreferenceManager.saveServerSettings(settings)
+				.then(close)
+				.then(function () {
+					Log.q("Success. The server setting was encrypted. ", false);
+					d.resolve();
+				}, function (err) {
+					throw Utils.getError("", "Notify", "showSecureWarning", err);
+				});
+			}
+		});
+		$btn2.one("click", function (e) {
+			close()
+			.then(function () {
+				d.resolve();
+			}, function (err) {
+				d.reject(err);
+			});
+		});
+		$container.css({"top": "-" + $container.outerHeight() + "px"});
+		$container.animate({"top": 0}, "fast").promise()
+		.then(function () {
+			$("#crypt-password", $notify).focus();
+		});
+		return d.promise();
+	};
 	
+	close = function () {
+		var	$container = $("#synapse-notify-container");
+		return $container.animate({"top": "-" + $container.outerHeight() + "px"}, "fast").promise();
+	};
 	
-	// <
+	_getLeft = function () {
+		return (($("div.main-view").outerWidth() - $("#synapse-notify-container").outerWidth()) / 2 )+ "px";
+	};
+	
+	_reposition = function () {
+		$("#synapse-notify-container").css({"left": _getLeft, "top": "-" + $("#synapse-notify-container").outerHeight() + "px"});
+	};
 	
 	EventDispatcher.makeEventDispatcher(exports);
 	
 	exports.init = init;
 	exports.show = show;
+	exports.showSecureWarning = showSecureWarning;
+	exports.showDecryptPassword = showDecryptPassword;
 	exports.close = close;
-	
 });

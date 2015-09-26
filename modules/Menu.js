@@ -3,6 +3,7 @@
 define(function (require, exports, module) {
 	"use strict";
 	
+	// HEADER >>
 	var NodeConnection = brackets.getModule("utils/NodeConnection");
 	var Menus = brackets.getModule("command/Menus");
 	var CommandManager = brackets.getModule("command/CommandManager");
@@ -16,13 +17,10 @@ define(function (require, exports, module) {
 	var FileTreeView = require("modules/FileTreeView");
 	var Strings = require("strings");
 	
-	/* region Public vars */
 	var treeViewContextMenu = null;
 	
-	/* region Private vars */
 	var _nodeConnection = null;
 	
-	/* region Public methods */
 	var showMainPanel,
 			initTreeViewContextMenu,
 			setRootMenu,
@@ -30,10 +28,8 @@ define(function (require, exports, module) {
 			reloadBrackets,
 			treeViewContextMenuState;
 	
-	/* region Private methods */
 	var _disableTreeViewContextMenuAllItem;
 	
-	/* region Static objects */
 	var ContextMenuIds = {
 			TREEVIEW_CTX_MENU: "kohei-synapse-treeview-context-menu"
 	};
@@ -52,7 +48,6 @@ define(function (require, exports, module) {
 			SYNAPSE_CTX_DELETE: Strings.SYNAPSE_CTX_DELETE
 	};
 	
-	/* region enable flags */
 	var Open_TreeView_Context_Menu_On_Directory_State = [
 			ContextMenuCommandIds.SYNAPSE_FILE_NEW,
 			ContextMenuCommandIds.SYNAPSE_DIRECTORY_NEW,
@@ -69,8 +64,7 @@ define(function (require, exports, module) {
 			ContextMenuCommandIds.SYNAPSE_DIRECTORY_NEW,
 			ContextMenuCommandIds.SYNAPSE_FILE_REFRESH
 		];
-	
-	/* Public Methods */
+	// <<
 	
 	showMainPanel = function() {
 		CommandManager.execute("kohei.synapse.mainPanel");
@@ -109,12 +103,9 @@ define(function (require, exports, module) {
 			key: "Ctrl-Shift-Alt-Enter",
 			displayKey: "Ctrl-Shift-Alt-Enter"
 		});
-		
 		//For Debug >
 		//Panel.showMain();
 		//setDebugMenu();
-		// <
-		
 		return new $.Deferred().resolve(domain).promise();
 	};
 	
