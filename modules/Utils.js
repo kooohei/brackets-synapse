@@ -4,30 +4,28 @@ define(function (require, exports, module) {
 	"use strict";
 
 	var _ = brackets.getModule("thirdparty/lodash");
-	
+
 	var sleep,
 			l,
 			getError;
 	var debug = true;
-	
-	sleep = function (sec) {
-		if (sec === 0)
-			return;
+
+	sleep = function (countBy100ms) {
 		var d = new $.Deferred(),
 				count = 0;
+		if (countBy100ms === 0)
+			return $.Deferred().resolve().promise();
+
 		var timer = setInterval(function () {
 			count++;
-			
-			
-			if (count === sec) {
+			if (count === countBy100ms) {
 				clearInterval(timer);
 				d.resolve();
 			}
-			
-		}, 1000);
+		}, 100);
 		return d.promise();
 	};
-	
+
 	l = function () {
 		var argLength = arguments.length;
 		if (argLength > 1) {
@@ -40,8 +38,8 @@ define(function (require, exports, module) {
 			console.log(arguments[0]);
 		}
 	};
-	
-	
+
+
 	getError = function (message, moduleName, methodName, err) {
 		var error = new Error();
 		var obj = {
@@ -56,7 +54,7 @@ define(function (require, exports, module) {
 		error.message = JSON.stringify(obj);
 		return error;
 	};
-	
+
 	exports.l = l;
 	exports.sleep = sleep;
 	exports.getError = getError;

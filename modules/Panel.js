@@ -12,6 +12,7 @@ define(function (require, exports, module) {
 	var FileUtils = brackets.getModule("file/FileUtils");
 	var Commands = brackets.getModule("command/Commands");
 	var _ = brackets.getModule("thirdparty/lodash");
+	var Async = brackets.getModule("utils/Async");
 
 	var Utils = require("modules/Utils");
 	var Project = require("modules/Project");
@@ -54,12 +55,12 @@ define(function (require, exports, module) {
 		_enableToolbarIcon,
 		_disableToolbarIcon,
 		_fadeOutMain,
-		_closeProject,
 		_toggleConnectBtn,
 		_removeServerSettingListRow,
 		_readPrivateKeyFile,
 		_setCurrentPrivateKeyText,
 		_readPrivateKeyPath,
+		_removeTreeviewRow,
 
 		onProtocolGroup,
 		onAuthGroup,
@@ -298,11 +299,12 @@ define(function (require, exports, module) {
 				return Project.close();
 			})
 			.then(function () {
-				// TODO: プロジェクトを終了しました。
+
+				Log.q("Project closed.");
 				deferred.resolve();
 			})
 			.fail(function (err) {
-				// TODO: プロジェクトの終了処理でエラーが発生ました。
+				Log.q("coud not terminate function for close project", true);
 				deferred.reject(err);
 			});
 		return deferred.promise();
@@ -812,17 +814,18 @@ define(function (require, exports, module) {
 		var index = $btn.data("index");
 		var server = SettingManager.getServerSetting(index);
 
-		// if the following code will be called, there is problem at somewhere the state change function.
-		// i.e. "Project.OPEN" must be false here
 		if (_projectState === Project.OPEN) {
 			if ($(this).data("index") === _currentServerIndex) {
-				closeProject()
-					.then(function () {
-						_toggleConnectBtn();
-					});
+				_removeTreeviewRow()
+				.then(function () {
+					return closeProject();
+				})
+				.then(function () {
+					_toggleConnectBtn();
+				});
 				return;
 			}
-			
+
 			// this is deprecated function. showAlert instead to Log.
 			// TODO: プロジェクトはすでに開いています。
 			FileTreeView.showAlert("Project is already opened.", "Please close current project before open other project.");
@@ -1000,6 +1003,26 @@ define(function (require, exports, module) {
 		MainViewManager.on("workingSetAdd workingSetAddList workingSetRemove workingSetRemoveList workingSetUpdate", function () {
 			FileTreeView.updateTreeviewContainerSize();
 		});
+	};
+
+	_removeTreeviewRow = function () {
+		var list = $("#synapse-tree li");
+		var d = new $.Deferred();
+		var offset = j.m.outerWidth() + "px";
+
+		var promises = [];
+		_.forEach(list, function (li) {
+			var $li = $(li);
+			if (typeof $li !== "undefined") {
+				var p = $li.animate({"margin-left": offset}, 600).promise();
+				promises.push(p);
+			}
+		});
+
+		Async.waitForAll(promises, false)
+		.then(d.resolve, d.reject);
+
+		return d.promise();
 	};
 
 	exports.init = init;
