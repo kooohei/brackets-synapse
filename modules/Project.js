@@ -402,6 +402,7 @@ define(function (require, exports, module) {
 
 	exports.open = open;
 	exports.close = close;
+	exports.isOpen = isOpen;
 	exports.closeProject = closeProject;
 	exports.OPEN = OPEN;
 	exports.CLOSE = CLOSE;

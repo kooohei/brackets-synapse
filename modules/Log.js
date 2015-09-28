@@ -23,10 +23,12 @@ define(function (require, exports, module) {
 					return $("#synapse-log-container");
 				}
 			};
+	
+	var _bounding = false;
 
 	var initView,
 			q,
-			_bound,
+			test,
 			_toggle,
 			_expand,
 			_collapse,
@@ -51,24 +53,9 @@ define(function (require, exports, module) {
 		});
 	});
 
-	_bound = function (e) {
-		var d = new $.Deferred();
-		var $container = $("#synapse-log-container");
 
-		$container.animate({"bottom": "-5px"}, 80).promise()
-		.then(function () {
-			return $container.animate({"bottom": 0}, 80).promise();
-		})
-		.then(function () {
-			return $container.animate({"bottom": "-5px"}, 80).promise();
-		})
-		.then(function () {
-			return $container.animate({"bottom": 0}, 80).promise();
-		}).then(d.resolve, d.reject);
-		return d.promise();
+	test = function () {
 	};
-
-
 
 	initView = function () {
 		var html = Mustache.render(viewSrc,{});
@@ -95,26 +82,21 @@ define(function (require, exports, module) {
 	};
 
 	q = function (message, error) {
-		
-		var m = moment();
-		var now = m.format("HH:mm:ss MMM DD").toString();
-
+		var m = moment(),
+				now = m.format("HH:mm:ss MMM DD").toString();
 		if (error) {
 			message = "<span class='synapse-log-error'>ERROR</span>" + message;
 		}
-
 		var obj = {
 			message: message,
 			now: now,
 			error: error
 		};
-
 		if ($("#synapse-log-container").hasClass("log-collapse")) {
 			j.area.removeClass("transparency");
 			noticeCount++;
 			$("#synapse-log-notice-count").html(noticeCount).show();
 			_onLeave();
-			_bound();
 		}
 		queue.push(obj);
 	};
@@ -234,4 +216,5 @@ define(function (require, exports, module) {
 
 	exports.q = q;
 	exports.initView = initView;
+	exports.test = test;
 });

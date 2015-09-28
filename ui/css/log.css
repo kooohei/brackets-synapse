@@ -82,7 +82,7 @@ div#synapse-log-tab {
 }
 div#synapse-log-main.transparency,
 div#synapse-log-tab.transparency {
-	opacity: 0.1;
+	opacity: 0.3;
 }
 
 div#synapse-log-main .inner {

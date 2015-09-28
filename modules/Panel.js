@@ -253,9 +253,8 @@ define(function (require, exports, module) {
 				});
 			return deferred.promise();
 		}
-
+		
 		if (!j.s.hasClass("hide")) {
-
 			_hideServerSetting()
 				.then(function () {
 					return open(_projectState);
@@ -299,8 +298,6 @@ define(function (require, exports, module) {
 				return Project.close();
 			})
 			.then(function () {
-
-				Log.q("Project closed.");
 				deferred.resolve();
 			})
 			.fail(function (err) {
@@ -316,38 +313,35 @@ define(function (require, exports, module) {
 	 * @returns {$.Promise}
 	 */
 	reloadServerSettingList = function () {
-
-		if (j.l.length) {
-			$("button.btn-connect", j.l).off("click", onClickConnectBtn);
-			$("button.btn-edit", j.l).off("click", onClickEditBtn);
-			$("button.btn-delete", j.l).off("click", onClickDeleteBtn);
-			$(".close-btn", j.l).off("click", _hideServerList);
-			$("div.item", j.l).off({
+		if (!Project.isOpen()) {
+			if (j.l.length) {
+				$("button.btn-connect", j.l).off("click", onClickConnectBtn);
+				$("button.btn-edit", j.l).off("click", onClickEditBtn);
+				$("button.btn-delete", j.l).off("click", onClickDeleteBtn);
+				$(".close-btn", j.l).off("click", _hideServerList);
+				$("div.item", j.l).off({
+					"mouseenter": onEnterListBtns,
+					"mouseleave": onLeaveListBtns
+				});
+				j.l.remove();
+			}
+			var list = SettingManager.getServerSettingsCache();
+			var html = Mustache.render(server_list_html, {
+				serverList: list,
+				Strings: Strings
+			});
+			var $html = $(html);
+			j.s.after($html);
+			$("button.btn-connect", j.l).on("click", onClickConnectBtn);
+			$("button.btn-edit", j.l).on("click", onClickEditBtn);
+			$("button.btn-delete", j.l).on("click", onClickDeleteBtn);
+			$(".close-btn", j.l).on("click", _hideServerList);
+			$("div.item", j.l).on({
 				"mouseenter": onEnterListBtns,
 				"mouseleave": onLeaveListBtns
 			});
-			j.l.remove();
+			$("#synapse-server-list div.list").addClass("quiet-scrollbars");
 		}
-
-		var list = SettingManager.getServerSettingsCache();
-
-		var html = Mustache.render(server_list_html, {
-			serverList: list,
-			Strings: Strings
-		});
-		var $html = $(html);
-		j.s.after($html);
-
-		$("button.btn-connect", j.l).on("click", onClickConnectBtn);
-		$("button.btn-edit", j.l).on("click", onClickEditBtn);
-		$("button.btn-delete", j.l).on("click", onClickDeleteBtn);
-		$(".close-btn", j.l).on("click", _hideServerList);
-		$("div.item", j.l).on({
-			"mouseenter": onEnterListBtns,
-			"mouseleave": onLeaveListBtns
-		});
-		$("#synapse-server-list div.list").addClass("quiet-scrollbars");
-
 		return new $.Deferred().resolve().promise();
 	};
 
@@ -822,6 +816,7 @@ define(function (require, exports, module) {
 				})
 				.then(function () {
 					_toggleConnectBtn();
+					Log.q("Project closed");
 				});
 				return;
 			}
