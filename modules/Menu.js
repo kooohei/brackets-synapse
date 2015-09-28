@@ -12,6 +12,7 @@ define(function (require, exports, module) {
 	var KeyBindingManager = brackets.getModule("command/KeyBindingManager");
 	var _ = brackets.getModule("thirdparty/lodash");
 	var ExtensionDiagnosis = require("modules/ExtensionDiagnosis");
+	var Log = require("modules/Log");
 	
 	var Panel = require("modules/Panel");
 	var FileTreeView = require("modules/FileTreeView");
@@ -114,12 +115,22 @@ define(function (require, exports, module) {
 			"Reload App wiz Node",
 			"kohei.syanpse.reloadBrackets",
 			reloadBrackets);
+		
+		var test = CommandManager.register(
+			"Test function",
+			"kohei.synapse.test",
+			Log.test);
 
 		var topMenu = Menus.getMenu(Menus.AppMenuBar.VIEW_MENU);
 		topMenu.addMenuDivider();
 		topMenu.addMenuItem(menu, {
 			key: "Ctrl-Shift-F6",
 			displeyKey: "Ctrl-Shift-F6"
+		});
+		topMenu.addMenuDivider();
+		topMenu.addMenuItem(test, {
+			key: "Ctrl-Alt-F1",
+			displayKey: "Ctrl-Alt-F1"
 		});
 	};
 	

@@ -2,9 +2,7 @@
 /*global define, $, brackets, Mustache, window, console */
 define(function (require, exports, module) {
 	"use strict";
-	var FileSystem = brackets.getModule("filesystem/FileSystem");
-	var CryptoJS = require("../node_modules/crypto-js/crypto-js");
-	var CryptoManager = require("modules/CryptoManager");
+	
 	
 	
 });

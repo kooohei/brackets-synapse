@@ -62,7 +62,6 @@ define(function (require, exports, module) {
 	};
 	
 	showDecryptPassword = function () {
-		Log.q("Enter the passowrd to decrypt the settings.", false);
 		var d = new $.Deferred(),
 				src = Mustache.render(_decryptPassword, {Strings: Strings}),
 				$base = _getBase("synapse-decrypt-password-notify", Strings.SYNAPSE_DECRYPT_PASSWORD_TITLE, src),
@@ -76,7 +75,6 @@ define(function (require, exports, module) {
 				$validMessage = $("p.validateMessage", $notify);
 		
 		$btn1.on("click", function (e) {
-			Log.q("Trying decription to the useable data.");
 			var password = $password.val();
 			if (password === "") {
 				$password.addClass("invalid");
@@ -93,7 +91,6 @@ define(function (require, exports, module) {
 				if (!settings) {
 					$password.addClass("invalid");
 					$validMessage.html("Failed, It is invalid password.");
-					Log.q("Failed, It is invalid password.", false);
 					$password.val("");
 					$password.focus();
 				} else {
@@ -102,7 +99,6 @@ define(function (require, exports, module) {
 					close()
 					.then(function () {
 						$btn1.off("click");
-						Log.q("Success. The server setting was decrypted. ", false);
 						d.resolve();
 					});
 				}
