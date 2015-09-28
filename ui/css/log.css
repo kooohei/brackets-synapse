@@ -1,0 +1,146 @@
+#synapse-log-container * {
+	padding: 0;
+	margin: 0;
+	border: 0;
+	text-shadow: none;
+}
+div#sidebar > div#synapse-log-container {
+	position: absolute;
+	width: 100%;
+	bottom: 0;
+	overflow: visible;
+}
+
+div#synapse-log-tab {
+	position: absolute;
+	top: -22px;
+	right: 10px;
+	box-sizing: border-box;
+	background: rgba(33, 43, 52, 0.98);
+	width: 150px;
+	border-top-left-radius: 2px;
+	border-top-right-radius: 2px;
+	padding: 5px;
+	display: flex;
+}
+div#synapse-log-tab p {
+	padding-left: 2px;
+	font-size: 0.7em;
+	line-height: 12px;
+	color: rgba(134, 166, 195, 0.98);
+	letter-spacing: 0.05em;
+	font-weight: bold;
+	text-shadow: -1px -1px #111;
+	flex: 1;
+	align-items: center;
+}
+div#synapse-log-tab #synapse-log-notice-count {
+	margin-right: 10px;
+	font-size: 10px;
+	line-height: 12px;
+	width: 12px;
+	height: 12px;
+	text-align: center;
+	border-radius: 6px;
+	text-shadow: -1px -1px #193d52;
+	background-color: #275672;
+	color: #fff;
+}
+div#synapse-log-tab i.fa-angle-up {
+	color: #70bae8;
+	width: 12px;
+	font-size: 12px;
+	line-height: 1em;
+	-webkit-transition: transform 0.2s ease-in-out;
+	transition: transform 0.2s ease-in-out;
+	-webkit-transform-origin: center;
+	transform-origin: center;
+	-webkit-transform: rotateZ(0deg);
+	transform: rotateZ(0deg);
+}
+div#synapse-log-tab i.fa-angle-up.down {
+	-webkit-transition: transform 0.2s ease-in-out;
+	transition: transform 0.2s ease-in-out;
+	-webkit-transform-origin: center;
+	transform-origin: center;
+	-webkit-transform: rotateZ(180deg);
+	transform: rotateZ(180deg);
+}
+div#synapse-log-main {
+	box-sizing: border-box;
+	margin: 0;
+	border: 0;
+	width: 100%;
+	min-height: 3px;
+	background: rgba(33, 43, 52, 0.98);
+}
+div#synapse-log-main,
+div#synapse-log-tab {
+	-webkit-transition: opacity 0.3s linear;
+	transition: opacity 0.3s linear;
+	opacity: 1;
+}
+div#synapse-log-main.transparency,
+div#synapse-log-tab.transparency {
+	opacity: 0.3;
+}
+
+div#synapse-log-main .inner {
+	width: 100%;
+}
+div#synapse-log-main .inner div#synapse-log-body {
+	box-sizing: border-box;
+	display: flex;
+	align-items: center;
+	width: 100%;
+}
+div#synapse-log-main .inner div#synapse-log-body > p {
+	flex: 1;
+}
+
+div#synapse-log-main div#synapse-log-rows {
+	box-sizing: border-box;
+	overflow: auto;
+	height: 100%;
+	width: 100%;
+	padding-top: 15px;
+}
+
+
+
+div#synapse-log-rows .synapse-log-row {
+	border-top: 1px solid   rgba(44, 57, 69, 0.98);
+	border-bottom: 1px solid   rgba(24, 31, 38, 0.98);
+	padding: 5px;
+	margin: 0 7px;
+}
+div#synapse-log-rows .synapse-log-row:first-child {
+	border-top: none;
+}
+div#synapse-log-rows .synapse-log-row:last-child {
+	border-bottom: none;
+}
+
+div#synapse-log-rows .synapse-log-row p.item {
+	padding-bottom: 3px;
+	line-height: 10px;
+	font-size: 10px;
+	letter-spacing: 0.05em;
+	color: rgba(118, 149, 177, 0.98);
+}
+div#synapse-log-rows .synapse-log-row p.item span.synapse-log-error {
+	display: inline-block;
+	margin-right: 5px;
+	background-color: #b46464;
+	line-height: 8px;
+	font-size: 8px;
+	padding: 3px;
+	color: #fff;
+	border-radius: 2px;
+}
+div#synapse-log-rows .synapse-log-row p.datetime {
+	text-align:right;
+	font-size: 0.8em;
+	line-height: 0.8em;
+	color: #888;
+}

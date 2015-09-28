@@ -108,4 +108,7 @@ define(function (require, exports, module) {
 	
 	exports.init = init;
 	exports.openFile = openFile;
+	exports.getModuleName = function () {
+		return module.id;
+	};
 });

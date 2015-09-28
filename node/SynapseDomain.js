@@ -3,12 +3,13 @@
 (function () {
 	"use strict";
 
-	var SSH = require("ssh2").Client;
-	var Client = require("ftp");
-	var fs = require("fs");
-	var _domainManager = null;
-	var Q = require("q");
-	//var CryptoJS = require("crypto-js");
+	// HEADER >>
+	var _domainManager = null,
+			Client = require("ftp"),
+			SSH = require("ssh2").Client,
+			Q = require("q"),
+			fs = require("fs");
+	
 	var client = null,
 			init,
 			test,
@@ -19,23 +20,21 @@
 			mkdir,
 			removeDirectory,
 			deleteFile,
-			_sftpStat,
 			download,
 			logout,
 			readLocalFile,
-			checkOpenSSL,
-			cryptor,
-
+			
 			_getSftpOption,
-
 			_sftpReadDir,
 			_sftpCheckSymLink,
 			_sftpCheckSymLinks,
+			_sftpStat,
 
 			_ftpReadDir,
 			_ftpCheckSymLink,
 			_ftpCheckSymLinks;
-
+	//<<
+	
 	_getSftpOption = function (setting) {
 		var settingObj = {
 					host: setting.host,
@@ -52,7 +51,7 @@
 		}
 		return settingObj;
 	};
-
+	
 	_sftpReadDir = function (sftp, remoteRoot) {
 		var q = Q.defer();
 		sftp.readdir(remoteRoot, function (err, list) {
@@ -98,7 +97,6 @@
 
 		return q.promise;
 	};
-
 	_ftpReadDir = function (client, path) {
 		var q = Q.defer();
 		client.list(path, function (err, list) {
@@ -160,7 +158,6 @@
 			}).connect(setting);
 		}
 	};
-
 	logout = function (client) {
 		client.once("close", function () {});
 		client.once("end", function () {});
@@ -173,7 +170,6 @@
 			}
 		});
 	};
-
 	upload = function (server, localPath, remotePath, cb) {
 		if (server.protocol === "ftp") {
 			client = new Client();
@@ -203,10 +199,12 @@
 			client.on("ready", function () {
 				client.sftp(function (err, sftp) {
 					if (err) {
+						console.error(err);
 						cb(err);
 					} else {
 						sftp.fastPut(localPath, remotePath, function (err) {
 							if (err) {
+								console.error(err);
 								cb(err);
 							} else {
 								cb(null, true);
@@ -218,7 +216,6 @@
 			}).connect(setting);
 		}
 	};
-
 	getList = function (server, path, cb) {
 
 		if (server.protocol === "ftp") {
@@ -265,7 +262,6 @@
 			}).connect(_getSftpOption(server));
 		}
 	};
-
 	rename = function (server, oldPath, newPath, cb) {
 		if (server.protocol === "ftp") {
 			client = new Client();
@@ -310,7 +306,6 @@
 			}).connect(setting);
 		}
 	};
-
 	mkdir = function (server, path, cb) {
 
 		if (server.protocol === "ftp") {
@@ -355,7 +350,6 @@
 			}).connect(setting);
 		}
 	};
-
 	removeDirectory = function (serverSetting, remotePath, cb) {
 
 		if (serverSetting.protocol === "ftp") {
@@ -400,7 +394,6 @@
 			}).connect(setting);
 		}
 	};
-
 	deleteFile = function (serverSetting, remotePath, cb) {
 		if (serverSetting.protocol === "ftp") {
 			client = new Client();
@@ -427,7 +420,6 @@
 			client = new SSH();
 			client.on("ready", function () {
 				client.sftp(function (err, sftp) {
-					console.log(err, sftp);
 					if (err) {
 						cb(err);
 					} else {
@@ -445,7 +437,6 @@
 			}).connect(setting);
 		}
 	};
-
 	download = function (serverSetting, localPath, remotePath, cb) {
 
 		if (serverSetting.protocol === "ftp") {
@@ -494,7 +485,6 @@
 			}).connect(setting);
 		}
 	};
-
 	readLocalFile = function (path, cb) {
 		fs.readFile(path, "utf8", function (err, text) {
 			if (err) {
@@ -503,37 +493,8 @@
 			cb(null, text);
 		});
 	};
-	/*
-	cryptor = function (state, data, pass, cb) {
-		var err = null;
-		var mode = {
-			mode: CryptoJS.mode.CBC,
-			keySize: 256
-		};
-
-		if (data === "" || !data) {
-			cb(new Error({message: "Error Invalid parameter were found [data]", src: [data], err: null}));
-		}
-		if (pass === "" || pass.length < 4) {
-			cb(new Error({message: "Error Invalid parameter were found [pass]", src: [pass], err: null}));
-		}
-
-		if (state === "encrypt") {
-			var cipher = CryptoJS.AES.encrypt(data, pass, mode);
-			cb(null, cipher.toString());
-		} else if (state === "decrypt") {
-			var bytes = CryptoJS.AES.decrypt(data.toString(), pass, mode),
-					decrypted = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-			cb(null, decrypted);
-		} else {
-			err = new Error({message: "Error Invalid parameter were found [state].", src: [state], err: null});
-			cb(err);
-		}
-	};
-	*/
-	/**
-	 * initialize
-	 */
+	
+	
 	init = function (domainManager, domainPath) {
 
 		if (!domainManager.hasDomain("synapse")) {
@@ -544,10 +505,7 @@
 		}
 		_domainManager = domainManager;
 
-		/**
-		 * register commands
-		 */
-
+		// FTP and SFTP functions >
 		domainManager.registerCommand(
 			"synapse",
 			"Connect",
@@ -564,7 +522,6 @@
 				type: "object"
 			}]
 		);
-
 		domainManager.registerCommand(
 			"synapse",
 			"List",
@@ -581,7 +538,6 @@
 				type: "object"
 			}]
 		);
-
 		domainManager.registerCommand(
 			"synapse",
 			"Rename",
@@ -601,7 +557,6 @@
 				type: "boolean"
 			}]
 		);
-
 		domainManager.registerCommand(
 			"synapse",
 			"Mkdir",
@@ -618,7 +573,6 @@
 				type: "boolean"
 			}]
 		);
-
 		domainManager.registerCommand(
 			"synapse",
 			"UploadFile",
@@ -638,7 +592,6 @@
 				type: "boolean"
 			}]
 		);
-
 		domainManager.registerCommand(
 			"synapse",
 			"RemoveDirectory",
@@ -655,7 +608,6 @@
 				type: "boolean"
 			}]
 		);
-
 		domainManager.registerCommand(
 			"synapse",
 			"DeleteFile",
@@ -672,7 +624,6 @@
 				type: "boolean"
 			}]
 		);
-
 		domainManager.registerCommand(
 			"synapse",
 			"Download",
@@ -692,7 +643,6 @@
 				type: "boolean"
 			}]
 		);
-
 		domainManager.registerCommand(
 			"synapse",
 			"ReadLocalFile",
@@ -703,45 +653,7 @@
 				type: "string"
 			}]
 		);
-
-		domainManager.registerCommand(
-			"synapse",
-			"CheckOpenSSL",
-			checkOpenSSL,
-			true,
-			"", [{
-			}]
-		);
-
-		domainManager.registerCommand(
-			"synapse",
-			"cryptor",
-			cryptor,
-			true, [{
-				name: "data",
-				type: "string"
-			},{
-				name: "pass",
-				type: "string"
-			}]
-		);
-
-
-
-		/**
-		 * register events
-		 */
-//
-//		domainManager.registerEvent(
-//			"synapse",
-//			"Connected",
-//			null
-//		);
-//		domainManager.registerEvent(
-//			"synapse",
-//			"Error",
-//			null
-//		);
+		// <
 	};
 
 	exports.init = init;

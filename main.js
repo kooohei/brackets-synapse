@@ -1,28 +1,31 @@
 /*jslint node: true, vars: true, plusplus: true, devel: true, nomen: true, regexp: true, indent: 4, maxerr: 50*/
-/*global define, $, brackets, Mustache, window, appshell*/
+/*global define, location, $, brackets, Mustache, window, appshell*/
 define(function (require, exports, module) {
 	"use strict";
-	
-	var VERSION = "1.1.1";
-	
+
+
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils"),
 			AppInit = brackets.getModule("utils/AppInit"),
 			NodeDomain = brackets.getModule("utils/NodeDomain"),
 			CommandManager = brackets.getModule("command/CommandManager"),
-			PreferencesManager = brackets.getModule("preferences/PreferencesManager"),
-			
 			PathManager = require("modules/PathManager"),
 			ExtensionDiagnosis = require("modules/ExtensionDiagnosis"),
+			Async = brackets.getModule("utils/Async"),
 			Menu = require("modules/Menu"),
 			Panel = require("modules/Panel"),
+			CryptoManager = require("modules/CryptoManager"),
 			SettingManager = require("modules/SettingManager"),
 			FileTreeView = require("modules/FileTreeView"),
 			RemoteManager = require("modules/RemoteManager"),
 			FileManager = require("modules/FileManager"),
-			COMMAND_ID = "kohei.synapse.mainPanel";
-	
+			PreferenceManager = require("modules/PreferenceManager"),
+			Notify = require("modules/Notify"),
+			Log = require("modules/Log");
+
+	var COMMAND_ID = "kohei.synapse.mainPanel";
+
 	var _domain = null;
-			
+
 	var $brackets = {
 				get toolbar() {
 					return $("#main-toolbar .buttons");
@@ -34,14 +37,13 @@ define(function (require, exports, module) {
 					return $("#sidebar");
 				}
 			};
-	
-	
-	var setAppIcon = function () {
+
+	var setAppIcon = function (domain) {
 		var d = new $.Deferred(),
 				icon = $("<a>")
 				.attr({
 					id:"synapse-icon",
-					"href": "#", 
+					"href": "#",
 					"title": "Synapse"
 				})
 				.addClass("diabled")
@@ -49,24 +51,57 @@ define(function (require, exports, module) {
 				.appendTo($brackets.toolbar);
 		return d.resolve(_domain).promise();
 	};
-	
-	
-	
+
 	AppInit.appReady(function () {
 		var domain = new NodeDomain("synapse", ExtensionUtils.getModulePath(module, "node/SynapseDomain"));
 		_domain = domain;
-		ExtensionDiagnosis.start()
-		.then(setAppIcon)
-		.then(Panel.init)
-		.then(PathManager.init)
-		.then(SettingManager.init)
-		.then(RemoteManager.init)
-		.then(FileTreeView.init)
-		.then(FileManager.init)
-		.then(Menu.setRootMenu)
-		.fail(function (err) {
-			console.error(err);
-			throw new Error(["Could not initialize to Synapse", err]);
+
+		var promises = [];
+		var p;
+
+		Log.initView()
+		.then(function () {
+			p = PreferenceManager.init(domain);
+			promises.push(p);
+
+			p = ExtensionDiagnosis.init(domain);
+			promises.push(p);
+
+			p = SettingManager.init(domain);
+			promises.push(p);
+
+			p = Panel.init(domain);
+			promises.push(p);
+
+			p = Notify.init(domain);
+			promises.push(p);
+
+			p = PathManager.init(domain);
+			promises.push(p);
+
+			p = RemoteManager.init(domain);
+			promises.push(p);
+
+			p = FileTreeView.init(domain);
+			promises.push(p);
+
+			p = FileManager.init(domain);
+			promises.push(p);
+
+			p = setAppIcon(domain);
+			promises.push(p);
+
+			p = Menu.setRootMenu(domain);
+			promises.push(p);
+
+			Async.waitForAll(promises, true)
+			.then(function () {
+				Log.q("Synapse initialized done.");
+			}, function (err) {
+				throw new Error(err);
+			});
+		}, function (err) {
+			console.error("Initialize Log module failed.");
 		});
 	});
 });

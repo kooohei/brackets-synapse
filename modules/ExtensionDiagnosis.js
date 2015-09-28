@@ -1,74 +1,55 @@
 /*jslint node:true, vars:true, plusplus:true, devel:true, nomen:true, regexp:true, white:true, indent:2, maxerr:50 */
 /*global define, $, brackets, Mustache, window, console */
 define(function (require, exports, module) {
-	"use strict";	
-	/* region Module */
-	var PreferencesManager = brackets.getModule("preferences/PreferencesManager");
+	"use strict";
+
+	
+	// Modules >>
 	var FileSystem = brackets.getModule("filesystem/FileSystem");
 	var FileUtils = brackets.getModule("file/FileUtils");
+
 	var _ = brackets.getModule("thirdparty/lodash");
 	var Directory = brackets.getModule("filesystem/Directory");
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
 	var Async = brackets.getModule("utils/Async");
 	var DialogCollection = require("modules/DialogCollection");
+	var PreferenceManager = require("modules/PreferenceManager");
+	var Utils = require("modules/Utils");
 	
-	/* endregion */
-	
-	/* region Privatte Vars */
-	var preference = PreferencesManager.getExtensionPrefs("brackets-synapse");
-	/* endregion */
-	
-	/* region Private Methods */
-	var _getRealVersion,
-			_getVersionByPrefs,
-			_setRealVersionToPreference,
+	var	_domain,
+			PATH_TO_PACKAGE_JSON = FileUtils.getParentPath(ExtensionUtils.getModulePath(module)) + "package.json";
+	var _getVersionFromPackageJson,
 			_firstLaunch,
-			_chkKeysDirectory,
-			_getDirectoryContents,
-			_checkPreferenceIsCrypto;
-	/* endregion */
+			_checkKeysDirectory,
+			_getDirectoryContents;
+	var init,
+			getDomain;
+	var onClickSecureWarning;
+	// <<
+
 	
-	/* region Public Methods */
-	var start;
-	/* endregion */
-	
-	_getVersionByPrefs = function () {
-		var version = preference.get("version");
-		return version;
-	};
-	_getRealVersion = function () {
-		var d = new $.Deferred();
-		var file = FileSystem.getFileForPath(FileUtils.getParentPath(ExtensionUtils.getModulePath(module)) + "package.json");
-		var package_json = "";
+	_getVersionFromPackageJson = function () {
+		var d							= new $.Deferred(),
+				file = FileSystem.getFileForPath(PATH_TO_PACKAGE_JSON);
+
 		FileUtils.readAsText(file)
 		.then(function (text, time) {
-			var package_json = JSON.parse(text);
-			d.resolve(package_json.version);
+			var version = JSON.parse(text).version;
+			d.resolve(version);
+		}, function (err) {
+			throw Utils.getError("", "ExtensionDiagnosis", "_getVersionFromPackageJson", err);
 		});
 		return d.promise();
 	};
-	_setRealVersionToPreference = function () {
-		var d = new $.Deferred();
-		_getRealVersion()
-		.then(function (ver) {
-			if (typeof (_getVersionByPrefs) === "undefined") {
-				preference.definePreference("version", "string", "");
-			}
-			if (!preference.set("version", ver)) {
-				throw new Error("The version number could not wrote to preference file.");
-			}
-			preference.save()
-			.then(d.resolve, d.reject);
-		});
-		return d.promise();
-	};
-	_firstLaunch = function (prefVer, realVer) {
-		if (prefVer !== realVer) {
-			return _chkKeysDirectory();
+
+	_firstLaunch = function () {
+		if (PreferenceManager.getVersion() !== _getVersionFromPackageJson()) {
+			return _checkKeysDirectory();
 		} else {
 			return new $.Deferred().resolve().promise();
 		}
 	};
+
 	_getDirectoryContents = function (dir) {
 		var d = $.Deferred();
 		dir.getContents(function (err, contents, stats, statsErrors) {
@@ -80,7 +61,8 @@ define(function (require, exports, module) {
 		});
 		return d.promise();
 	};
-	_chkKeysDirectory = function () {
+
+	_checkKeysDirectory = function () {
 		var d = new $.Deferred();
 		var path = FileUtils.getParentPath(ExtensionUtils.getModulePath(module)) + "__KEYS__";
 		var keysdir = FileSystem.getDirectoryForPath(path);
@@ -96,10 +78,16 @@ define(function (require, exports, module) {
 									user = tmp[1];
 							message += "Host @ User : " + host + " @ " + user + "<br>";
 						});
-						keysdir.moveToTrash();
+						keysdir.moveToTrash(function (err) {
+							if (err) {
+								d.reject(err);
+							}
+						});
 						DialogCollection.showAlert("Alert", message);
 					} else {
-						keysdir.moveToTrash();
+						keysdir.moveToTrash(function (err) {
+							d.reject(err);
+						});
 					}
 					d.resolve();
 				}, function (err) {
@@ -111,41 +99,23 @@ define(function (require, exports, module) {
 		});
 		return d.promise();
 	};
-	_checkPreferenceIsCrypto = function (domain) {
-//		var d = new $.Deferred(),
-//				settingPrefs = preference.get("server-settings");
-//				
-//		if (settingPrefs === undefined || settingPrefs === "") {
-//			return d.resolve().promise();
-//		}
-//		if (!settingPrefs.match(/"host".+?"port"/)) {
-//			return d.resolve().promise();
-//		} else {
-//			d.resolve();
-//		}
-//		return d.promise();
-	};
+
 	
-	start = function (domain) {
+	init = function (domain) {
+		_domain = domain;
 		var d = new $.Deferred();
-		var prefVer = _getVersionByPrefs();
-		
-		_getRealVersion()
-		.then(function (realVer) {
-			return _firstLaunch(prefVer, realVer);
-		})
+		_firstLaunch()
+		.then(_getVersionFromPackageJson)
+		.then(PreferenceManager.setVersion)
 		.then(function () {
-			return _setRealVersionToPreference();
+			d.resolve();
 		})
-//		.then(function () {
-//			return _checkPreferenceIsCrypto(domain);
-//		})
-		.then(d.resolve, function (err) {
-			console.log(err);
+		.fail(function (err) {
 			d.reject(err);
 		});
 		return d.promise();
 	};
-	
-	exports.start = start;
+
+	exports.init = init;
+	exports.getDomain = getDomain;
 });

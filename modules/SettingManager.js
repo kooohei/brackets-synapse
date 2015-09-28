@@ -3,43 +3,48 @@
 define(function (require, exports, module) {
 	"use strict";
 
-	/* region Modules */
+	// HEADER >>
 	var PreferencesManager = brackets.getModule("preferences/PreferencesManager");
+	var EventDispatcher = brackets.getModule("utils/EventDispatcher");
 	var _ = brackets.getModule("thirdparty/lodash");
 	var PathManager = require("modules/PathManager");
 	var FileManager = require("modules/FileManager");
 	var Panel = require("modules/Panel");
-	/* endregion */
+	var Strings = require("strings");
+	var Utils = require("modules/Utils");
+	var CryptoManager = require("modules/CryptoManager");
+	var PreferenceManager = require("modules/PreferenceManager");
+	var Notify = require("modules/Notify");
+	var l = require("modules/Utils").l;
+	var Log = require("modules/Log");
 
-	/* region Public Methods */
 	var init,
 			edit,
 			validateAll,
 			validate,
 			reset,
-			getServerList,
 			getServerSetting,
-			deleteServerSetting,
-			uglify,
-			deuglify;
-	/* endregion */
-
-	/* region Private Methods */
-	var _getServerSettings,
-			_rebuildIndex,
-			_editServerSetting,
-			_saveServerSettings,
+			getServerSettingsCache,
+			setServerSettings,
+			deleteServerSetting;
+	
+	var	_editServerSetting,
 			_connectTest,
-			_showSettingAlert,
-			_hideSettingAlert,
-			_appendServerBtnState,
-			_showConnectTestSpinner,
-			_hideConnectTestSpinner
+			_appendServerBtnState
 			;
-	/* endregion */
+	
+	var SERVER_SETTING_REMOVED = "SERVER_SETTING_REMOVED";
+	var COULD_NOT_REMOVE_SERVER_SETTING = "COULD_NOT_REMOVE_SERVER_SETTING";
+	var SERVER_SETTING_ADDED = "SERVER_SETTING_ADDED";
+	var COULD_NOT_INSERT_NEW_SERVER_SETTING= "COULD_NOT_INSERT_NEW_SERVER_SETTING";
+	
+	var _serverSettings = [];
+	
+	
+	var onSecureWarningDo,
+			onSecureWarningLater;
 
-	var domain,
-			preference = PreferencesManager.getExtensionPrefs("brackets-synapse");
+	var domain;
 	var Server = function () {
 		this.protocol = "ftp";
 		this.host = null;
@@ -52,6 +57,7 @@ define(function (require, exports, module) {
 		this.exclude = null;
 	};
 	var $serverSetting = null;
+	
 	var regexp = {
 		host: null,
 		port: null,
@@ -60,10 +66,13 @@ define(function (require, exports, module) {
 		win_path: null
 	};
 
+	// <<
+	
 	/* Public Methods */
 	init = function (_domain) {
 		var deferred = new $.Deferred();
 		domain = _domain;
+		
 		$serverSetting = $("#synapse-server-setting");
 		regexp.host = new RegExp("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])$");
 		regexp.port = new RegExp("[1-65535]");
@@ -74,8 +83,8 @@ define(function (require, exports, module) {
 		$("th > i", $serverSetting).removeClass("done");
 		$("th > i.fa-plug", $serverSetting).addClass("done");
 		$("button.btn-add").addClass("disabled");
-		deferred.resolve(domain);
-		return deferred.promise();
+		
+		return deferred.resolve(domain).promise();
 	};
 
 	edit = function (state) {
@@ -96,10 +105,22 @@ define(function (require, exports, module) {
 			.then(function () {
 				_editServerSetting(state, setting, Panel.getCurrentPrivateKeyText())
 					.then(function () {
+						// TODO: サーバ設定が追加されました。
+						if (state === "UPDATE") {
+							Log.q("", false);
+						} else {
+						// TODO: サーバ設定の編集が完了しました。
+							Log.q(""< false);
+						}
 						Panel.showServerList();
 					}, deferred.reject);
 			}, function (err) {
-				_showSettingAlert("Failed", "Could not connect to server");
+				// TODO: サーバー設定の追加に失敗しました。
+				if (state === "UPDATE") {
+					
+				} else {
+				// TODO: サーバー設定の更新ができませんでした。
+				}
 				deferred.reject(err);
 			}).always(function () {
 				_appendServerBtnState("enabled");
@@ -117,6 +138,7 @@ define(function (require, exports, module) {
 			port 				: {form: $("#synapse-server-port", $serverSetting), icon: $("i.fa-plug"), invalid: false},
 			user 				: {form: $("#synapse-server-user", $serverSetting), icon: $("i.fa-user"), invalid: false},
 			password		: {form: $("#synapse-server-password", $serverSetting),icon: $("i.fa-unlock"), invalid: false},
+			name				: {form: $("#synapse-server-setting-name", $serverSetting), icon: $("i.fa-barcode"), invalid: false},
 			dir	 				: {form: $("#synapse-server-dir", $serverSetting), icon: $("i.fa-sitemap"), invalid: false},
 			exclude			: {form: $("#synapse-server-exclude", $serverSetting), icon: $("i.fa-ban"), invalid: false}
 		};
@@ -126,6 +148,7 @@ define(function (require, exports, module) {
 			user 				: {form: $("#synapse-server-user", $serverSetting), icon: $("i.fa-user"), invalid: false},
 			privateKey	: {form: $("#synapse-server-privateKey-name", $serverSetting), icon: $("i.fa-key"), invalid: false},
 			passphrase	: {form: $("#synapse-server-passphrase", $serverSetting), icon: $("i.fa-unlock-alt"), invalid: false},
+			name				: {form: $("#synapse-server-setting-name", $serverSetting), icon: $("i.fa-barcode"), invalid: false},
 			dir	 				: {form: $("#synapse-server-dir", $serverSetting), icon: $("i.fa-sitemap"), invalid: false},
 			exclude			: {form: $("#synapse-server-exclude", $serverSetting), icon: $("i.fa-ban"), invalid: false}
 		};
@@ -134,6 +157,7 @@ define(function (require, exports, module) {
 			port 				: {form: $("#synapse-server-port", $serverSetting), icon: $("i.fa-plug"), invalid: false},
 			user 				: {form: $("#synapse-server-user", $serverSetting), icon: $("i.fa-user"), invalid: false},
 			password		: {form: $("#synapse-server-password", $serverSetting),icon: $("i.fa-unlock"), invalid: false},
+			name				: {form: $("#synapse-server-setting-name", $serverSetting), icon: $("i.fa-barcode"), invalid: false},
 			dir	 				: {form: $("#synapse-server-dir", $serverSetting), icon: $("i.fa-sitemap"), invalid: false},
 			exclude			: {form: $("#synapse-server-exclude", $serverSetting), icon: $("i.fa-ban"), invalid: false}
 		};
@@ -211,6 +235,9 @@ define(function (require, exports, module) {
 		if (prop === "passphrase") {
 			return true;
 		}
+		if (prop === "name") {
+			return true;
+		}
 		if (prop === "dir") {
 			return value === "" || (value.match(regexp.unix_path) || value.match(regexp.win_path));
 		}
@@ -243,23 +270,31 @@ define(function (require, exports, module) {
 
 	deleteServerSetting = function (index) {
 		var deferred = new $.Deferred();
-		var slist = getServerList();
+		var slist = getServerSettingsCache();
+		
 		var result = getServerSetting(index);
 		var list = _.filter(slist, function (item, idx, ary) {
 			return item.index !== index;
 		});
-		_saveServerSettings(list)
-		.then(deferred.resolve);
+		setServerSettings(list);
 
+		PreferenceManager.saveServerSettings(list)
+		.then(function () {
+			// TODO: サーバ設定を削除しました。
+			deferred.resolve();
+		}, function (err) {
+			// TODO: サーバ設定の削除に失敗しました。
+			deferred.reject();
+		});
 		return deferred.promise();
 	};
 
-	getServerList = function () {
-		return _getServerSettings();
+	setServerSettings = function (settings) {
+		_serverSettings = settings;
 	};
-
+	
 	getServerSetting = function (index) {
-		var list = _getServerSettings();
+		var list = getServerSettingsCache();
 		var res = null;
 		list.forEach(function (item) {
 			if (item.index === index) {
@@ -268,6 +303,9 @@ define(function (require, exports, module) {
 		});
 		return res;
 	};
+	
+
+	
 	/* Private Methods */
 	_appendServerBtnState = function (state) {
 		var dev_null = null;
@@ -294,20 +332,13 @@ define(function (require, exports, module) {
 		}
 	};
 
-	_getServerSettings = function () {
-		var json = preference.get("server-settings");
-		if (typeof (json) === "undefined") {
-			preference.definePreference("server-settings", "string", JSON.stringify([]));
-			return [];
-		} else {
-			return JSON.parse(json);
-		}
+	getServerSettingsCache = function () {
+		return _serverSettings;
 	};
 
 	_editServerSetting = function (state, setting) {
-		var list = _getServerSettings(),
+		var list = getServerSettingsCache(),
 				deferred = new $.Deferred(),
-				index,
 				temp = [];
 
 		if (setting.dir.length > 1 && setting.dir !== "./") {
@@ -325,12 +356,15 @@ define(function (require, exports, module) {
 				delete setting.passphrase;
 			}
 		}
-		
 		if (setting.protocol === "ftp") {
 			delete setting.passphrase;
 			delete setting.privateKey;
 		}
 
+		if (setting.name === "") {
+			setting.name = setting.host + "@" + setting.user;
+		}
+		
 		if (state === "UPDATE") {
 			setting.index = $("#synapse-server-setting").data("index");
 			temp = _.map(list, function (item, idx, ary) {
@@ -340,77 +374,17 @@ define(function (require, exports, module) {
 		} else {
 			list.push(setting);
 		}
-		_saveServerSettings(list)
-			.then(function () {
-				deferred.resolve(setting);
-			}, deferred.reject);
+		var index;
+		for (index = 0; index < list.length; index++) {
+			list[index].index = index+1;
+		}
+		PreferenceManager.saveServerSettings(list)
+		.then(deferred.resolve, deferred.reject);
+		
 		return deferred.promise();
 	};
 
-	_saveServerSettings = function (list) {
-		var deferred = new $.Deferred();
-		if (!preference.set("server-settings", JSON.stringify(list))) {
-			deferred.reject("could not set server configuration to preference.");
-		} else {
-			preference.save()
-				.then(_rebuildIndex)
-				.then(deferred.resolve)
-				.fail(function () {
-					deferred.reject("could not save server configuration to preference.");
-			});
-		}
-		return deferred.promise();
-	};
 
-	_showSettingAlert = function (title, caption) {
-		var $container = $("<div/>").addClass("synapse-server-setting-alert")
-				.html($("<p/>").html(title).addClass("synapse-server-setting-alert-title"))
-				.append($("<p/>").html(caption).addClass("synapse-server-setting-alert-caption"));
-
-		$("#synapse-server-setting").append($container);
-
-		var height = $container.outerHeight();
-		var left   = "-" + $container.outerWidth() + "px";
-		var settingHeight = $("#synapse-server-setting").height();
-		var top = (settingHeight - height) / 2;
-		$container.css({"top": top + "px", "left": left});
-		$container.animate({"left": 0, "opacity": 1}, 300, function () {
-			$("#synapse-server-setting input").addClass("disabled");
-			$("#synapse-server-setting input").prop("disabled", true);
-			$("#synapse-server-setting button").addClass("disabled");
-			$("#synapse-server-setting button").prop("disabled", true);
-			$(this).on("click", _hideSettingAlert);
-		});
-	};
-
-	_hideSettingAlert = function (e) {
-		var $container = $(e.currentTarget);
-		var left = "-" + $container.outerWidth() + "px";
-		$container.off("click", _hideSettingAlert);
-		$container.animate({"left": left, "opacity": 0}, 300, function () {
-			$("#synapse-server-setting input").removeClass("disabled");
-			$("#synapse-server-setting input").prop("disabled", false);
-			$("#synapse-server-setting button").removeClass("disabled");
-			$("#synapse-server-setting button").prop("disabled", false);
-			$container.remove();
-		});
-	};
-
-	_rebuildIndex = function () {
-		var list = _getServerSettings();
-		var deferred = new $.Deferred();
-		var i;
-
-		for (i = 0; i < list.length; i++) {
-			list[i].index = i + 1;
-		}
-		if (preference.set("server-settings", JSON.stringify(list))) {
-			preference.save().then(deferred.resolve, deferred.reject);
-		} else {
-			deferred.reject("could not reset server configuration unique id");
-		}
-		return deferred.promise();
-	};
 
 	_connectTest = function (server) {
 		var deferred = new $.Deferred();
@@ -429,13 +403,22 @@ define(function (require, exports, module) {
 		});
 		return deferred.promise();
 	};
+	
+	
+	
+	EventDispatcher.makeEventDispatcher(exports);
 
 	exports.init = init;
 	exports.edit = edit;
 	exports.validateAll = validateAll;
 	exports.reset = reset;
-	exports.getServerList = getServerList;
 	exports.getServerSetting = getServerSetting;
+	exports.setServerSettings = setServerSettings;
+	exports.getServerSettingsCache = getServerSettingsCache;
 	exports.deleteServerSetting = deleteServerSetting;
-
+	exports.SERVER_SETTING_REMOVED = SERVER_SETTING_REMOVED;
+	exports.COULD_NOT_REMOVE_SERVER_SETTING = COULD_NOT_REMOVE_SERVER_SETTING;
+	exports.getModuleName = function () {
+		return module.id;
+	};
 });

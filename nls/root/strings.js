@@ -34,6 +34,7 @@ define({
 	"SYNAPSE_CTX_DELETE": "Delete",
 
 	"SYNAPSE_SETTING_TITLE": "Server Setting",
+	"SYNAPSE_SETTING_PH_SETTING_NAME": "SETTING NAME",
 	"SYNAPSE_SETTING_PH_HOST": "HOST",
 	"SYNAPSE_SETTING_PH_PORT": "PORT",
 	"SYNAPSE_SETTING_PH_USER": "USER",
@@ -53,7 +54,10 @@ define({
 	"SYNAPSE_LIST_DELETE": "DELETE",
 	
 	"SYNAPSE_SECURE_WARNING_TITLE": "SECURITY WARNING",
-	"SYNAPSE_SECURE_WARNING_BTN1": "I Do",
+	"SYNAPSE_SECURE_WARNING_MESSAGE": "<p>&nbsp;The server settings have been store via the plain text so far. </p><p>I recommended to do encryption to the settings.<br>(The password is just one for all settings)</p><p>However, You must be input to password when started synapse at every time.</p><p>The password is never stored.</p>",
+	"SYNAPSE_SECURE_WARNING_BTN1": "Now I do",
 	"SYNAPSE_SECURE_WARNING_BTN2": "Later",
-	"SYNAPSE_SECURE_WARNING_BODY": "Currently, the server settings has been saved by the plain text.\nSynapse recommend the encryption of the your server settings.\nHowever, you must enter the password every time the bracket is started\nDo you input the password?"
+	
+	"SYNAPSE_DECRYPT_PASSWORD_TITLE": "PASSWORD FOR THE DECRYPT",
+	"SYNAPSE_DECRYPT_PASSWORD_MESSAGE": "<p>Settings must have been crypto before the synapse is activated.</p>"
 });
