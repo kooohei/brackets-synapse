@@ -96,10 +96,7 @@ define(function (require, exports, module) {
 		
 		setting.protocol = $("#currentProtocol").val();
 		if (setting.protocol === "sftp") {
-<<<<<<< HEAD
 			setting.privateKeyPath = $("#synapse-server-privateKey-path").val();
-=======
->>>>>>> origin/master
 			setting.auth = $("#currentAuth").val();
 		}
 		if (setting !== false) {
@@ -394,10 +391,6 @@ define(function (require, exports, module) {
 	 * called by edit())
 	 */
 	_connectTest = function (server) {
-<<<<<<< HEAD
-=======
-		
->>>>>>> origin/master
 		console.log(server);
 		var deferred = new $.Deferred();
 		var remotePath = server.dir === "" ? "./" : server.dir;

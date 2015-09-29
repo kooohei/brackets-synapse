@@ -517,11 +517,7 @@ define(function (require, exports, module) {
 								$("tr.passphrase-row").show();
 								$("button.toggle-password").removeClass("active");
 								$("button.toggle-key").addClass("active");
-<<<<<<< HEAD
 								$("#synapse-server-privateKey-path");
-=======
-								
->>>>>>> origin/master
 							}
 							if (setting.auth === "password") {
 								$("tr.password-row").show();
@@ -974,10 +970,6 @@ define(function (require, exports, module) {
 		reader.readAsText(file);
 		return deferred.promise();
 	};
-<<<<<<< HEAD
-=======
-	
->>>>>>> origin/master
 	_attachWorkingSetStateChanged = function () {
 		MainViewManager.on("workingSetAdd workingSetAddList workingSetRemove workingSetRemoveList workingSetUpdate", function () {
 			FileTreeView.updateTreeviewContainerSize();

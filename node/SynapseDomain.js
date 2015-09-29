@@ -21,11 +21,7 @@
 			init,
 			test,
 			connect,
-<<<<<<< HEAD
-			secureConnectTest,
-=======
 			securePrivateKeyConnect,
->>>>>>> origin/master
 			getList,
 			rename,
 			upload,
@@ -98,14 +94,6 @@
 		readyTimeout: 8000
 	};
 	
-<<<<<<< HEAD
-	secureConnectTest = function (server, remoteRoot, cb) {
-		var conn = new SSH();
-		conn.on("error", function (err) {
-			console.error(err);
-			cb(err, null);
-			client.end();
-=======
 	securePrivateKeyConnect = function (server, remoteRoot, cb) {
 		var con = new SSH();
 		con.on("ready", function (err) {
@@ -119,21 +107,6 @@
 			port: server.port,
 			username: server.username,
 			privateKey: ""
->>>>>>> origin/master
-		});
-		
-		conn.on("ready", function () {
-			conn.sftp(function (err, sftp) {
-				conn.end();
-				if (err) {
-					cb(err);
-				} else {
-					
-					cb(null, true);
-				}
-			});
-		}).connect({
-			
 		});
 	};
 	
