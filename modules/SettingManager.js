@@ -96,7 +96,10 @@ define(function (require, exports, module) {
 		
 		setting.protocol = $("#currentProtocol").val();
 		if (setting.protocol === "sftp") {
+<<<<<<< HEAD
 			setting.privateKeyPath = $("#synapse-server-privateKey-path").val();
+=======
+>>>>>>> origin/master
 			setting.auth = $("#currentAuth").val();
 		}
 		if (setting !== false) {
@@ -110,19 +113,18 @@ define(function (require, exports, module) {
 					.then(function () {
 						// TODO: サーバ設定が追加されました。
 						if (state === "UPDATE") {
-							Log.q("", false);
+							Log.q("the server setting stored.", false);
 						} else {
 						// TODO: サーバ設定の編集が完了しました。
-							Log.q(""< false);
+							Log.q("Complete, update the server setting.", false);
 						}
 						Panel.showServerList();
 					}, deferred.reject);
 			}, function (err) {
-				// TODO: サーバー設定の追加に失敗しました。
 				if (state === "UPDATE") {
-					
+					Log.q("Failed, update server setting to preference file.", true);
 				} else {
-				// TODO: サーバー設定の更新ができませんでした。
+					Log.q("Failed, append server setting to preference file.", true);
 				}
 				deferred.reject(err);
 			}).always(function () {
@@ -392,6 +394,10 @@ define(function (require, exports, module) {
 	 * called by edit())
 	 */
 	_connectTest = function (server) {
+<<<<<<< HEAD
+=======
+		
+>>>>>>> origin/master
 		console.log(server);
 		var deferred = new $.Deferred();
 		var remotePath = server.dir === "" ? "./" : server.dir;

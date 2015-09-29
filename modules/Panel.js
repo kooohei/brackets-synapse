@@ -517,7 +517,11 @@ define(function (require, exports, module) {
 								$("tr.passphrase-row").show();
 								$("button.toggle-password").removeClass("active");
 								$("button.toggle-key").addClass("active");
+<<<<<<< HEAD
 								$("#synapse-server-privateKey-path");
+=======
+								
+>>>>>>> origin/master
 							}
 							if (setting.auth === "password") {
 								$("tr.password-row").show();
@@ -911,6 +915,7 @@ define(function (require, exports, module) {
 		
 		Shared.domain.exec("homeDir")
 		.done(function (path) {
+			console.log(path);
 			FileSystem.showOpenDialog(false, false, "Select to key file", path, null, function (err, paths) {
 				if (!err) {
 					if (paths.length > 0) {
@@ -969,6 +974,10 @@ define(function (require, exports, module) {
 		reader.readAsText(file);
 		return deferred.promise();
 	};
+<<<<<<< HEAD
+=======
+	
+>>>>>>> origin/master
 	_attachWorkingSetStateChanged = function () {
 		MainViewManager.on("workingSetAdd workingSetAddList workingSetRemove workingSetRemoveList workingSetUpdate", function () {
 			FileTreeView.updateTreeviewContainerSize();

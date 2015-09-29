@@ -58,8 +58,6 @@ define(function (require, exports, module) {
 		return d.promise();
 	};
 	
-	
-
 	exports.showYesNoModal = showYesNoModal;
 	exports.showAlert = showAlert;
 });
