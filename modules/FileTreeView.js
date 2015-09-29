@@ -130,12 +130,12 @@ define(function (require, exports, module) {
 
 
 
-	init = function (domain) {
+	init = function () {
 		var deferred = new $.Deferred();
 		_attachEvent();
 		Menu.initTreeViewContextMenu();
 		Project.on(Project.PROJECT_STATE_CHANGED, onProjectStateChanged);
-		return deferred.resolve(domain).promise();
+		return deferred.resolve().promise();
 	};
 
 	loadTreeView = function (serverSetting) {

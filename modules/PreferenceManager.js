@@ -49,7 +49,7 @@ define(function (require, exports, module) {
 	 * @param domain {NodeDomain}
 	 * @return {$.Promise}
 	 */
-	init = function (domain) {
+	init = function () {
 		var d = new $.Deferred(),
 				promise = null,
 				promises = [];
@@ -72,7 +72,7 @@ define(function (require, exports, module) {
 		});
 		Async.waitForAll(promises)
 		.then(function () {
-			d.resolve(domain);
+			d.resolve();
 		}, d.reject);
 		return d.promise();
 	};

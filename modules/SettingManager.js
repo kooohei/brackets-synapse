@@ -96,7 +96,6 @@ define(function (require, exports, module) {
 		
 		setting.protocol = $("#currentProtocol").val();
 		if (setting.protocol === "sftp") {
-			setting.privateKey = Panel.getCurrentPrivateKeyText();
 			setting.auth = $("#currentAuth").val();
 		}
 		if (setting !== false) {
@@ -106,23 +105,22 @@ define(function (require, exports, module) {
 				deferred.reject(err);
 			})
 			.then(function () {
-				_editServerSetting(state, setting, Panel.getCurrentPrivateKeyText())
+				_editServerSetting(state, setting)
 					.then(function () {
 						// TODO: サーバ設定が追加されました。
 						if (state === "UPDATE") {
-							Log.q("", false);
+							Log.q("the server setting stored.", false);
 						} else {
 						// TODO: サーバ設定の編集が完了しました。
-							Log.q(""< false);
+							Log.q("Complete, update the server setting.", false);
 						}
 						Panel.showServerList();
 					}, deferred.reject);
 			}, function (err) {
-				// TODO: サーバー設定の追加に失敗しました。
 				if (state === "UPDATE") {
-					
+					Log.q("Failed, update server setting to preference file.", true);
 				} else {
-				// TODO: サーバー設定の更新ができませんでした。
+					Log.q("Failed, append server setting to preference file.", true);
 				}
 				deferred.reject(err);
 			}).always(function () {
@@ -149,7 +147,7 @@ define(function (require, exports, module) {
 			host 				: {form: $("#synapse-server-host", $serverSetting), icon: $("i.fa-desktop"), invalid: false},
 			port 				: {form: $("#synapse-server-port", $serverSetting), icon: $("i.fa-plug"), invalid: false},
 			user 				: {form: $("#synapse-server-user", $serverSetting), icon: $("i.fa-user"), invalid: false},
-			privateKey	: {form: $("#synapse-server-privateKey-name", $serverSetting), icon: $("i.fa-key"), invalid: false},
+			privateKey	: {form: $("#synapse-server-privateKey-path", $serverSetting), icon: $("i.fa-key"), invalid: false},
 			passphrase	: {form: $("#synapse-server-passphrase", $serverSetting), icon: $("i.fa-unlock-alt"), invalid: false},
 			name				: {form: $("#synapse-server-setting-name", $serverSetting), icon: $("i.fa-barcode"), invalid: false},
 			dir	 				: {form: $("#synapse-server-dir", $serverSetting), icon: $("i.fa-sitemap"), invalid: false},
@@ -392,6 +390,8 @@ define(function (require, exports, module) {
 	 * called by edit())
 	 */
 	_connectTest = function (server) {
+		
+		console.log(server);
 		var deferred = new $.Deferred();
 		var remotePath = server.dir === "" ? "./" : server.dir;
 

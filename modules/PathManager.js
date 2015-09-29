@@ -37,11 +37,11 @@ define(function (require, exports, module) {
 
 	/* Public Methods */
 
-	init = function (domain) {
+	init = function () {
 		var deferred = new $.Deferred();
 		Project.on(Project.PROJECT_STATE_CHANGED, _onProjectStateChanged);
 
-		return deferred.resolve(domain).promise();
+		return deferred.resolve().promise();
 	};
 
 	setRemoteRoot = function (_path) {

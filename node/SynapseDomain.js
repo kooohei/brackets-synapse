@@ -21,7 +21,7 @@
 			init,
 			test,
 			connect,
-			secureConnect,
+			securePrivateKeyConnect,
 			getList,
 			rename,
 			upload,
@@ -89,10 +89,27 @@
 		 */
 		
 		// integer
-		keepAliveInterval: 0
+		keepAliveInterval: 0,
+		// integer
+		keepAliveCountMax: 3,
+		// integer (millseconds) default: 20sec -> 8sec
+		readyTimeout: 8000
 	};
 	
-	secureConnect = function () {
+	securePrivateKeyConnect = function (server, remoteRoot, cb) {
+		var con = new SSH();
+		con.on("ready", function (err) {
+			if (err) {
+				cb(err);
+				console.error(err);
+			}
+			
+		}).connect({
+			host: server.host,
+			port: server.port,
+			username: server.username,
+			privateKey: ""
+		});
 		
 	};
 	
