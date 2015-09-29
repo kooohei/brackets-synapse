@@ -9,10 +9,12 @@ define(function (require, exports, module) {
 	var MainViewManager = brackets.getModule("view/MainViewManager");
 	var DocumentManager = brackets.getModule("document/DocumentManager");
 	var CommandManager = brackets.getModule("command/CommandManager");
+	var FileSystem = brackets.getModule("filesystem/FileSystem");
 	var FileUtils = brackets.getModule("file/FileUtils");
 	var Commands = brackets.getModule("command/Commands");
 	var _ = brackets.getModule("thirdparty/lodash");
 	var Async = brackets.getModule("utils/Async");
+	var Shared = require("modules/Shared");
 
 	var Utils = require("modules/Utils");
 	var Project = require("modules/Project");
@@ -31,7 +33,6 @@ define(function (require, exports, module) {
 	var _projectState = Project.CLOSE,
 		_currentServerIndex = null,
 		_projectDir = null,
-		_domain = null,
 		_currentPrivateKeyText = null;
 
 	var
@@ -131,7 +132,6 @@ define(function (require, exports, module) {
 	 */
 	init = function (domain) {
 		var d = new $.Deferred();
-		_domain = domain;
 		_projectState = Project.CLOSE;
 
 		_initMainUI()
@@ -911,18 +911,26 @@ define(function (require, exports, module) {
 	};
 
 	openFileSelect = function (e) {
-		if ($("#synapse-server-privateKey").length) {
-			$("#synapse-server-privateKey").remove();
-		}
-		var $input = $("<input>").attr({
-			type: "file",
-			id: "synapse-server-privateKey"
-		}).css({
-			"display": "none"
+		var d = new $.Deferred();
+		
+		Shared.domain.exec("homeDir")
+		.done(function (path) {
+			FileSystem.showOpenDialog(false, false, "Select to key file", path, null, function (err, paths) {
+				if (!err) {
+					if (paths.length > 0) {
+						$("#synapse-server-privateKey-name").val(paths[0]);
+						d.resolve();
+					} else {
+						// user just canceled
+						d.reject("cancel");
+					}
+				} else {
+					console.error(err);
+					Log.q("Some error has occurred.", true);
+				}
+			});
 		});
-		$("div.privateKeyFileSelect > div").html($input);
-		$input.on("change", onPrivateKeySelected);
-		$input.click();
+		return d.promise();
 	};
 
 	resetPrivateKey = function (e) {

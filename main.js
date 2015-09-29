@@ -20,11 +20,11 @@ define(function (require, exports, module) {
 			FileManager = require("modules/FileManager"),
 			PreferenceManager = require("modules/PreferenceManager"),
 			Notify = require("modules/Notify"),
-			Log = require("modules/Log");
+			Log = require("modules/Log"),
+			Shared = require("modules/Shared");
 
 	var COMMAND_ID = "kohei.synapse.mainPanel";
 
-	var _domain = null;
 
 	var $brackets = {
 				get toolbar() {
@@ -49,12 +49,11 @@ define(function (require, exports, module) {
 				.addClass("diabled")
 				.on("click", Menu.showMainPanel)
 				.appendTo($brackets.toolbar);
-		return d.resolve(_domain).promise();
+		return d.resolve().promise();
 	};
 
 	AppInit.appReady(function () {
 		var domain = new NodeDomain("synapse", ExtensionUtils.getModulePath(module, "node/SynapseDomain"));
-		_domain = domain;
 
 		var promises = [];
 		var p;

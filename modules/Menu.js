@@ -3,6 +3,7 @@
 define(function (require, exports, module) {
 	"use strict";
 	
+	
 	// HEADER >>
 	var NodeConnection = brackets.getModule("utils/NodeConnection");
 	var Menus = brackets.getModule("command/Menus");
@@ -106,7 +107,7 @@ define(function (require, exports, module) {
 		});
 		//For Debug >
 		//Panel.showMain();
-		//setDebugMenu();
+		setDebugMenu();
 		return new $.Deferred().resolve(domain).promise();
 	};
 	

@@ -36,14 +36,12 @@ define(function (require, exports, module) {
 	/* endregion */
 
 	/* region Private vars and methods */
-	var _domain = null;
 	var _projectState = Project.CLOSE;
 	var _modulePath = FileUtils.getParentPath(ExtensionUtils.getModulePath(module));
 	/* endregion */
 	
-	init = function (domain) {
+	init = function () {
 		var d = new $.Deferred();
-		_domain = domain;
 		_attachEvent();
 		return d.resolve().promise();
 	};

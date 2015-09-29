@@ -17,6 +17,7 @@ define(function (require, exports, module) {
 	var Notify = require("modules/Notify");
 	var l = require("modules/Utils").l;
 	var Log = require("modules/Log");
+	var Shared = require("modules/Shared");
 
 	var init,
 			edit,
@@ -69,9 +70,8 @@ define(function (require, exports, module) {
 	// <<
 	
 	/* Public Methods */
-	init = function (_domain) {
+	init = function () {
 		var deferred = new $.Deferred();
-		domain = _domain;
 		
 		$serverSetting = $("#synapse-server-setting");
 		regexp.host = new RegExp("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])$");
@@ -87,6 +87,9 @@ define(function (require, exports, module) {
 		return deferred.resolve(domain).promise();
 	};
 
+	/**
+	 * called by [Panel.onEdit]
+	 */
 	edit = function (state) {
 		var deferred = new $.Deferred();
 		var setting = validateAll();
@@ -385,13 +388,15 @@ define(function (require, exports, module) {
 	};
 
 
-
+	/**
+	 * called by edit())
+	 */
 	_connectTest = function (server) {
 		var deferred = new $.Deferred();
 		var remotePath = server.dir === "" ? "./" : server.dir;
 
 		Panel.showSpinner();
-		domain.exec("Connect", server, remotePath)
+		Shared.domain.exec("Connect", server, remotePath)
 		.done(function (list) {
 			deferred.resolve();
 		})

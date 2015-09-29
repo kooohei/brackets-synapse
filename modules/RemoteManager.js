@@ -4,15 +4,15 @@ define(function (require, exports, module) {
 	"use strict";
 	
 	// HEADER >>
+	var _ = brackets.getModule("thirdparty/lodash");
 	var EventDispatcher = brackets.getModule("utils/EventDispatcher");
 	var FileTreeView = require("modules/FileTreeView");
-	var PathManager = require("modules/PathManager");
 	var Panel = require("modules/Panel");
+	var PathManager = require("modules/PathManager");
 	var Project = require("modules/Project");
-	var _ = brackets.getModule("thirdparty/lodash");
+	var Shared = require("modules/Shared");
 
-	var _domain,
-			_currentServerSetting;
+	var _currentServerSetting;
 
 	var init,
 			clear,
@@ -50,10 +50,9 @@ define(function (require, exports, module) {
 	var _convObjectLikeFTP;
 	//<<
 
-	init = function (domain) {
-		_domain = domain;
+	init = function () {
 		clear();
-		return new $.Deferred().resolve(domain).promise();
+		return new $.Deferred().resolve().promise();
 	};
 
 	clear = function () {
@@ -96,6 +95,9 @@ define(function (require, exports, module) {
 		}
 	};
 
+	/**
+	 * called by [Panel.onClickConnectBtn]
+	 */
 	connect = function (serverSetting) {
 		var deferred =  new $.Deferred();
 		var _rootEntity = FileTreeView.loadTreeView(serverSetting);
@@ -103,7 +105,7 @@ define(function (require, exports, module) {
 		var result = [];
 		Panel.showSpinner();
 		var remoteRoot = PathManager.getRemoteRoot();
-		_domain.exec("Connect", serverSetting, remoteRoot)
+		Shared.domain.exec("Connect", serverSetting, remoteRoot)
 		.then(function (list) {
 			if (serverSetting.protocol === "sftp") {
 				list = _convObjectLikeFTP(list);
@@ -132,7 +134,7 @@ define(function (require, exports, module) {
 	getList = function (entity, serverSetting, remotePath) {
 		var deferred = new $.Deferred();
 		Panel.showSpinner();
-		_domain.exec("List", serverSetting, remotePath)
+		Shared.domain.exec("List", serverSetting, remotePath)
 		.then(function (list) {
 			if (serverSetting.protocol === "sftp") {
 				list = _convObjectLikeFTP(list);
@@ -149,7 +151,7 @@ define(function (require, exports, module) {
 
 	uploadFile = function (serverSetting, localPath, remotePath) {
 		var deferred = new $.Deferred();
-		_domain.exec("UploadFile", serverSetting, localPath, remotePath)
+		Shared.domain.exec("UploadFile", serverSetting, localPath, remotePath)
 		.then(deferred.resolve, function (err) {
 			if (err.code === 553) {
 				err = "Permission denied";
@@ -163,7 +165,7 @@ define(function (require, exports, module) {
 
 	mkdir = function (serverSetting, remotePath) {
 		var deferred =new $.Deferred();
-		_domain.exec("Mkdir", serverSetting, remotePath)
+		Shared.domain.exec("Mkdir", serverSetting, remotePath)
 		.then(function () {
 			deferred.resolve(true);
 		}, deferred.reject);
@@ -172,7 +174,7 @@ define(function (require, exports, module) {
 
 	removeDirectory = function (serverSetting, remotePath) {
 		var deferred = new $.Deferred();
-		_domain.exec("RemoveDirectory", serverSetting, remotePath)
+		Shared.domain.exec("RemoveDirectory", serverSetting, remotePath)
 		.then(function () {
 			deferred.resolve(true);
 		}, function (err) {
@@ -184,7 +186,7 @@ define(function (require, exports, module) {
 
 	deleteFile = function (serverSetting, remotePath) {
 		var deferred = new $.Deferred();
-		_domain.exec("DeleteFile", serverSetting, remotePath)
+		Shared.domain.exec("DeleteFile", serverSetting, remotePath)
 		.then(function () {
 			deferred.resolve(true);
 		}, deferred.reject);
@@ -193,7 +195,7 @@ define(function (require, exports, module) {
 
 	rename = function (serverSetting, oldPath, newPath) {
 		var deferred = new $.Deferred();
-		_domain.exec("Rename", serverSetting, oldPath, newPath)
+		Shared.domain.exec("Rename", serverSetting, oldPath, newPath)
 			.then(function () {
 				deferred.resolve(true);
 			}, deferred.reject);
@@ -202,7 +204,7 @@ define(function (require, exports, module) {
 
 	download = function (serverSetting, localPath, remotePath) {
 		var deferred = new $.Deferred();
-		_domain.exec("Download", serverSetting, localPath, remotePath)
+		Shared.domain.exec("Download", serverSetting, localPath, remotePath)
 			.then(function () {
 				deferred.resolve(true);
 			}, deferred.reject);

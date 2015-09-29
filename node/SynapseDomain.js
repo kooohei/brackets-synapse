@@ -3,17 +3,25 @@
 (function () {
 	"use strict";
 
+	/**
+	 * MODULE CODE: 2 for ERROR CODE.
+	 */
+	
+	
 	// HEADER >>
 	var _domainManager = null,
+			homedir = require("homedir"),
 			Client = require("ftp"),
 			SSH = require("ssh2").Client,
 			Q = require("q"),
 			fs = require("fs");
 	
 	var client = null,
+			homeDir,
 			init,
 			test,
 			connect,
+			secureConnect,
 			getList,
 			rename,
 			upload,
@@ -21,8 +29,7 @@
 			removeDirectory,
 			deleteFile,
 			download,
-			logout,
-			readLocalFile,
+			_logout,
 			
 			_getSftpOption,
 			_sftpReadDir,
@@ -34,6 +41,66 @@
 			_ftpCheckSymLink,
 			_ftpCheckSymLinks;
 	//<<
+	
+	// priority : passowrd -> private key -> hostbased -> none.
+	var param = {
+		// string
+		host: "localhost",
+		// integer
+		port: 22, 
+		// boolean
+		forceIPv4: false,
+		// boolean
+		forceIPv6: false,
+		
+		/* *
+		 * [for Host Base Authentication]
+		 * hostHash,
+		 * hostVerifier, 
+		 * * Synapse is not support host verification.
+		 */
+		
+		// string
+		username: "",
+		// string
+		password: "",
+		
+		/* *
+		 * [for SSH Agent based user authentication]
+		 * agent
+		 * * Synapse is not support SSH Agent based user auth.
+		 */
+		
+		// mixed "buffer" of "string", OpenSSH formated.
+		privateKey: null,
+		// string for decrypt to privateKey
+		passphrase: "",
+		
+		
+		
+		/* *
+		 * [for Hostbased user authentication]
+		 * localHostname 
+		 * localusername
+		 */
+		
+		/**
+		 * tryKeyboard if we use intaractive authentication. but Synapse is not support
+		 */
+		
+		// integer
+		keepAliveInterval: 0
+	};
+	
+	secureConnect = function () {
+		
+	};
+	
+	
+	
+	
+	
+	
 	
 	_getSftpOption = function (setting) {
 		var settingObj = {
@@ -51,7 +118,6 @@
 		}
 		return settingObj;
 	};
-	
 	_sftpReadDir = function (sftp, remoteRoot) {
 		var q = Q.defer();
 		sftp.readdir(remoteRoot, function (err, list) {
@@ -108,7 +174,12 @@
 		});
 		return q.promise;
 	};
-
+	
+	
+	/**
+	 * called by [RemoteManager.connect, SettingManager.connectTest]
+	 * METHOD CODE: 1 for ERROR CODE.
+	 */
 	connect = function (server, remoteRoot, cb) {
 		/* FTP */
 		if (server.protocol === "ftp") {
@@ -120,7 +191,7 @@
 					cb(null, list);
 				}, cb)
 				.finally(function () {
-					logout(client);
+					_logout(client);
 				});
 			});
 			client.connect(server);
@@ -130,10 +201,18 @@
 		if (server.protocol === "sftp") {
 			var setting = _getSftpOption(server);
 
-
-
 			client = new SSH();
 			client.on("error", function (err) {
+				var param = {
+					method: "SynapseDomain.connect:SFTP",
+					message: "",
+					code: "2-1"
+				};
+				if (typeof (err) === "object") {
+					param.message = JSON.stringify(err);
+				} else {
+					param.message = err;
+				}
 				console.error(err);
 			});
 			client.on("ready", function () {
@@ -158,7 +237,11 @@
 			}).connect(setting);
 		}
 	};
-	logout = function (client) {
+	
+	/**
+	 * called by just self.
+	 */
+	_logout = function (client) {
 		client.once("close", function () {});
 		client.once("end", function () {});
 
@@ -170,6 +253,10 @@
 			}
 		});
 	};
+	
+	/**
+	 * called by [RemoteManager.uploadFile]
+	 */
 	upload = function (server, localPath, remotePath, cb) {
 		if (server.protocol === "ftp") {
 			client = new Client();
@@ -177,12 +264,12 @@
 				if (err) {
 					cb(err);
 				}
-				logout(client);
+				_logout(client);
 			});
 
 			client.once("ready", function () {
 				client.put(localPath, remotePath, function (err) {
-					logout(client);
+					_logout(client);
 					if (err) {
 						cb(err);
 					} else {
@@ -216,6 +303,10 @@
 			}).connect(setting);
 		}
 	};
+	
+	/**
+	 * called by [RemoteManager.getList]
+	 */
 	getList = function (server, path, cb) {
 
 		if (server.protocol === "ftp") {
@@ -224,12 +315,12 @@
 				if (err) {
 					cb(err);
 				}
-				logout(client);
+				_logout(client);
 			});
 
 			client.once("ready", function () {
 				client.list(path, function (err, list) {
-					logout(client);
+					_logout(client);
 					if (err) {
 						cb(err);
 					} else {
@@ -262,6 +353,10 @@
 			}).connect(_getSftpOption(server));
 		}
 	};
+	
+	/**
+	 * called by [RemoteManager.rename]
+	 */
 	rename = function (server, oldPath, newPath, cb) {
 		if (server.protocol === "ftp") {
 			client = new Client();
@@ -269,12 +364,12 @@
 				if (err) {
 					cb(err);
 				}
-				logout(client);
+				_logout(client);
 			});
 
 			client.once("ready", function () {
 				client.rename(oldPath, newPath, function (err) {
-					logout(client);
+					_logout(client);
 					if (err) {
 						cb(err);
 					} else {
@@ -306,6 +401,10 @@
 			}).connect(setting);
 		}
 	};
+	
+	/**
+	 * called by [RemoteManager.mkdir]
+	 */
 	mkdir = function (server, path, cb) {
 
 		if (server.protocol === "ftp") {
@@ -313,13 +412,13 @@
 			client = new Client();
 			client.once("error", function (err) {
 				if (err) {
-					logout(client);
+					_logout(client);
 					cb(err);
 				}
 			});
 			client.once("ready", function () {
 				client.mkdir(path, false, function (err) {
-					logout(client);
+					_logout(client);
 					if (err) {
 						cb(err);
 					} else {
@@ -350,19 +449,23 @@
 			}).connect(setting);
 		}
 	};
+	
+	/**
+	 * called by [RemoteManager.removeDirectory]
+	 */
 	removeDirectory = function (serverSetting, remotePath, cb) {
 
 		if (serverSetting.protocol === "ftp") {
 			client = new Client();
 			client.once("error", function (err) {
 				if (err) {
-					logout(client);
+					_logout(client);
 					cb(err);
 				}
 			});
 			client.once("ready", function () {
 				client.rmdir(remotePath, true, function (err) {
-					logout(client);
+					_logout(client);
 					if (err) {
 						cb(err);
 					} else {
@@ -394,18 +497,22 @@
 			}).connect(setting);
 		}
 	};
+	
+	/**
+	 * called by [RemoteManager.deleteFile]
+	 */
 	deleteFile = function (serverSetting, remotePath, cb) {
 		if (serverSetting.protocol === "ftp") {
 			client = new Client();
 			client.once("error", function (err) {
-				logout(client);
+				_logout(client);
 				if (err) {
 					cb(err);
 				}
 			});
 			client.once("ready", function () {
 				client.delete(remotePath, function (err) {
-					logout(client);
+					_logout(client);
 					if (err) {
 						cb(err);
 					} else {
@@ -437,13 +544,17 @@
 			}).connect(setting);
 		}
 	};
+	
+	/**
+	 * called by [RemoteManager.download]
+	 */
 	download = function (serverSetting, localPath, remotePath, cb) {
 
 		if (serverSetting.protocol === "ftp") {
 			client = new Client();
 			client.once("error", function (err) {
 				if (err) {
-					logout(client);
+					_logout(client);
 					cb(err);
 				}
 			});
@@ -451,12 +562,12 @@
 				client.get(remotePath, function (err, stream) {
 					if (err) {
 						cb(err);
-						logout(client);
+						_logout(client);
 					} else {
 						stream.pipe(fs.createWriteStream(localPath));
 						stream.once("close", function () {
 							client.end();
-							logout(client);
+							_logout(client);
 							cb(null, true);
 						});
 					}
@@ -485,16 +596,13 @@
 			}).connect(setting);
 		}
 	};
-	readLocalFile = function (path, cb) {
-		fs.readFile(path, "utf8", function (err, text) {
-			if (err) {
-				cb(err);
-			}
-			cb(null, text);
-		});
+	
+	/**
+	 * called by [Panel.openFileSelect]
+	 */
+	homeDir = function () {
+		return homedir();
 	};
-	
-	
 	init = function (domainManager, domainPath) {
 
 		if (!domainManager.hasDomain("synapse")) {
@@ -505,7 +613,20 @@
 		}
 		_domainManager = domainManager;
 
-		// FTP and SFTP functions >
+		domainManager.registerCommand(
+			"synapse",
+			"homeDir",
+			homeDir,
+			false,
+			"", [{
+			}],
+			[{
+				name: "path",
+				type: "string"
+			}]
+		);
+		
+		// FTP and SFTP functions >>
 		domainManager.registerCommand(
 			"synapse",
 			"Connect",
@@ -643,19 +764,22 @@
 				type: "boolean"
 			}]
 		);
-		domainManager.registerCommand(
+		
+		/**
+		 * usage _domainManager.emitEvent("synapse", "error", {method: string, message: string});
+		 * message made by library the ftp of ssh2, that must parse to json if it type is object.
+		 */
+		domainManager.registerEvent(
 			"synapse",
-			"ReadLocalFile",
-			readLocalFile,
-			true,
-			"", [{
-				name: "path",
-				type: "string"
-			}]
+			"error",
+			{
+				method: "",
+				message: ""
+			}
 		);
-		// <
+		
+		// <<
 	};
 
 	exports.init = init;
-
 }());

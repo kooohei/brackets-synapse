@@ -81,11 +81,11 @@ define(function (require, exports, module) {
 		return new $.Deferred().resolve().promise();
 	};
 
-	q = function (message, error) {
+	q = function (message, error, errCode) {
 		var m = moment(),
 				now = m.format("HH:mm:ss MMM DD").toString();
 		if (error) {
-			message = "<span class='synapse-log-error'>ERROR</span>" + message;
+			message = "<span class='synapse-log-error'>ERROR</span>" + message + "[" + errCode + "]";
 		}
 		var obj = {
 			message: message,

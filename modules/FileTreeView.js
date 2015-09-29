@@ -23,7 +23,6 @@ define(function (require, exports, module) {
 	var Strings = require("strings");
 
 	var _modulePath = FileUtils.getParentPath(ExtensionUtils.getModulePath(module)),
-			_domain,
 			_remoteRootPath = null,
 			_renameValidate,
 			_currentServerSetting = null,
@@ -133,7 +132,6 @@ define(function (require, exports, module) {
 
 	init = function (domain) {
 		var deferred = new $.Deferred();
-		_domain = domain;
 		_attachEvent();
 		Menu.initTreeViewContextMenu();
 		Project.on(Project.PROJECT_STATE_CHANGED, onProjectStateChanged);

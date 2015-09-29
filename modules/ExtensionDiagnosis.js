@@ -16,8 +16,7 @@ define(function (require, exports, module) {
 	var PreferenceManager = require("modules/PreferenceManager");
 	var Utils = require("modules/Utils");
 	
-	var	_domain,
-			PATH_TO_PACKAGE_JSON = FileUtils.getParentPath(ExtensionUtils.getModulePath(module)) + "package.json";
+	var PATH_TO_PACKAGE_JSON = FileUtils.getParentPath(ExtensionUtils.getModulePath(module)) + "package.json";
 	var _getVersionFromPackageJson,
 			_firstLaunch,
 			_checkKeysDirectory,
@@ -101,8 +100,7 @@ define(function (require, exports, module) {
 	};
 
 	
-	init = function (domain) {
-		_domain = domain;
+	init = function () {
 		var d = new $.Deferred();
 		_firstLaunch()
 		.then(_getVersionFromPackageJson)

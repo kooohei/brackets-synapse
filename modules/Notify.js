@@ -42,8 +42,7 @@ define(function (require, exports, module) {
 	 */
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/notify.css");
 	
-	init = function (_domain) {
-		domain = _domain;
+	init = function () {
 		var $container = $("<div>")
 				.attr({"id": "synapse-notify-container"})
 				.appendTo($("div.main-view")).hide();
