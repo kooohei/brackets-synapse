@@ -135,7 +135,7 @@
 #synapse-server-setting .input-append {
 	margin-bottom: 0;
 }
-#synapse-server-setting .input-append input#synapse-server-privateKey-name {
+#synapse-server-setting .input-append input#synapse-server-privateKey-path {
 	width: 147px;
 }
 #synapse-server-setting .input-append input#synapse-server-exclude {

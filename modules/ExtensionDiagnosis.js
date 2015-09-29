@@ -21,8 +21,7 @@ define(function (require, exports, module) {
 			_firstLaunch,
 			_checkKeysDirectory,
 			_getDirectoryContents;
-	var init,
-			getDomain;
+	var init;
 	var onClickSecureWarning;
 	// <<
 
@@ -115,5 +114,7 @@ define(function (require, exports, module) {
 	};
 
 	exports.init = init;
-	exports.getDomain = getDomain;
+	
+	
+	
 });

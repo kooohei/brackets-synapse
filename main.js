@@ -38,7 +38,7 @@ define(function (require, exports, module) {
 				}
 			};
 
-	var setAppIcon = function (domain) {
+	var setAppIcon = function () {
 		var d = new $.Deferred(),
 				icon = $("<a>")
 				.attr({
@@ -53,44 +53,44 @@ define(function (require, exports, module) {
 	};
 
 	AppInit.appReady(function () {
-		var domain = new NodeDomain("synapse", ExtensionUtils.getModulePath(module, "node/SynapseDomain"));
+		Shared.domain = new NodeDomain("synapse", ExtensionUtils.getModulePath(module, "node/SynapseDomain"));
 
 		var promises = [];
 		var p;
 
 		Log.initView()
 		.then(function () {
-			p = PreferenceManager.init(domain);
+			p = PreferenceManager.init();
 			promises.push(p);
 
-			p = ExtensionDiagnosis.init(domain);
+			p = ExtensionDiagnosis.init();
 			promises.push(p);
 
-			p = SettingManager.init(domain);
+			p = SettingManager.init();
 			promises.push(p);
 
-			p = Panel.init(domain);
+			p = Panel.init();
 			promises.push(p);
 
-			p = Notify.init(domain);
+			p = Notify.init();
 			promises.push(p);
 
-			p = PathManager.init(domain);
+			p = PathManager.init();
 			promises.push(p);
 
-			p = RemoteManager.init(domain);
+			p = RemoteManager.init();
 			promises.push(p);
 
-			p = FileTreeView.init(domain);
+			p = FileTreeView.init();
 			promises.push(p);
 
-			p = FileManager.init(domain);
+			p = FileManager.init();
 			promises.push(p);
 
-			p = setAppIcon(domain);
+			p = setAppIcon();
 			promises.push(p);
 
-			p = Menu.setRootMenu(domain);
+			p = Menu.setRootMenu();
 			promises.push(p);
 
 			Async.waitForAll(promises, true)

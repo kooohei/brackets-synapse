@@ -21,7 +21,7 @@
 			init,
 			test,
 			connect,
-			secureConnect,
+			secureConnectTest,
 			getList,
 			rename,
 			upload,
@@ -76,8 +76,6 @@
 		// string for decrypt to privateKey
 		passphrase: "",
 		
-		
-		
 		/* *
 		 * [for Hostbased user authentication]
 		 * localHostname 
@@ -92,15 +90,28 @@
 		keepAliveInterval: 0
 	};
 	
-	secureConnect = function () {
+	secureConnectTest = function (server, remoteRoot, cb) {
+		var conn = new SSH();
+		conn.on("error", function (err) {
+			console.error(err);
+			cb(err, null);
+			client.end();
+		});
 		
+		conn.on("ready", function () {
+			conn.sftp(function (err, sftp) {
+				conn.end();
+				if (err) {
+					cb(err);
+				} else {
+					
+					cb(null, true);
+				}
+			});
+		}).connect({
+			
+		});
 	};
-	
-	
-	
-	
-	
-	
 	
 	_getSftpOption = function (setting) {
 		var settingObj = {
@@ -110,7 +121,7 @@
 				};
 
 		if (setting.auth === "key") {
-			settingObj.privateKey = setting.privateKey;
+			settingObj.privateKey = fs.readFileSync(setting.privateKeyPath);
 			settingObj.passphrase = setting.passphrase;
 		} else
 		if (setting.auth === "password") {
@@ -118,6 +129,7 @@
 		}
 		return settingObj;
 	};
+	
 	_sftpReadDir = function (sftp, remoteRoot) {
 		var q = Q.defer();
 		sftp.readdir(remoteRoot, function (err, list) {
@@ -129,6 +141,7 @@
 		});
 		return q.promise;
 	};
+	
 	_sftpCheckSymLink = function (sftp, row, basePath) {
 		var q = Q.defer();
 		if (row.longname.charAt(0) === "l") {
@@ -147,6 +160,7 @@
 		}
 		return q.promise;
 	};
+	
 	_sftpCheckSymLinks = function (sftp, basePath, list) {
 		var q = Q.defer();
 		var files = [];
@@ -163,6 +177,7 @@
 
 		return q.promise;
 	};
+	
 	_ftpReadDir = function (client, path) {
 		var q = Q.defer();
 		client.list(path, function (err, list) {
@@ -174,7 +189,6 @@
 		});
 		return q.promise;
 	};
-	
 	
 	/**
 	 * called by [RemoteManager.connect, SettingManager.connectTest]
@@ -200,7 +214,6 @@
 		/* SFTP */
 		if (server.protocol === "sftp") {
 			var setting = _getSftpOption(server);
-
 			client = new SSH();
 			client.on("error", function (err) {
 				var param = {
@@ -219,6 +232,7 @@
 				client.sftp(function (err, sftp) {
 					if (err) {
 						cb(err);
+						client.end();
 					} else {
 						remoteRoot = remoteRoot === "" ? "./" : remoteRoot;
 						_sftpReadDir(sftp, remoteRoot)
@@ -233,6 +247,7 @@
 							client.end();
 						});
 					}
+					
 				});
 			}).connect(setting);
 		}
@@ -603,8 +618,9 @@
 	homeDir = function () {
 		return homedir();
 	};
+	
 	init = function (domainManager, domainPath) {
-
+		
 		if (!domainManager.hasDomain("synapse")) {
 			domainManager.registerDomain("synapse", {
 				major: 0,

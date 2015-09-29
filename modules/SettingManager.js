@@ -53,7 +53,7 @@ define(function (require, exports, module) {
 		this.user = null;
 		this.password = null;
 		this.passphrase = null;
-		this.privateKey = null;
+		this.privateKeyPath = null;
 		this.dir = null;
 		this.exclude = null;
 	};
@@ -96,7 +96,7 @@ define(function (require, exports, module) {
 		
 		setting.protocol = $("#currentProtocol").val();
 		if (setting.protocol === "sftp") {
-			setting.privateKey = Panel.getCurrentPrivateKeyText();
+			setting.privateKeyPath = $("#synapse-server-privateKey-path").val();
 			setting.auth = $("#currentAuth").val();
 		}
 		if (setting !== false) {
@@ -106,7 +106,7 @@ define(function (require, exports, module) {
 				deferred.reject(err);
 			})
 			.then(function () {
-				_editServerSetting(state, setting, Panel.getCurrentPrivateKeyText())
+				_editServerSetting(state, setting)
 					.then(function () {
 						// TODO: サーバ設定が追加されました。
 						if (state === "UPDATE") {
@@ -149,7 +149,7 @@ define(function (require, exports, module) {
 			host 				: {form: $("#synapse-server-host", $serverSetting), icon: $("i.fa-desktop"), invalid: false},
 			port 				: {form: $("#synapse-server-port", $serverSetting), icon: $("i.fa-plug"), invalid: false},
 			user 				: {form: $("#synapse-server-user", $serverSetting), icon: $("i.fa-user"), invalid: false},
-			privateKey	: {form: $("#synapse-server-privateKey-name", $serverSetting), icon: $("i.fa-key"), invalid: false},
+			privateKey	: {form: $("#synapse-server-privateKey-path", $serverSetting), icon: $("i.fa-key"), invalid: false},
 			passphrase	: {form: $("#synapse-server-passphrase", $serverSetting), icon: $("i.fa-unlock-alt"), invalid: false},
 			name				: {form: $("#synapse-server-setting-name", $serverSetting), icon: $("i.fa-barcode"), invalid: false},
 			dir	 				: {form: $("#synapse-server-dir", $serverSetting), icon: $("i.fa-sitemap"), invalid: false},
@@ -355,13 +355,13 @@ define(function (require, exports, module) {
 				delete setting.password;
 			} else
 			if (setting.auth === "password") {
-				delete setting.privateKey;
+				delete setting.privateKeyPath;
 				delete setting.passphrase;
 			}
 		}
 		if (setting.protocol === "ftp") {
 			delete setting.passphrase;
-			delete setting.privateKey;
+			delete setting.privateKeyPath;
 		}
 
 		if (setting.name === "") {
@@ -392,9 +392,13 @@ define(function (require, exports, module) {
 	 * called by edit())
 	 */
 	_connectTest = function (server) {
+		console.log(server);
 		var deferred = new $.Deferred();
 		var remotePath = server.dir === "" ? "./" : server.dir;
-
+		var method = "";
+		if (server.protocol === "sftp") {
+			
+		}
 		Panel.showSpinner();
 		Shared.domain.exec("Connect", server, remotePath)
 		.done(function (list) {

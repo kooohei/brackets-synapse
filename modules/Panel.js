@@ -32,8 +32,7 @@ define(function (require, exports, module) {
 
 	var _projectState = Project.CLOSE,
 		_currentServerIndex = null,
-		_projectDir = null,
-		_currentPrivateKeyText = null;
+		_projectDir = null;
 
 	var
 		init,
@@ -43,7 +42,6 @@ define(function (require, exports, module) {
 		showSpinner,
 		hideSpinner,
 		showMain,
-		getCurrentPrivateKeyText,
 		connect,
 		showServerList,
 
@@ -72,7 +70,6 @@ define(function (require, exports, module) {
 		onEnterListBtns,
 		onClickEditBtn,
 		onProjectStateChanged,
-		onPrivateKeySelected,
 
 		_attachWorkingSetStateChanged,
 		_detachWorkingSetStateChanged,
@@ -130,7 +127,7 @@ define(function (require, exports, module) {
 	 * @param   {NodeDomain} domain
 	 * @returns {$.Promise} never rejected.
 	 */
-	init = function (domain) {
+	init = function () {
 		var d = new $.Deferred();
 		_projectState = Project.CLOSE;
 
@@ -141,7 +138,7 @@ define(function (require, exports, module) {
 				//for Devel
 				//showMain();
 				//brackets.app.showDeveloperTools();
-				d.resolve(domain);
+				d.resolve();
 			});
 		return d.promise();
 	};
@@ -514,14 +511,13 @@ define(function (require, exports, module) {
 							$(".sftp-row").show();
 
 							if (setting.auth === "key") {
-								$("#synapse-server-privateKey-name").val("Setted");
+								$("#synapse-server-privateKey-path").val("Setted");
 								$("#synapse-server-passphrase").val(setting.passphrase);
 								$("tr.password-row").hide();
 								$("tr.passphrase-row").show();
 								$("button.toggle-password").removeClass("active");
 								$("button.toggle-key").addClass("active");
-								$("#synapse-server-privateKey-name");
-								_currentPrivateKeyText = setting.privateKey;
+								$("#synapse-server-privateKey-path");
 							}
 							if (setting.auth === "password") {
 								$("tr.password-row").show();
@@ -918,7 +914,8 @@ define(function (require, exports, module) {
 			FileSystem.showOpenDialog(false, false, "Select to key file", path, null, function (err, paths) {
 				if (!err) {
 					if (paths.length > 0) {
-						$("#synapse-server-privateKey-name").val(paths[0]);
+						$("#synapse-server-privateKey-path").val(paths[0]);
+						SettingManager.validateAll();
 						d.resolve();
 					} else {
 						// user just canceled
@@ -937,8 +934,7 @@ define(function (require, exports, module) {
 		if ($("#synapse-server-privateKey").length) {
 			$("#synapse-server-privateKey").remove();
 		}
-		$("#synapse-server-privateKey-name").val("");
-		_currentPrivateKeyText = null;
+		$("#synapse-server-privateKey-path").val("");
 		SettingManager.validateAll();
 	};
 
@@ -946,33 +942,7 @@ define(function (require, exports, module) {
 		$("#synapse-server-exclude").val("^\\.$, ^\\.\\.$, ^\\..+$");
 	};
 
-	onPrivateKeySelected = function (e) {
-		var file = $(e.target).prop("files")[0];
-		var $keyName = $("#synapse-server-privateKey-name", j.s);
-		_readPrivateKeyFile(file)
-			.then(function (res) {
-				var text = res;
-				//var reg = new RegExp(/PRIVATE KEY/g);
-				var reg = new RegExp(/^$/g);
-				if (text.match(reg)) {
-					$keyName.val("").addClass("invalid");
-					_currentPrivateKeyText = null;
-				} else {
-					$keyName.removeClass("invalid");
-					$keyName.val(file.name);
-					_currentPrivateKeyText = res;
-				}
-			}, function () {
-				if ($("#synapse-server-privateKey").length) {
-					$("#synapse-server-privateKey").remove();
-				}
-				$keyName.val("").addClass("invalid");
-				_currentPrivateKeyText = null;
-				console.error("error");
-			}).always(function () {
-				SettingManager.validateAll();
-			});
-	};
+	
 	/* unuse */
 	_readPrivateKeyPath = function (file) {
 		var reader = new FileReader();
@@ -998,9 +968,6 @@ define(function (require, exports, module) {
 		};
 		reader.readAsText(file);
 		return deferred.promise();
-	};
-	getCurrentPrivateKeyText = function () {
-		return _currentPrivateKeyText;
 	};
 	_attachWorkingSetStateChanged = function () {
 		MainViewManager.on("workingSetAdd workingSetAddList workingSetRemove workingSetRemoveList workingSetUpdate", function () {
@@ -1032,7 +999,6 @@ define(function (require, exports, module) {
 	exports.showMain = showMain;
 	exports.showSpinner = showSpinner;
 	exports.hideSpinner = hideSpinner;
-	exports.getCurrentPrivateKeyText = getCurrentPrivateKeyText;
 	exports.reloadServerSettingList = reloadServerSettingList;
 	exports.showServerList = showServerList;
 	exports.getModuleName = function () {
