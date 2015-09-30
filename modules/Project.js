@@ -26,7 +26,7 @@ define(function (require, exports, module) {
 			getServerSetting,
 			createDirectoryIfExists,
 			renameLocalEntry,
-			maxProjectHistory = 3;
+			maxProjectHistory = 10;
 
 	var
 			_initProjectContext,

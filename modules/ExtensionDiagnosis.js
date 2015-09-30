@@ -19,6 +19,7 @@ define(function (require, exports, module) {
 	var PATH_TO_PACKAGE_JSON = FileUtils.getParentPath(ExtensionUtils.getModulePath(module)) + "package.json";
 	var _getVersionFromPackageJson,
 			_firstLaunch,
+			_chkErrorLog,
 			_checkKeysDirectory,
 			_getDirectoryContents;
 	var init;
@@ -97,11 +98,31 @@ define(function (require, exports, module) {
 		});
 		return d.promise();
 	};
+	
+	_chkErrorLog = function () {
+		var d = new $.Deferred();
+		var file = FileSystem.getFileForPath(FileUtils.getParentPath(ExtensionUtils.getModulePath(module)) + "error.log");
+		file.exists(function (err, isExists) {
+			if (!isExists) {
+				FileUtils.writeText(file, "", true)
+				.then(function () {
+					d.resolve();
+				}, function (err) {
+					d.reject(err);
+				});
+			} else {
+				d.resolve();
+			}
+		});
+		
+		return d.promise();
+	};
 
 	
 	init = function () {
 		var d = new $.Deferred();
 		_firstLaunch()
+		.then(_chkErrorLog)
 		.then(_getVersionFromPackageJson)
 		.then(PreferenceManager.setVersion)
 		.then(function () {

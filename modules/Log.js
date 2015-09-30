@@ -3,15 +3,20 @@
 define(function (require, exports, module) {
 	"use strict";
 	// HEADER >>
-	var ExtentionUtils = brackets.getModule("utils/ExtensionUtils"),
+	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils"),
+			FileSystem = brackets.getModule("filesystem/FileSystem"),
 			_ = brackets.getModule("thirdparty/lodash"),
-
-			moment = require("../node_modules/moment/moment");
+			FileUtils = brackets.getModule("file/FileUtils"),
+			moment = require("../node_modules/moment/moment"),
+			Shared = require("modules/Shared");
 
 	var fadeTimer = null,
 			noticeCount = 0;
+	
+	var errorFileBuffer = null;
 
 	var queue = [],
+			fileQueue = [],
 			history = 100,
 			viewSrc = require("text!../ui/log.html"),
 			state = "collapse",
@@ -33,6 +38,7 @@ define(function (require, exports, module) {
 			_expand,
 			_collapse,
 			_add,
+			_prependFile,
 			_onLeave,
 			_onEnter,
 			_threeSecondsAfter,
@@ -41,7 +47,7 @@ define(function (require, exports, module) {
 
 
 
-	ExtentionUtils.loadStyleSheet(module, "../ui/css/log.css");
+	ExtensionUtils.loadStyleSheet(module, "../ui/css/log.css");
 	// <<
 
 
@@ -52,12 +58,26 @@ define(function (require, exports, module) {
 			}
 		});
 	});
-
+	Array.observe(fileQueue, function (changes) {
+		_.forEach(changes, function (change) {
+			if ((change.type === "splice" || change.type === "remove") && change.object.length > 0) {
+				_prependFile(fileQueue.shift());
+			}
+		});
+	});
 
 	test = function () {
 	};
 
 	initView = function () {
+		
+		
+		Shared.errorFile = FileSystem.getFileForPath(FileUtils.getParentPath(ExtensionUtils.getModulePath(module)) + "error.log");
+		FileUtils.readAsText(Shared.errorFile)
+		.then(function (text, time) {
+			errorFileBuffer = text.split(/\n/);
+		});
+		
 		var html = Mustache.render(viewSrc,{});
 		$("#sidebar").append($(html));
 		$("#synapse-log-rows").hide();
@@ -81,11 +101,11 @@ define(function (require, exports, module) {
 		return new $.Deferred().resolve().promise();
 	};
 
-	q = function (message, error, errCode) {
+	q = function (message, error, toFile) {
 		var m = moment(),
 				now = m.format("HH:mm:ss MMM DD").toString();
 		if (error) {
-			message = "<span class='synapse-log-error'>ERROR</span>" + message + "[" + errCode + "]";
+			message = "<span class='synapse-log-error'>ERROR</span>" + message;
 		}
 		var obj = {
 			message: message,
@@ -99,6 +119,20 @@ define(function (require, exports, module) {
 			_onLeave();
 		}
 		queue.push(obj);
+		
+		var writeStr = "";
+		if (typeof (toFile) === "object") {
+			writeStr = JSON.stringify(toFile);
+		} else
+		if (typeof (toFile) === "string") {
+			writeStr = toFile;
+		} else {
+			writeStr = null;
+		}
+		if(writeStr) {
+			console.log(writeStr);
+			fileQueue.push("[" + now + "]:" + writeStr);
+		}
 	};
 
 	_toggle = function () {
@@ -152,6 +186,7 @@ define(function (require, exports, module) {
 		if ($container.hasClass("log-expand")) {
 			return d.resolve().promise();
 		}
+		j.area.removeClass("transparency");
 		$body.animate({"height": "150px"}, 200).promise()
 		.then(function () {
 			noticeCount = 0;
@@ -176,7 +211,10 @@ define(function (require, exports, module) {
 			.addClass("datetime")
 			.html(item.now)
 			.appendTo($row);
-
+		
+		if (item.error && $("#synapse-log-container").hasClass("log-collapse")) {
+			_toggle();
+		}
 		$rows.prepend($row);
 	};
 
@@ -186,12 +224,14 @@ define(function (require, exports, module) {
 	
 	_fadeDetach = function () {
 		if (fadeTimer !== null) {
-			setTimeout(fadeTimer);
+			clearTimeout(fadeTimer);
+			fadeTimer = null;
 		}
 		fadeTimer = null;
 		j.area.off("mouseenter", _onEnter);
 		j.area.off("mouseleave", _onLeave);
 	};
+	
 	_onEnter = function (e) {
 		if (fadeTimer !== null) {
 			clearTimeout(fadeTimer);
@@ -213,6 +253,11 @@ define(function (require, exports, module) {
 		fadeTimer = null;
 	};
 
+	
+	_prependFile = function (line) {
+		errorFileBuffer.unshift(line);
+		FileUtils.writeText(Shared.errorFile, errorFileBuffer.join("\n"));
+	};
 
 	exports.q = q;
 	exports.initView = initView;

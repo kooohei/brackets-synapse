@@ -503,6 +503,7 @@ define(function (require, exports, module) {
 					var d = new $.Deferred();
 					if (state === "update") {
 						j.s.data("index", setting.index);
+						j.s.data("state", "update");
 						if (setting.protocol === "sftp") {
 							$("#currentProtocol").val("sftp");
 							$("#currentAuth").val(setting.auth);
@@ -511,7 +512,7 @@ define(function (require, exports, module) {
 							$(".sftp-row").show();
 
 							if (setting.auth === "key") {
-								$("#synapse-server-privateKey-path").val("Setted");
+								$("#synapse-server-privateKey-path").val(setting.privateKeyPath);
 								$("#synapse-server-passphrase").val(setting.passphrase);
 								$("tr.password-row").hide();
 								$("tr.passphrase-row").show();
@@ -548,6 +549,7 @@ define(function (require, exports, module) {
 						SettingManager.validateAll();
 						d.resolve();
 					} else {
+						j.s.data("state", "insert");
 						$("button.btn-add", j.s)
 							.html(Strings.SYNAPSE_SETTING_APPEND)
 							.css({
@@ -585,6 +587,7 @@ define(function (require, exports, module) {
 				.then(_open)
 				.then(deferred.resolve, deferred.reject);
 		} else {
+			
 			_open()
 				.then(deferred.resolve, deferred.reject);
 		}
@@ -738,8 +741,6 @@ define(function (require, exports, module) {
 			}
 		});
 
-		//SettingManager.reset();
-
 		if ($btn.hasClass("toggle-ftp")) {
 			$("#currentProtocol").val("ftp");
 			$("tr.sftp-row").hide();
@@ -790,12 +791,22 @@ define(function (require, exports, module) {
 			$("tr.passphrase-row").hide();
 			$("tr.key-row").hide();
 		}
-		$btn.addClass("active");
+		j.s.removeClass("hide");
+		j.tvc.css({
+			"border-top": "1px solid rgba(255, 255, 255, 0.05)"
+		});
+		j.tvc.animate({
+			"top": (j.s.outerHeight() + 10) + j.h.outerHeight() + "px",
+			"bottom": 0
+		}, 100).promise().then(function () {
+			$btn.addClass("active");
+			SettingManager.validateAll();
+		});
 	};
 
 	onEdit = function (e) {
-		var $btn = $(e.currentTarget);
-		SettingManager.edit($btn.html());
+		var state = j.s.data("state");
+		SettingManager.edit(state);
 	};
 
 	onClickConnectBtn = function (e) {
@@ -817,8 +828,7 @@ define(function (require, exports, module) {
 				return;
 			}
 
-			// this is deprecated function. showAlert instead to Log.
-			// TODO: プロジェクトはすでに開いています。
+			Log.q("Project is already opened");
 			FileTreeView.showAlert("Project is already opened.", "Please close current project before open other project.");
 			return;
 		}
@@ -864,7 +874,7 @@ define(function (require, exports, module) {
 							_removeServerSettingListRow(idx)
 								.then(_reloadServerSettingListWhenDelete)
 								.then(function () {
-									var list = SettingManager.getServerSettingCache();
+									var list = SettingManager.getServerSettingsCache();
 									if (list.length === 0) {
 										return _hideServerList();
 									} else {
@@ -903,7 +913,6 @@ define(function (require, exports, module) {
 	onProjectStateChanged = function (evt, obj) {
 		_projectState = obj.state;
 		_projectDir = obj.directory;
-		// TODO: stateによってログの切り替え　ONLINE OFFLINE
 	};
 
 	openFileSelect = function (e) {

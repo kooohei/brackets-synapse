@@ -4,6 +4,8 @@ define(function (require, exports, module) {
 	"use strict";
 	
 	var domain = null;
+	var errorFile = null;
 	
 	exports.domain = domain;
+	exports.errorFile = errorFile;
 });

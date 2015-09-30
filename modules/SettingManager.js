@@ -102,27 +102,26 @@ define(function (require, exports, module) {
 		if (setting !== false) {
 			_appendServerBtnState("disabled");
 			_connectTest(setting)
-			.then(function (err) {
-				deferred.reject(err);
+			.then(function () {
+				return $.Deferred().resolve().promise();
+			}, function (err) {
+				Log.q("Authentication Error. Please check the setting you input.", true, err);
+				return $.Deferred().reject().promise();
 			})
 			.then(function () {
 				_editServerSetting(state, setting)
 					.then(function () {
 						// TODO: サーバ設定が追加されました。
-						if (state === "UPDATE") {
-							Log.q("the server setting stored.", false);
+						if (state === "update") {
+							Log.q("Complete, update the server setting.", false);
 						} else {
 						// TODO: サーバ設定の編集が完了しました。
-							Log.q("Complete, update the server setting.", false);
+							Log.q("the server setting stored.", false);
 						}
 						Panel.showServerList();
 					}, deferred.reject);
 			}, function (err) {
-				if (state === "UPDATE") {
-					Log.q("Failed, update server setting to preference file.", true);
-				} else {
-					Log.q("Failed, append server setting to preference file.", true);
-				}
+				// Log is shown at the above depend funcs.
 				deferred.reject(err);
 			}).always(function () {
 				_appendServerBtnState("enabled");
@@ -367,7 +366,7 @@ define(function (require, exports, module) {
 			setting.name = setting.host + "@" + setting.user;
 		}
 		
-		if (state === "UPDATE") {
+		if (state === "update") {
 			setting.index = $("#synapse-server-setting").data("index");
 			temp = _.map(list, function (item, idx, ary) {
 				return (item.index === setting.index) ? setting : item;
@@ -391,19 +390,19 @@ define(function (require, exports, module) {
 	 * called by edit())
 	 */
 	_connectTest = function (server) {
-		console.log(server);
 		var deferred = new $.Deferred();
-		var remotePath = server.dir === "" ? "./" : server.dir;
 		var method = "";
 		if (server.protocol === "sftp") {
-			
+			method = "secureConnectTest";
+		} else {
+			method = "connectTest";
 		}
 		Panel.showSpinner();
-		Shared.domain.exec("Connect", server, remotePath)
-		.done(function (list) {
+		Shared.domain.exec(method, server)
+		.then(function (res) {
+			console.log({success: res});
 			deferred.resolve();
-		})
-		.fail(function (err) {
+		}, function (err) {
 			deferred.reject(err);
 		})
 		.always(function () {
