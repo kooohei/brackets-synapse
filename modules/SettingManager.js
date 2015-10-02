@@ -384,23 +384,23 @@ define(function (require, exports, module) {
 		
 		return deferred.promise();
 	};
-
+	
 
 	/**
 	 * called by edit())
 	 */
-	_connectTest = function (server) {
+	_connectTest = function (setting) {
 		var deferred = new $.Deferred();
 		var method = "";
-		if (server.protocol === "sftp") {
-			method = "secureConnectTest";
+		if (setting.protocol === "sftp") {
+			method = "sftpConnectTest";
 		} else {
 			method = "connectTest";
 		}
 		Panel.showSpinner();
-		Shared.domain.exec(method, server)
+		console.log(setting);
+		Shared.domain.exec(method, setting)
 		.then(function (res) {
-			console.log({success: res});
 			deferred.resolve();
 		}, function (err) {
 			deferred.reject(err);

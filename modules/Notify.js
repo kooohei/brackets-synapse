@@ -53,13 +53,6 @@ define(function (require, exports, module) {
 		return new $.Deferred().resolve().promise();
 	};
 	
-	_getBase = function (id, title, $content) {
-		var src = Mustache.render(_base, {id: id, title: title, content: $content}),
-				$base = $(src);
-		$("button.close", $base).on("click", close);
-		return $base;
-	};
-	
 	showDecryptPassword = function () {
 		var d = new $.Deferred(),
 				src = Mustache.render(_decryptPassword, {Strings: Strings}),
@@ -182,6 +175,13 @@ define(function (require, exports, module) {
 	
 	_reposition = function () {
 		$("#synapse-notify-container").css({"left": _getLeft, "top": "-" + $("#synapse-notify-container").outerHeight() + "px"});
+	};
+
+	_getBase = function (id, title, $content) {
+		var src = Mustache.render(_base, {id: id, title: title, content: $content}),
+				$base = $(src);
+		$("button.close", $base).on("click", close);
+		return $base;
 	};
 	
 	EventDispatcher.makeEventDispatcher(exports);

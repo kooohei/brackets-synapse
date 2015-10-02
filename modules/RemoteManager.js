@@ -98,26 +98,36 @@ define(function (require, exports, module) {
 	/**
 	 * called by [Panel.onClickConnectBtn]
 	 */
-	connect = function (serverSetting) {
+	connect = function (setting) {
 		var deferred =  new $.Deferred();
-		var _rootEntity = FileTreeView.loadTreeView(serverSetting);
+		var _rootEntity = FileTreeView.loadTreeView(setting);
 
 		var result = [];
 		Panel.showSpinner();
 		var remoteRoot = PathManager.getRemoteRoot();
-		Shared.domain.exec("Connect", serverSetting, remoteRoot)
+		
+		var method = "";
+		if (setting.protocol === "ftp") {
+			method = "connect";
+		} else {
+			method = "sftpConnect";
+		}
+		Shared.domain.exec(method, setting, remoteRoot)
 		.then(function (list) {
-			if (serverSetting.protocol === "sftp") {
+			if (setting.protocol === "sftp") {
 				list = _convObjectLikeFTP(list);
 			}
-			list = getListIgnoreExclude(serverSetting, list);
+			console.log(list);
+			list = getListIgnoreExclude(setting, list);
+			
+			
 			return FileTreeView.setEntities(list, _rootEntity);
 		}, function (err) { console.error(err); })
 		.then(function (list) {
-			return Project.open(serverSetting);
+			return Project.open(setting);
 		}, function (err) { console.error(err); })
 		.then(function () {
-			_currentServerSetting = serverSetting;
+			_currentServerSetting = setting;
 			State.mode = ONLINE;
 			deferred.resolve(result);
 		})
@@ -216,9 +226,8 @@ define(function (require, exports, module) {
 		var list = [];
 		_.forEach(ents, function (ent) {
 			var obj = {},
-			octMode = ent.attrs.mode.toString(8),
-			owner = "";
-
+			octMode = ent.attrs.mode.toString(8);
+			
 			function getTime(ts) {
 				var timestamp = ts;
 				var date = new Date(timestamp * 1000);
@@ -255,25 +264,13 @@ define(function (require, exports, module) {
 				return res;
 			}
 
-			var tmp = "";
-			if (octMode.charAt(0) === "1") {
-				tmp = octMode.substr(3);
-				obj.type = "-";
-			} else {
-				tmp = octMode.substr(2);
-				obj.type = "d";
-			}
-
-			if (ent.stat !== null) {
-				// is symlink files.
-				obj.type = ent.stat.mode.toString(8).charAt(0) === "1" ? "" : "d";
-			}
-
 			var rights = {};
-			rights.user = digitToString(tmp.charAt(0));
-			rights.group = digitToString(tmp.charAt(1));
-			rights.other = digitToString(tmp.charAt(2));
+			rights.other = digitToString(octMode.substr(-1, 1));
+			rights.group = digitToString(octMode.substr(-2, 1));
+			rights.user = digitToString(octMode.substr(-3, 1));
 
+			console.log(rights);
+			
 			obj.acl = false;
 			obj.owner = ent.attrs.uid;
 			obj.group = ent.attrs.gid;
@@ -282,6 +279,9 @@ define(function (require, exports, module) {
 			obj.size = ent.attrs.size;
 			obj.date = getTime(ent.attrs.mtime);
 			obj.sticky = false;
+			obj.type = ent.type;
+			obj.destType = ent.destType;
+			obj.target = ent.target;
 			list.push(obj);
 		});
 		return list;

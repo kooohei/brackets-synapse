@@ -51,17 +51,21 @@ define(function (require, exports, module) {
 		}
 		isRelative = (_path.charAt(0) !== "/");
 		if (_path === "./") {
-			remoteRoot = "./";
+			remoteRoot = [];
 		} else {
-			remoteRoot = _path.split('/').filter(function (item) {
-				return (item !== "") && (item !== ".") && (item !== "..");
-			});
+			var ary = _path.split('/');
+			remoteRoot = ary.filter(function (item) {
+										return (item !== "") && (item !== ".") && (item !== "..");
+									});
 		}
 	};
 
 	getRemoteRoot = function () {
-		var tmp = [].concat(remoteRoot);
-		return ((isRelative) ? "" : "/") + tmp.join("/");
+		if (remoteRoot.length === 0) {
+			return "./";
+		} else {
+			return ((isRelative) ? "" : "/") + remoteRoot.join("/");
+		}
 	};
 
 	completionRemotePath = function (pathAry) {

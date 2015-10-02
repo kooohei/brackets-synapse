@@ -5,24 +5,23 @@ define(function (require, exports, module) {
 	
 	
 	// HEADER >>
-	var NodeConnection = brackets.getModule("utils/NodeConnection");
-	var Menus = brackets.getModule("command/Menus");
-	var CommandManager = brackets.getModule("command/CommandManager");
-	var Commands = brackets.getModule("command/Commands");
-	var PreferencesManager = brackets.getModule("preferences/PreferencesManager");
-	var KeyBindingManager = brackets.getModule("command/KeyBindingManager");
-	var _ = brackets.getModule("thirdparty/lodash");
-	var ExtensionDiagnosis = require("modules/ExtensionDiagnosis");
-	var Log = require("modules/Log");
+	var NodeConnection 			= brackets.getModule("utils/NodeConnection"),
+			Menus 							= brackets.getModule("command/Menus"),
+			CommandManager 			= brackets.getModule("command/CommandManager"),
+			Commands 						= brackets.getModule("command/Commands"),
+			PreferencesManager 	= brackets.getModule("preferences/PreferencesManager"),
+			KeyBindingManager 	= brackets.getModule("command/KeyBindingManager"),
+			_ 									= brackets.getModule("thirdparty/lodash");
 	
-	var Panel = require("modules/Panel");
-	var FileTreeView = require("modules/FileTreeView");
-	var Strings = require("strings");
+	var ExtensionDiagnosis 	= require("modules/ExtensionDiagnosis"),
+			Log 								= require("modules/Log"),
+			Panel 							= require("modules/Panel"),
+			FileTreeView 				= require("modules/FileTreeView"),
+			Strings 						= require("strings");
 	
 	var treeViewContextMenu = null;
-	
-	var _nodeConnection = null;
-	
+	var _nodeConnection 		= null;
+
 	var showMainPanel,
 			initTreeViewContextMenu,
 			setRootMenu,
@@ -32,7 +31,7 @@ define(function (require, exports, module) {
 	
 	var _disableTreeViewContextMenuAllItem;
 	
-	var ContextMenuIds = {
+	var ContextMenuIds 				= {
 			TREEVIEW_CTX_MENU: "kohei-synapse-treeview-context-menu"
 	};
 	var ContextMenuCommandIds = {
@@ -42,7 +41,7 @@ define(function (require, exports, module) {
 			SYNAPSE_FILE_RENAME: "kohei.synapse.file_rename",
 			SYNAPSE_DELETE: "kohei.synapse.delete"
 	};
-	var MenuText = {
+	var MenuText 							= {
 			SYNAPSE_CTX_FILE_NEW: Strings.SYNAPSE_CTX_FILE_NEW,
 			SYNAPSE_CTX_DIRECTORY_NEW: Strings.SYNAPSE_CTX_DIRECTORY_NEW,
 			SYNAPSE_CTX_FILE_REFRESH: Strings.SYNAPSE_CTX_FILE_REFRESH,
@@ -58,14 +57,14 @@ define(function (require, exports, module) {
 			ContextMenuCommandIds.SYNAPSE_FILE_RENAME
 		];
 	var Open_TreeView_Context_Menu_On_File_State = [
-			ContextMenuCommandIds.SYNAPSE_FILE_RENAME,
-			ContextMenuCommandIds.SYNAPSE_DELETE
-		];
+				ContextMenuCommandIds.SYNAPSE_FILE_RENAME,
+				ContextMenuCommandIds.SYNAPSE_DELETE
+			];
 	var Open_TreeView_Context_Menu_On_Root_State = [
-			ContextMenuCommandIds.SYNAPSE_FILE_NEW,
-			ContextMenuCommandIds.SYNAPSE_DIRECTORY_NEW,
-			ContextMenuCommandIds.SYNAPSE_FILE_REFRESH
-		];
+				ContextMenuCommandIds.SYNAPSE_FILE_NEW,
+				ContextMenuCommandIds.SYNAPSE_DIRECTORY_NEW,
+				ContextMenuCommandIds.SYNAPSE_FILE_REFRESH
+			];
 	// <<
 	
 	showMainPanel = function() {
@@ -145,23 +144,34 @@ define(function (require, exports, module) {
 	};
 	
 	initTreeViewContextMenu = function () {
-		CommandManager.register(MenuText.SYNAPSE_CTX_FILE_REFRESH, ContextMenuCommandIds.SYNAPSE_FILE_REFRESH, FileTreeView.refresh);
-		CommandManager.register(MenuText.SYNAPSE_CTX_FILE_RENAME, ContextMenuCommandIds.SYNAPSE_FILE_RENAME, FileTreeView.rename);
-		CommandManager.register(MenuText.SYNAPSE_CTX_FILE_NEW, ContextMenuCommandIds.SYNAPSE_FILE_NEW, FileTreeView.newFile);
-		CommandManager.register(MenuText.SYNAPSE_CTX_DIRECTORY_NEW, ContextMenuCommandIds.SYNAPSE_DIRECTORY_NEW, FileTreeView.newDirectory);
-		CommandManager.register(MenuText.SYNAPSE_CTX_DELETE, ContextMenuCommandIds.SYNAPSE_DELETE, FileTreeView.removeFile);
+		CommandManager
+			.register(MenuText.SYNAPSE_CTX_FILE_REFRESH, 	ContextMenuCommandIds.SYNAPSE_FILE_REFRESH, 	FileTreeView.refresh);
+		CommandManager
+			.register(MenuText.SYNAPSE_CTX_FILE_RENAME, 	ContextMenuCommandIds.SYNAPSE_FILE_RENAME, 		FileTreeView.rename);
+		CommandManager
+			.register(MenuText.SYNAPSE_CTX_FILE_NEW, 			ContextMenuCommandIds.SYNAPSE_FILE_NEW, 			FileTreeView.newFile);
+		CommandManager
+			.register(MenuText.SYNAPSE_CTX_DIRECTORY_NEW, ContextMenuCommandIds.SYNAPSE_DIRECTORY_NEW, 	FileTreeView.newDirectory);
+		CommandManager
+			.register(MenuText.SYNAPSE_CTX_DELETE, 				ContextMenuCommandIds.SYNAPSE_DELETE, 				FileTreeView.removeFile);
 
 		treeViewContextMenu = Menus.registerContextMenu(ContextMenuIds.TREEVIEW_CTX_MENU);
 		
-		treeViewContextMenu.addMenuItem(ContextMenuCommandIds.SYNAPSE_FILE_REFRESH);
-		treeViewContextMenu.addMenuItem(ContextMenuCommandIds.SYNAPSE_FILE_RENAME, null, Menus.LAST, null);
-		treeViewContextMenu.addMenuDivider();
-		treeViewContextMenu.addMenuItem(ContextMenuCommandIds.SYNAPSE_FILE_NEW, null, Menus.LAST, null);
-		treeViewContextMenu.addMenuItem(ContextMenuCommandIds.SYNAPSE_DIRECTORY_NEW, null, Menus.LAST, null);
-		treeViewContextMenu.addMenuDivider();
-		treeViewContextMenu.addMenuItem(ContextMenuCommandIds.SYNAPSE_DELETE, null, Menus.LAST, null);
+		treeViewContextMenu
+			.addMenuItem(ContextMenuCommandIds.SYNAPSE_FILE_REFRESH);
+		treeViewContextMenu
+			.addMenuItem(ContextMenuCommandIds.SYNAPSE_FILE_RENAME, null, Menus.LAST, null);
+		treeViewContextMenu
+			.addMenuDivider();
+		treeViewContextMenu
+			.addMenuItem(ContextMenuCommandIds.SYNAPSE_FILE_NEW, null, Menus.LAST, null);
+		treeViewContextMenu
+			.addMenuItem(ContextMenuCommandIds.SYNAPSE_DIRECTORY_NEW, null, Menus.LAST, null);
+		treeViewContextMenu
+			.addMenuDivider();
+		treeViewContextMenu
+			.addMenuItem(ContextMenuCommandIds.SYNAPSE_DELETE, null, Menus.LAST, null);
 		
-		//Menus.ContextMenu.assignContextMenuToSelector("(button etc)" menu);
 		$("#synapse-treeview-container").contextmenu(function (e) {
 			FileTreeView.onTreeViewContextMenu(e, treeViewContextMenu);
 		});
@@ -175,17 +185,18 @@ define(function (require, exports, module) {
 			CommandManager.get(val).setEnabled(false);
 		});
 	};
+	
 	/* for Debug */
 	_nodeConnection = new NodeConnection();
 	_nodeConnection.connect(true);
 	
-	exports.showMainPanel = showMainPanel;
-	exports.setRootMenu = setRootMenu;
-	exports.initTreeViewContextMenu = initTreeViewContextMenu;
-	exports.ContextMenuCommandIds = ContextMenuCommandIds;
-	exports.ContextMenuIds = ContextMenuIds;
-	exports.treeViewContextMenuState = treeViewContextMenuState;
-	exports.getModuleName = function () {
+	exports.showMainPanel 						= showMainPanel;
+	exports.setRootMenu 							= setRootMenu;
+	exports.initTreeViewContextMenu 	= initTreeViewContextMenu;
+	exports.ContextMenuCommandIds 		= ContextMenuCommandIds;
+	exports.ContextMenuIds 						= ContextMenuIds;
+	exports.treeViewContextMenuState 	= treeViewContextMenuState;
+	exports.getModuleName 						= function () {
 		return module.id;
 	};
 

@@ -1,159 +1,300 @@
-/*jslint node: true, vars: true, plusplus: true, white: true, devel: true, nomen: true, regexp: true, indent: 2, maxerr: 50 */
-/*global define, brackets: true, $, window, navigator, Mustache, jQuery, console, moment */
+/*jslint node:true, vars:true, plusplus:true, devel:true, nomen:true, regexp:true, white:true, indent:2, maxerr:50 */
+/*global define, $, brackets, Mustache, window, console */
 (function () {
 	"use strict";
-
-	/**
-	 * MODULE CODE: 2 for ERROR CODE.
-	 */
-	
 	
 	// HEADER >>
-	var _domainManager = null,
-			homedir = require("homedir"),
-			Client = require("ftp"),
-			SSH = require("ssh2").Client,
-			Q = require("q"),
-			fs = require("fs");
+	var FTP = require("ftp");
+	var SFTP = require("ssh2").Client;
+	var fs = require("fs");
+	var path = require("path");
+	var Q = require("q");
+	var _domainManager = null;
 	
-	var client = null,
-			homeDir,
-			init,
-			test,
-			
-			connect,
-			secureConnect,
-			connectTest,
-			secureConnectTest,
-			
-			getList,
-			rename,
-			
-			upload,
-			mkdir,
+	var init;
+	
+	var	resolveSetting,
+			ftpClose,
+			ftpResolveEntity,
+			sftpResolveEntity;
+	
+	var connectTest,
+			sftpConnectTest;
+	
+	var	connect,
+			sftpConnect;
+	
+	var getList,
+			sftpGetList;
+	
+	var rename,
+			sftpRename,
 			removeDirectory,
-			deleteFile,
-			download,
-			_logout,
-			
-			_getSftpOption,
-			_sftpReadDir,
-			_sftpCheckSymLink,
-			_sftpCheckSymLinks,
-			_sftpStat,
-
-			_ftpReadDir,
-			_ftpCheckSymLink,
-			_ftpCheckSymLinks;
+			sftpRemoveDirectory,
+			removeFile,
+			sftpRemoveFile;
 	
+	var createDirectory,
+			sftpCreateDirectory;
+	
+	var upload,
+			sftpUpload,
+			download,
+			sftpDownload;
 	var ENV = {
 		//milseconds.
-		ConnectionTimeout: 5000
+		ConnectionTimeout: 5000,
+		CommandTimeout: 5000
 	};
-	//<<
+	// <<
 	
-	// priority : passowrd -> private key -> hostbased -> none.
-	var The_parameter_of_the_connect_function_of_SSH_this_is_just_for_the_example_not_use = {
-		// string
-		host: "localhost",
-		// integer
-		port: 22, 
-		// boolean
-		forceIPv4: false,
-		// boolean
-		forceIPv6: false,
+	
+	resolveSetting = function (setting) {
+		if (setting.protocol === "ftp") {
+			setting.conTimeout = ENV.ConnectionTimeout;
+			setting.pasvTimeout = ENV.CommandTimeout;
+		}
 		
-		/* *
-		 * [for Host Base Authentication]
-		 * hostHash,
-		 * hostVerifier, 
-		 * * Synapse is not support host verification.
-		 */
-		
-		// string
-		username: "",
-		// string
-		password: "",
-		
-		/* *
-		 * [for SSH Agent based user authentication]
-		 * agent
-		 * * Synapse is not support SSH Agent based user auth.
-		 */
-		
-		// mixed "buffer" of "string", OpenSSH formated.
-		privateKey: null,
-		// string for decrypt to privateKey
-		passphrase: "",
-		
-		/* *
-		 * [for Hostbased user authentication]
-		 * localHostname 
-		 * localusername
-		 */
-		
-		/**
-		 * tryKeyboard if we use intaractive authentication. but Synapse is not support
-		 */
-		
-		// integer
-		keepAliveInterval: 0,
-		// integer
-		keepAliveCountMax: 3,
-		// integer (millseconds) default: 20sec -> 8sec
-		readyTimeout: 8000
+		if (setting.protocol === "sftp") {
+			setting.username = setting.user;
+			setting.readyTimeout = ENV.ConnectionTimeou;
+			
+			if (setting.auth === "key") {
+				setting.privateKey = fs.readFileSync(setting.privateKeyPath);
+			}
+		}
+		return setting;
 	};
- 	
+	
 	
 	/**
-	 * Connection test when the append of edit server setting.
+	 * Utility functions.
+	 * 
+	 * octet (100: file) (40: directory) (120: link)
 	 */
-	// FTP
-	connectTest = function (setting, cb) {
+	ftpResolveEntity = function (list, remotePath, setting) {
+		var links = [],
+				result = [],
+				promises = [],
+				masterQ = Q.defer(),
+				setType = null;
+		if (list.length === 0) {
+			masterQ.resolve();
+			return masterQ.promise;
+		}
+		
+		/*
+		setType = function (entity, setting) {
+			var q = Q.defer(),
+					parentPath = path.dirname(entity.target),
+					destName = path.basename(entity.target);
+			
+			getList(setting, parentPath, function (err, ents) {
+				if (err) {
+					console.error(err);
+					q.reject(err);
+				} else {
+					if (typeof (ents) === "undefined") {
+						entity.destType = "out of priority";
+						q.resolve(entity);
+					} else {
+						ents.forEach(function (ent) {
+							if (err) {
+								q.reject(err);
+							} else {
+								if (ent.name === destName) {
+									entity.destName = ent.type;
+									q.resolve(entity);
+								}
+							}
+						});
+					}
+				}
+			});
 
-		setting.connTimeout = ENV.ConnectionTimeout;
+			
+			return q.promise;
+		};
 		
-		var con = new Client();
+		list.forEach(function (entity) {
+			if (entity.type === "l") {
+				links.push(entity);
+			} else {
+				result.push(entity);
+			}
+		});
+		
+		if (links.length === 0) {
+			masterQ.resolve(result);
+		} else {
+			var i = 0;
+			for (; i < links.length; i++) {
+				var promise = setType(links[i], setting);
+				promise.timeout(5000);
+				promises.push(promise);
+			}
+			Q.all(promises)
+			.then(function (values) {
+				values.forEach(function (val) {
+					result.push(val);
+					masterQ.resolve(result);
+				});
+			}, function (err) {
+				masterQ.reject(err);
+			});
+		}
+		*/
+		masterQ.resolve(result);
+		return masterQ.promise;
+	};
+	sftpResolveEntity = function (list, remotePath, sftp) {
+		if (list.length === 0) {
+			var q = Q.defer();
+			return q.resolve().promise;
+		}
+		var setType = function (entity) {
+			var mode = parseInt(entity.attrs.mode);
+			var octal = mode.toString(8);
+			if (octal.match(/^120[0-9]+?/)) {
+				entity.type = "l";
+			} else 
+			if (octal.match(/^100[0-9]+?/)) {
+				entity.type = "-";
+			} else 
+			if (octal.match(/^40[0-9]?/)) {
+				entity.type = "d";
+			} else {
+				entity.type = "unknonw";
+			}
+			return entity;
+		};
+		var getRealPath = function (symlinkPath) {
+			var q = Q.defer();
+			sftp.realpath(symlinkPath, function (err, realPath) {
+				if (err) {
+					q.reject(err);
+				} else {
+					q.resolve(realPath);
+				}
+			});
+			return q.promise;
+		};
+		var getDestType = function (entity) {
+			var q = Q.defer();
+			sftp.stat(entity.target, function (err, stat) {
+				if (err) {
+					q.reject(err);
+				} else {
+					var octal = stat.mode.toString(8);
+					if (octal.match(/^40[0-9]+?/)) {
+						entity.destType = "d";
+					} else
+					if (octal.match(/^100[0-9]+?/)) {
+						entity.destType = "-";
+					} else {
+						q.reject(new Error("File mode unknown."));
+					}
+					q.resolve(entity);
+				}
+			});
+			return q.promise;
+		};
+		var links = [],
+				result = [],
+				promises = [],
+				masterQ = Q.defer();
+		
+		list.forEach(function (entity) {
+			entity = setType(entity);
+			if (entity.type === "l") {
+				links.push(entity);
+			} else {
+				result.push(entity);
+			}
+		});
+		if (links.length === 0) {
+			masterQ.resolve(result);
+		} else {
+			links.forEach(function (entity) {
+				var destPath = path.join(remotePath, entity.filename);
+				var promise = (function () {
+					var q = Q.defer();
+					getRealPath(destPath)
+					.then(function (realPath) {
+						entity.target = realPath;
+						return getDestType(entity);
+					})
+					.then(function () {
+						q.resolve(entity);
+					})
+					.fail(function (err) {
+						q.reject(err);
+					});
+					return q.promise;
+				}(entity));
+				promises.push(promise);
+			});
+			Q.all(promises)
+			.then(function (values) {
+				values.forEach(function (val) {
+					result.push(val);
+					masterQ.resolve(result);
+				});
+			}, function (err) {
+				masterQ.reject(err);
+			});
+		}
+		return masterQ.promise;
+	};
+	ftpClose = function (con) {
+		con.once("close", function () {});
+		con.once("end", function () {});
+		
+		con.logout(function (err, res) {
+			if (err) {
+				console.error(err);
+			} else {
+				con = null;
+			}
+		});
+	};
+	
+	/**
+	 * Auth Connect
+	 */
+	connectTest = function (setting, cb) {
+		setting = resolveSetting(setting);
 		var remotePath = setting.dir === "" ? "./" : setting.dir;
-		
+		var con = new FTP();
 		con.once("error", function (err) {
+			console.error(err);
 			cb(err);
+			ftpClose(con);
 		});
 		con.once("ready", function () {
 			con.list(remotePath, function (err, list) {
 				if (err) {
 					cb(err);
-					_logout(con);
+					ftpClose(con);
 				} else {
 					cb(null, true);
-					_logout(con);
+					ftpClose(con);
 				}
 			});
-		});
-		con.connect(setting);
+		}).connect(setting);
 	};
-	// SSH
-	secureConnectTest = function (setting, cb) {
-		var param = {
-			host: setting.host,
-			port: setting.port,
-			username: setting.user,
-			readyTimeout: ENV.ConnectionTimeout
-		};
-		if (setting.auth === "key") {
-			param.privateKey = fs.readFileSync(setting.privateKeyPath);
-			param.passphrase = setting.passphrase;
-		} else {
-			param.password = setting.password;
-		}
-		var con = new SSH();
+	sftpConnectTest = function (setting, cb) {
+		
+		setting = resolveSetting(setting);
+		
+		var con = new SFTP();
 		con.on("error", function (err) {
 			cb(err);
 			con.end();
 		});
 		con.on("ready", function () {
 			con.sftp(function (err, sftp) {
-				if(err) {
+				if (err) {
 					cb(err);
 					con.end();
 				} else {
@@ -161,63 +302,72 @@
 					con.end();
 				}
 			});
-		}).connect(param);
+		}).connect(setting);
 	};
 	
-	
-	
-	/**
-	 * called by [RemoteManager.connect, SettingManager.connectTest]
-	 * METHOD CODE: 1 for ERROR CODE.
-	 */
-	connect = function (server, remoteRoot, cb) {
-		/* FTP */
-		client = new Client();
-		client.once("error", cb);
-		client.once("ready", function () {
-			_ftpReadDir(client, remoteRoot)
-			.then(function (list) {
-				cb(null, list);
-			}, cb)
-			.finally(function () {
-				_logout(client);
+	connect = function (setting, remotePath, cb) {
+		setting = resolveSetting(setting);
+		
+		var con = new FTP();
+		con.once("error", function (err) {
+			cb(err);
+			ftpClose(con);
+		});
+		
+		con.once("ready", function () {
+			con.list(remotePath, function (err, items) {
+				if (err) {
+					console.error(err);
+					cb(err);
+					ftpClose(con);
+				} else {
+					ftpResolveEntity(items, remotePath, setting)
+					.then(function (result) {
+						cb(null, result);
+					}, function (err) {
+						console.error(err);
+						cb(err);
+					})
+					.finally(function () {
+						ftpClose(con);
+					});
+				}
 			});
 		});
-		client.connect(server);
+		con.connect(setting);
 	};
-	secureConnect = function (server, remoteRoot, cb) {
-		var setting = _getSftpOption(server);
-		client = new SSH();
-		client.on("error", function (err) {
-			var param = {
-				method: "SynapseDomain.connect:SFTP",
-				message: "",
-				code: "2-1"
-			};
-			if (typeof (err) === "object") {
-				param.message = JSON.stringify(err);
-			} else {
-				param.message = err;
-			}
-			console.error(err);
+	sftpConnect = function (setting, remotePath, cb) {
+		setting = resolveSetting(setting);
+		
+		var con = new SFTP();
+		con.on("error", function (err) {
+			cb(err);
+			con.end();
 		});
-		client.on("ready", function () {
-			client.sftp(function (err, sftp) {
+		if (setting.auth === "key") {
+			setting.privateKey = fs.readFileSync(setting.privateKeyPath);
+		}
+		con.on("ready", function () {
+			con.sftp(function (err, sftp) {
 				if (err) {
 					cb(err);
-					client.end();
+					con.end();
 				} else {
-					remoteRoot = remoteRoot === "" ? "./" : remoteRoot;
-					_sftpReadDir(sftp, remoteRoot)
-					.then(function (list) {
-						return _sftpCheckSymLinks(sftp, remoteRoot, list);
-					})
-					.then(function (files) {
-						cb(null, files);
-						client.end();
-					}, function (err) {
-						cb(err);
-						client.end();
+					sftp.readdir(remotePath, function (err, list) {
+						if (err) {
+							cb(err);
+							con.end();
+						} else {
+							sftpResolveEntity(list, remotePath, sftp)
+							.then(function (result) {
+								cb(null, result);
+							}, function (err) {
+								cb(err);
+							})
+							.finally(function () {
+								con.end();
+							});
+						}
 					});
 				}
 			});
@@ -225,452 +375,397 @@
 	};
 	
 	/**
-	 * called by just self.
+	 * Get files list.
 	 */
-	_logout = function (client) {
-		client.once("close", function () {});
-		client.once("end", function () {});
-
-		client.logout(function (err, res) {
+	getList = function (setting, remotePath, cb) {
+		setting = resolveSetting(setting);
+		var con = new FTP();
+		con.once("error", function (err) {
 			if (err) {
-				console.error(err);
-			} else {
-				client = null;
+				cb(err);
 			}
+			ftpClose(con);
 		});
-	};
-	
-	/**
-	 * called by [RemoteManager.uploadFile]
-	 */
-	upload = function (server, localPath, remotePath, cb) {
-		if (server.protocol === "ftp") {
-			client = new Client();
-			client.once("error", function (err) {
+		con.once("ready", function () {
+			con.list(remotePath, function (err, list) {
 				if (err) {
 					cb(err);
-				}
-				_logout(client);
-			});
-
-			client.once("ready", function () {
-				client.put(localPath, remotePath, function (err) {
-					_logout(client);
-					if (err) {
-						cb(err);
-					} else {
-						cb(null, true);
-					}
-
-				});
-			});
-			client.connect(server);
-		} else
-		if (server.protocol === "sftp") {
-			var setting = _getSftpOption(server);
-			client = new SSH();
-			client.on("ready", function () {
-				client.sftp(function (err, sftp) {
-					if (err) {
-						console.error(err);
-						cb(err);
-					} else {
-						sftp.fastPut(localPath, remotePath, function (err) {
-							if (err) {
-								console.error(err);
-								cb(err);
-							} else {
-								cb(null, true);
-							}
-							client.end();
-						});
-					}
-				});
-			}).connect(setting);
-		}
-	};
-	
-	/**
-	 * called by [RemoteManager.getList]
-	 */
-	getList = function (server, path, cb) {
-
-		if (server.protocol === "ftp") {
-			client = new Client();
-			client.once("error", function (err) {
-				if (err) {
-					cb(err);
-				}
-				_logout(client);
-			});
-
-			client.once("ready", function () {
-				client.list(path, function (err, list) {
-					_logout(client);
-					if (err) {
-						cb(err);
-					} else {
-						cb(null, list);
-					}
-				});
-			});
-			client.connect(server);
-		} else if (server.protocol === "sftp") {
-			client = new SSH();
-			client.on("ready", function () {
-				client.sftp(function(err, sftp) {
-					if (err) {
-						cb(err);
-					} else {
-						path = path === "" ? "./" : path;
-						_sftpReadDir(sftp, path)
-						.then(function (list) {
-							return _sftpCheckSymLinks(sftp, path, list);
-						})
-						.then(function (files) {
-							cb(null, files);
-							client.end();
-						}, function (err) {
-							cb(err);
-							client.end();
-						});
-					}
-				});
-			}).connect(_getSftpOption(server));
-		}
-	};
-	
-	/**
-	 * called by [RemoteManager.rename]
-	 */
-	rename = function (server, oldPath, newPath, cb) {
-		if (server.protocol === "ftp") {
-			client = new Client();
-			client.once("error", function (err) {
-				if (err) {
-					cb(err);
-				}
-				_logout(client);
-			});
-
-			client.once("ready", function () {
-				client.rename(oldPath, newPath, function (err) {
-					_logout(client);
-					if (err) {
-						cb(err);
-					} else {
-						cb(null, true);
-					}
-					client.end();
-				});
-			});
-			client.connect(server);
-		} else
-		if (server.protocol === "sftp") {
-			var setting = _getSftpOption(server);
-			client = new SSH();
-			client.on("ready", function () {
-				client.sftp(function (err, sftp) {
-					if (err) {
-						cb(err);
-						console.error(err);
-					} else {
-						sftp.rename(oldPath, newPath, function (err) {
-							if (err) {
-								cb(err);
-							} else {
-								cb(null, true);
-							}
-						});
-					}
-				});
-			}).connect(setting);
-		}
-	};
-	
-	/**
-	 * called by [RemoteManager.mkdir]
-	 */
-	mkdir = function (server, path, cb) {
-
-		if (server.protocol === "ftp") {
-
-			client = new Client();
-			client.once("error", function (err) {
-				if (err) {
-					_logout(client);
-					cb(err);
-				}
-			});
-			client.once("ready", function () {
-				client.mkdir(path, false, function (err) {
-					_logout(client);
-					if (err) {
-						cb(err);
-					} else {
-						cb(null, true);
-					}
-				});
-			});
-			client.connect(server);
-		} else
-		if (server.protocol === "sftp") {
-			var setting = _getSftpOption(server);
-			client = new SSH();
-			client.on("ready", function () {
-				client.sftp(function (err, sftp) {
-					if (err) {
-						cb(err);
-					} else {
-						sftp.mkdir(path, function (err) {
-							if (err) {
-								cb(err);
-							} else {
-								cb(null, true);
-							}
-							client.end();
-						});
-					}
-				});
-			}).connect(setting);
-		}
-	};
-	
-	/**
-	 * called by [RemoteManager.removeDirectory]
-	 */
-	removeDirectory = function (serverSetting, remotePath, cb) {
-
-		if (serverSetting.protocol === "ftp") {
-			client = new Client();
-			client.once("error", function (err) {
-				if (err) {
-					_logout(client);
-					cb(err);
-				}
-			});
-			client.once("ready", function () {
-				client.rmdir(remotePath, true, function (err) {
-					_logout(client);
-					if (err) {
-						cb(err);
-					} else {
-						cb(null, true);
-					}
-				});
-			});
-			client.connect(serverSetting);
-		}
-
-		if (serverSetting.protocol === "sftp") {
-			var setting = _getSftpOption(serverSetting);
-			client = new SSH();
-			client.on("ready", function () {
-				client.sftp(function (err, sftp) {
-					if (err) {
-						cb(err);
-					} else {
-						sftp.rmdir(remotePath, function (err) {
-							if (err) {
-								cb(err);
-							} else {
-								cb(null, true);
-							}
-							client.end();
-						});
-					}
-				});
-			}).connect(setting);
-		}
-	};
-	
-	/**
-	 * called by [RemoteManager.deleteFile]
-	 */
-	deleteFile = function (serverSetting, remotePath, cb) {
-		if (serverSetting.protocol === "ftp") {
-			client = new Client();
-			client.once("error", function (err) {
-				_logout(client);
-				if (err) {
-					cb(err);
-				}
-			});
-			client.once("ready", function () {
-				client.delete(remotePath, function (err) {
-					_logout(client);
-					if (err) {
-						cb(err);
-					} else {
-						cb(null, true);
-					}
-				});
-			});
-			client.connect(serverSetting);
-		} else
-		if (serverSetting.protocol === "sftp") {
-			var setting = _getSftpOption(serverSetting);
-			client = new SSH();
-			client.on("ready", function () {
-				client.sftp(function (err, sftp) {
-					if (err) {
-						cb(err);
-					} else {
-
-						sftp.unlink(remotePath, function (err) {
-							if (err) {
-								cb(err);
-							} else {
-								cb(null, true);
-							}
-							client.end();
-						});
-					}
-				});
-			}).connect(setting);
-		}
-	};
-	
-	/**
-	 * called by [RemoteManager.download]
-	 */
-	download = function (serverSetting, localPath, remotePath, cb) {
-
-		if (serverSetting.protocol === "ftp") {
-			client = new Client();
-			client.once("error", function (err) {
-				if (err) {
-					_logout(client);
-					cb(err);
-				}
-			});
-			client.once("ready", function () {
-				client.get(remotePath, function (err, stream) {
-					if (err) {
-						cb(err);
-						_logout(client);
-					} else {
-						stream.pipe(fs.createWriteStream(localPath));
-						stream.once("close", function () {
-							client.end();
-							_logout(client);
-							cb(null, true);
-						});
-					}
-				});
-			});
-			client.connect(serverSetting);
-
-		} else if (serverSetting.protocol === "sftp") {
-			var setting = _getSftpOption(serverSetting);
-			client = new SSH();
-			client.on("ready", function () {
-				client.sftp(function (err, sftp) {
-					if (err) {
-						cb(err);
-					} else {
-						sftp.fastGet(remotePath, localPath, function (err, nb, data) {
-							if (err) {
-								cb(err);
-							} else {
-								cb(null, true);
-							}
-							client.end();
-						});
-					}
-				});
-			}).connect(setting);
-		}
-	};
-	
-	/**
-	 * called by [Panel.openFileSelect]
-	 */
-	homeDir = function () {
-		return homedir();
-	};
-	
-	
-	_getSftpOption = function (setting) {
-		var settingObj = {
-					host: setting.host,
-					port: parseInt(setting.port),
-					username: setting.user
-				};
-
-		if (setting.auth === "key") {
-			settingObj.privateKey = fs.readFileSync(setting.privateKeyPath);
-			settingObj.passphrase = setting.passphrase;
-		} else
-		if (setting.auth === "password") {
-			settingObj.password = setting.password;
-		}
-		return settingObj;
-	};
-	
-	_sftpReadDir = function (sftp, remoteRoot) {
-		var q = Q.defer();
-		sftp.readdir(remoteRoot, function (err, list) {
-			if (err) {
-				q.reject(err);
-			} else {
-				q.resolve(list);
-			}
-		});
-		return q.promise;
-	};
-	
-	_sftpCheckSymLink = function (sftp, row, basePath) {
-		var q = Q.defer();
-		if (row.longname.charAt(0) === "l") {
-			var filePath = basePath === "./" ? basePath + row.filename : basePath + "/" + row.filename;
-			sftp.stat(filePath, function (err, stat) {
-				if (err) {
-					q.reject(err);
+					ftpClose(con);
 				} else {
-					row.stat = stat;
-					q.resolve(row);
+					ftpResolveEntity(list, remotePath, con)
+					.then(function (result) {
+						cb(null, result);
+					}, function (err) {
+						cb(err);
+					})
+					.finally(function () {
+						ftpClose(con);
+					});
 				}
 			});
-		} else {
-			row.stat = null;
-			q.resolve(row);
+		});
+		con.connect(setting);
+	};
+	sftpGetList = function (setting, remotePath, cb) {
+		setting = resolveSetting(setting);
+		var con = new SFTP();
+		con.on("error", function (err) {
+			cb(err);
+			con.end();
+		});
+		if (setting.auth === "key") {
+			setting.privateKey = fs.readFileSync(setting.privateKeyPath);
 		}
-		return q.promise;
+		con.on("ready", function () {
+			con.sftp(function (err, sftp) {
+				if (err) {
+					cb(err);
+					con.end();
+				} else {
+					sftp.readdir(remotePath, function (err, list) {
+						if (err) {
+							cb(err);
+							con.end();
+						} else {
+							sftpResolveEntity(list, remotePath, sftp)
+							.then(function (result) {
+								cb(null, result);
+							}, function (err) {
+								cb(err);
+							})
+							.finally(function () {
+								con.end();
+							});
+						}
+					});
+				}
+			});
+		}).connect(setting);
 	};
 	
-	_sftpCheckSymLinks = function (sftp, basePath, list) {
-		var q = Q.defer();
-		var files = [];
-		var promises = [];
-		list.forEach(function (row) {
-			var promise = _sftpCheckSymLink(sftp, row, basePath);
-			promises.push(promise);
-
-		});
-		Q.all(promises)
-		.then(function (values) {
-			q.resolve(values);
-		}, q.reject);
-
-		return q.promise;
-	};
-	
-	_ftpReadDir = function (client, path) {
-		var q = Q.defer();
-		client.list(path, function (err, list) {
+	/**
+	 * Mod files.
+	 */
+	rename = function (setting, oldPath, newPath, cb) {
+		setting = resolveSetting(setting);
+		var con = new FTP();
+		con.once("error", function (err) {
 			if (err) {
-				q.reject(err);
-			} else {
-				q.resolve(list);
+				cb(err);
 			}
+			ftpClose(con);
 		});
-		return q.promise;
+		con.once("ready", function () {
+			con.rename(oldPath, newPath, function (err) {
+				if (err) {
+					cb(err);
+					ftpClose(con);
+				} else {
+					cb(null, true);	
+					ftpClose(con);
+				}
+			});
+		});
+		con.connect(setting);
+	};
+	sftpRename = function (setting, oldPath, newPath, cb) {
+		setting = resolveSetting(setting);
+		var con = new SFTP();
+		con.on("error", function (err) {
+			cb(err);
+			con.end();
+		});
+		if (setting.auth === "key") {
+			setting.privateKey = fs.readFileSync(setting.privateKeyPath);
+		}
+		con.on("ready", function () {
+			con.sftp(function (err, sftp) {
+				if (err) {
+					cb(err);
+					con.end();
+				} else {
+					sftp.rename(oldPath, newPath, function (err) {
+						if (err) {
+							cb(err);
+						} else {
+							cb(null, true);
+						}
+						con.end();
+					});
+				}
+			});
+		}).connect(setting);
 	};
 	
+	removeDirectory = function (setting, remotePath, cb) {
+		setting = resolveSetting(setting);
+		var con = new FTP();
+		con.on("error", function (err) {
+			if (err) {
+				cb(err);
+			}
+			ftpClose(con);
+		});
+		con.on("ready", function () {
+			con.rmdir(remotePath, true, function (err) {
+				if (err) {
+					cb(err);
+				} else {
+					cb(null, true);
+				}
+				ftpClose(con);
+			});
+		});
+		con.connect(setting);
+	};
+	sftpRemoveDirectory = function (setting, remotePath, cb) {
+		setting = resolveSetting(setting);
+		var con = new SFTP();
+		con.on("error", function (err) {
+			cb(err);
+			con.end();
+		});
+		if (setting.auth === "key") {
+			setting.privateKey = fs.readFileSync(setting.privateKeyPath);
+		}
+		con.on("ready", function () {
+			con.sftp(function (err, sftp) {
+				if (err) {
+					cb(err);
+					cb.end();
+				} else {
+					con.rmdir(remotePath, true, function (err) {
+						if (err) {
+							cb(err);
+						} else {
+							cb(null, true);
+						}
+						con.end();
+					});
+				}
+			});
+		}).connect(setting);
+	};
+	removeFile = function (setting, remotePath, cb) {
+		setting = resolveSetting(setting);
+		var con = new FTP();
+		con.on("error", function (err) {
+			if (err) {
+				cb(err);
+			} else {
+				cb({});
+			}
+			ftpClose(con);
+		});
+		con.on("ready", function () {
+			con.delete(remotePath, function (err) {
+				if (err) {
+					cb(err);
+				} else {
+					cb(null, true);
+				}
+				ftpClose(con);
+			});
+		});
+		con.connect(setting);
+	};
+	sftpRemoveFile = function (setting, remotePath, cb) {
+		setting = resolveSetting(setting);
+		var con = new SFTP();
+		con.on("error", function (err) {
+			cb(err);
+			cb.end();
+		});
+		if (setting.auth === "key") {
+			setting.privateKey = fs.readFileSync(setting.privateKeyPath);
+		}
+		con.on("ready", function () {
+			con.sftp(function (err, sftp) {
+				if (err) {
+					cb(err);
+					cb.end();
+				} else {
+					sftp.unlink(remotePath, function (err) {
+						if (err) {
+							cb(err);
+						} else {
+							cb(null, true);
+						}
+						con.end();
+					});
+				}
+			});
+		}).connect(setting);
+	};
 	
+	/**
+	 * Create Entity.
+	 */
+	createDirectory = function (setting, path, cb) {
+		setting = resolveSetting(setting);
+		var con = new FTP();
+		con.once("error", function (err) {
+			if (err) {
+				cb(err);
+			}
+			ftpClose(con);
+		});
+		con.on("ready", function () {
+			con.mkdir(path, false, function (err) {
+				if (err) {
+					cb(err);
+					ftpClose(con);
+				} else {
+					cb(null, true);
+					ftpClose(con);
+				}
+			});
+		});
+		con.connect(setting);
+	};
+	sftpCreateDirectory = function (setting, path, cb) {
+		setting = resolveSetting(setting);
+		var con = new SFTP();
+		con.once("error", function (err) {
+			if (err) {
+				cb(err);
+			}
+			con.end();
+		});
+		if (setting.auth === "key") {
+			setting.privateKey = fs.readFileSync(setting.privateKeyPath);
+		}
+		con.once("ready", function () {
+			con.sftp(function (err, sftp) {
+				if (err) {
+					cb(err);
+				} else {
+					sftp.mkdir(path, function (err) {
+						if (err) {
+							cb(err);
+						} else {
+							cb(null, true);
+						}
+						con.end();
+					});
+				}
+			});
+		}).connect(setting);
+	};
+	/**
+	 * Transfer
+	 */
+	upload = function (setting, localPath, remotePath, cb) {
+		setting = resolveSetting(setting);
+		var con = new FTP();
+		con.once("error", function (err) {
+			if (err) {
+				cb(err);
+			}
+			ftpClose(con);
+		});
+		con.once("ready", function () {
+			con.put(localPath, remotePath, function (err) {
+				if (err) {
+					cb(err);
+					ftpClose(con);
+				} else {
+					cb(null, true);
+					ftpClose(con);
+				}
+			});
+		});
+		con.connect(setting);
+	};
+	sftpUpload = function (setting, localPath, remotePath, cb) {
+		setting = resolveSetting(setting);
+		var con = new SFTP();
+		con.once("error", function (err) {
+			cb(err);
+			con.end();
+		});
+		if (setting.auth === "key") {
+			setting.privateKey = fs.readFileSync(setting.privateKeyPath);
+		}
+		con.on("ready", function () {
+			con.sftp(function (err, sftp) {
+				if (err) {
+					cb(err);
+					cb.end();
+				} else {
+					sftp.fastPut(localPath, remotePath, function (err) {
+						if (err) {
+							cb(err);
+						} else {
+							cb(null, true);
+						}
+						cb.end();
+					});
+				}
+			});
+		}).connect(setting);
+	};
 	
-	init = function (domainManager, domainPath) {
+	download = function (setting, localPath, remotePath, cb) {
+		setting = resolveSetting(setting);
+		var con = new FTP();
+		con.on("error", function (err) {
+			if (err) {
+				cb(err);
+			}
+			ftpClose();
+		});
+		con.on("ready", function () {
+			con.get(remotePath, function (err, stream) {
+				if (err) {
+					cb(err);
+					ftpClose(con);
+				} else {
+					stream.pipe(fs.createWriteStream(localPath));
+					stream.once("close", function () {
+						con.end();
+						ftpClose(con);
+						con(null, true);
+					});
+				}
+			});
+		});
+		con.connect(setting);
+	};
+	sftpDownload = function (setting, localPath, remotePath, cb) {
+		setting = resolveSetting(setting);
+		var con = new SFTP();
+		con.on("error", function (err) {
+			cb(err);
+			con.end();
+		});
+		if (setting.auth === "key") {
+			setting.privateKey = fs.readFileSync(setting.privateKeyPath);
+		}
+		con.on("ready", function () {
+			con.sftp(function (err, sftp) {
+				if (err) {
+					cb(err);
+					con.end();
+				} else {
+					sftp.fastGet(remotePath, localPath, function (err, nb, data) {
+						if (err) {
+							cb(err);
+							con.end();
+						} else {
+							cb(null, true);
+							con.end();
+						}
+					});
+				}
+			});
+		}).connect(setting);
+	};
+	
+	/**
+	 * Initialize DomainManager.
+	 */
+	init = function (domainManager, _domainPath) {
 		if (!domainManager.hasDomain("synapse")) {
 			domainManager.registerDomain("synapse", {
 				major: 0,
@@ -678,89 +773,119 @@
 			});
 		}
 		_domainManager = domainManager;
-
-		domainManager.registerCommand(
-			"synapse",
-			"homeDir",
-			homeDir,
-			false,
-			"", [{
-			}],
-			[{
-				name: "path",
-				type: "string"
-			}]
-		);
 		
-		// FTP and SFTP functions >>
-		domainManager.registerCommand(
+		_domainManager.registerCommand(
 			"synapse",
-			"secureConnectTest",
-			secureConnectTest,
-			true,
-			"", [{
-				name: "setting",
-				type: "object"
-			}],[{
-				name: "res",
-				type: "boolean"
-			}]
-		);
-		domainManager.registerCommand(
-			"synapse", 
 			"connectTest",
 			connectTest,
 			true,
 			"", [{
 				name: "setting",
-				type: "object"
+				type: "object",
+			}, {
+				name: "remotePath",
+				type: "string"
 			}], [{
-				name: "res",
+				name: "err",
+				type: "object"
+			}, {
+				name: "res", 
 				type: "boolean"
 			}]
 		);
 		
-		// >>
-		domainManager.registerCommand(
+		_domainManager.registerCommand(
 			"synapse",
-			"Connect",
+			"sftpConnectTest",
+			sftpConnectTest,
+			true,
+			"", [{
+				name: "setting",
+				type: "object",
+			}], [{
+				name: "res", 
+				type: "boolean"
+			}]
+		);
+		
+		_domainManager.registerCommand(
+			"synapse", 
+			"connect", 
 			connect,
 			true,
 			"", [{
-				name: "serverSetting",
+				name: "setting",
 				type: "object"
 			}, {
-				name: "remoteRoot",
+				name: "remotePath",
 				type: "string"
-			}], [{
+			}],[{
+				name: "list", 
+				type: "object"
+			}]
+		);
+		domainManager.registerCommand(
+			"synapse", 
+			"sftpConnect", 
+			sftpConnect,
+			true,
+			"", [{
+				name: "setting",
+				type: "object"
+			}, {
+				name: "remotePath",
+				type: "string"
+			}],[{
 				name: "list",
 				type: "object"
 			}]
 		);
+		
 		domainManager.registerCommand(
 			"synapse",
 			"List",
 			getList,
 			true,
-			"", [{
-				name: "serverSetting",
-				type: "object"
+			"", 
+			[{
+				name: "setting",
+				type: "string"
 			}, {
-				name: "path",
+				name: "remotePath",
 				type: "string"
 			}], [{
 				name: "list",
 				type: "object"
 			}]
 		);
+		
 		domainManager.registerCommand(
 			"synapse",
-			"Rename",
+			"sftpGetList",
+			sftpGetList,
+			true,
+			"", 
+			[{
+				name: "setting",
+				type: "string"
+			}, {
+				name: "remotePath",
+				type: "string"
+			}], [{
+				name: "list",
+				type: "object"
+			}]
+		);
+		
+		domainManager.registerCommand(
+			"synapse",
+			"rename",
 			rename,
 			true,
-			"", [{
-				name: "serverSetting",
-				type: "object"
+			"", 
+			[{
+				name: "setting",
+				type: "string"
 			}, {
 				name: "oldPath",
 				type: "string"
@@ -774,14 +899,18 @@
 		);
 		domainManager.registerCommand(
 			"synapse",
-			"Mkdir",
-			mkdir,
+			"sftpRename",
+			sftpRename,
 			true,
-			"", [{
-				name: "serverSetting",
-				type: "object"
+			"", 
+			[{
+				name: "setting",
+				type: "string"
 			}, {
-				name: "path",
+				name: "oldPath",
+				type: "string"
+			}, {
+				name: "newPath",
 				type: "string"
 			}], [{
 				name: "res",
@@ -790,30 +919,45 @@
 		);
 		domainManager.registerCommand(
 			"synapse",
-			"UploadFile",
-			upload,
+			"removeDirectory",
+			removeDirectory,
 			true,
-			"", [{
-				name: "serverSetting",
-				type: "object"
-			}, {
-				name: "localPath",
+			"", 
+			[{
+				name: "setting",
 				type: "string"
 			}, {
 				name: "remotePath",
 				type: "string"
 			}], [{
+			}]
+		);
+		domainManager.registerCommand(
+			"synapse", 
+			"sftpRemoveDirectory",
+			sftpRemoveDirectory,
+			true,
+			"", 
+			[{
+				name: "setting",
+				type: "object",
+			}, {
+				name: "remotePath",
+				type: "string"
+			}], 
+			[{
 				name: "res",
 				type: "boolean"
 			}]
 		);
 		domainManager.registerCommand(
 			"synapse",
-			"RemoveDirectory",
-			removeDirectory,
+			"removeFile",
+			removeFile,
 			true,
-			"", [{
-				name: "serverSetting",
+			"", 
+			[{
+				name: "setting",
 				type: "object",
 			}, {
 				name: "remotePath",
@@ -825,11 +969,12 @@
 		);
 		domainManager.registerCommand(
 			"synapse",
-			"DeleteFile",
-			deleteFile,
+			"sftpRemoveFile",
+			sftpRemoveFile,
 			true,
-			"", [{
-				name: "serverSetting",
+			"", 
+			[{
+				name: "setting",
 				type: "object"
 			}, {
 				name: "remotePath",
@@ -839,13 +984,15 @@
 				type: "boolean"
 			}]
 		);
+		
 		domainManager.registerCommand(
 			"synapse",
-			"Download",
-			download,
+			"upload",
+			upload,
 			true,
-			"", [{
-				name: "serverSetting",
+			"", 
+			[{
+				name: "setting",
 				type: "object"
 			}, {
 				name: "localPath",
@@ -859,21 +1006,72 @@
 			}]
 		);
 		
-		/**
-		 * usage _domainManager.emitEvent("synapse", "error", {method: string, message: string});
-		 * message made by library the ftp of ssh2, that must parse to json if it type is object.
-		 */
-		domainManager.registerEvent(
+		domainManager.registerCommand(
 			"synapse",
-			"error",
-			{
-				method: "",
-				message: ""
-			}
+			"sftpUpload",
+			sftpUpload,
+			true,
+			"",
+			[{
+				name: "setting",
+				type: "object"
+			}, {
+				name: "setting",
+				type: "object"
+			}, {
+				name: "localPath",
+				type: "string"
+			}, {
+				name: "remotePath",
+				type: "string"
+			}], [{
+				name: "res",
+				type: "boolean"
+			}]
 		);
-		// <<
-	
+		
+		domainManager.registerCommand(
+			"synapse",
+			"download",
+			download,
+			true,
+			"",
+			[{
+				name: "setting",
+				type: "object"
+			}, {
+				name: "localPath",
+				type: "string"
+			}, {
+				name: "remotePath",
+				type: "string"
+			}], [{
+				name: "res", 
+				type: "boolean"
+			}]
+		);
+		
+		domainManager.registerCommand(
+			"synapse",
+			"sftpDownload",
+			sftpDownload, 
+			true,
+			"",
+			[{
+				name: "setting",
+				type: "object"
+			}, {
+				name: "localPath",
+				type: "string"
+			}, {
+				name: "remotePath",
+				type: "string"
+			}], [{
+				name: "res",
+				type: "boolean"
+			}]
+		);
+			
 	};
-
 	exports.init = init;
 }());

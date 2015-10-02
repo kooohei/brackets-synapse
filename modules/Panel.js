@@ -918,24 +918,20 @@ define(function (require, exports, module) {
 	openFileSelect = function (e) {
 		var d = new $.Deferred();
 		
-		Shared.domain.exec("homeDir")
-		.done(function (path) {
-			console.log(path);
-			FileSystem.showOpenDialog(false, false, "Select to key file", path, null, function (err, paths) {
-				if (!err) {
-					if (paths.length > 0) {
-						$("#synapse-server-privateKey-path").val(paths[0]);
-						SettingManager.validateAll();
-						d.resolve();
-					} else {
-						// user just canceled
-						d.reject("cancel");
-					}
+		FileSystem.showOpenDialog(false, false, "Select to key file", "", null, function (err, paths) {
+			if (!err) {
+				if (paths.length > 0) {
+					$("#synapse-server-privateKey-path").val(paths[0]);
+					SettingManager.validateAll();
+					d.resolve();
 				} else {
-					console.error(err);
-					Log.q("Some error has occurred.", true);
+					// user just canceled
+					d.reject("cancel");
 				}
-			});
+			} else {
+				console.error(err);
+				Log.q("Some error has occurred.", true);
+			}
 		});
 		return d.promise();
 	};
