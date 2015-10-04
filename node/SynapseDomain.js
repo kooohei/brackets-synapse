@@ -4,6 +4,7 @@
 	"use strict";
 	
 	// HEADER >>
+	var JSFTP = require("jsftp");
 	var FTP = require("ftp");
 	var SFTP = require("ssh2").Client;
 	var fs = require("fs");
@@ -41,6 +42,9 @@
 			sftpUpload,
 			download,
 			sftpDownload;
+	
+	
+	
 	var ENV = {
 		//milseconds.
 		ConnectionTimeout: 5000,
@@ -83,35 +87,26 @@
 			return masterQ.promise;
 		}
 		
-		/*
+		
 		setType = function (entity, setting) {
-			var q = Q.defer(),
-					parentPath = path.dirname(entity.target),
-					destName = path.basename(entity.target);
+			var q = Q.defer();
 			
-			getList(setting, parentPath, function (err, ents) {
-				if (err) {
-					console.error(err);
-					q.reject(err);
-				} else {
-					if (typeof (ents) === "undefined") {
-						entity.destType = "out of priority";
-						q.resolve(entity);
-					} else {
-						ents.forEach(function (ent) {
-							if (err) {
-								q.reject(err);
-							} else {
-								if (ent.name === destName) {
-									entity.destName = ent.type;
-									q.resolve(entity);
-								}
-							}
-						});
-					}
-				}
+			var con = new FTP();
+			con.once("error", function (err) {
+				q.reject(err);
+				ftpClose(con);
 			});
-
+			con.once("ready", function () {
+				con.cwd(entity.target, function (err, cwd) {
+					if (err) {
+						entity.destType = "block";
+					} else {
+						entity.destType = "ldirectory";
+					}
+					q.resolve(entity);
+					ftpClose(con);
+				});
+			}).connect(setting);
 			
 			return q.promise;
 		};
@@ -137,20 +132,19 @@
 			.then(function (values) {
 				values.forEach(function (val) {
 					result.push(val);
-					masterQ.resolve(result);
 				});
+				masterQ.resolve(result);
 			}, function (err) {
 				masterQ.reject(err);
 			});
 		}
-		*/
-		masterQ.resolve(result);
 		return masterQ.promise;
 	};
 	sftpResolveEntity = function (list, remotePath, sftp) {
+		var masterQ = Q.defer();
 		if (list.length === 0) {
-			var q = Q.defer();
-			return q.resolve().promise;
+			masterQ.resolve(list);
+			return masterQ.promise;
 		}
 		var setType = function (entity) {
 			var mode = parseInt(entity.attrs.mode);
@@ -187,10 +181,10 @@
 				} else {
 					var octal = stat.mode.toString(8);
 					if (octal.match(/^40[0-9]+?/)) {
-						entity.destType = "d";
+						entity.destType = "ldirectory";
 					} else
 					if (octal.match(/^100[0-9]+?/)) {
-						entity.destType = "-";
+						entity.destType = "lfile";
 					} else {
 						q.reject(new Error("File mode unknown."));
 					}
@@ -201,8 +195,7 @@
 		};
 		var links = [],
 				result = [],
-				promises = [],
-				masterQ = Q.defer();
+				promises = [];
 		
 		list.forEach(function (entity) {
 			entity = setType(entity);
@@ -238,8 +231,8 @@
 			.then(function (values) {
 				values.forEach(function (val) {
 					result.push(val);
-					masterQ.resolve(result);
 				});
+				masterQ.resolve(result);
 			}, function (err) {
 				masterQ.reject(err);
 			});
@@ -340,14 +333,11 @@
 		setting = resolveSetting(setting);
 		
 		var con = new SFTP();
-		con.on("error", function (err) {
+		con.once("error", function (err) {
 			cb(err);
 			con.end();
 		});
-		if (setting.auth === "key") {
-			setting.privateKey = fs.readFileSync(setting.privateKeyPath);
-		}
-		con.on("ready", function () {
+		con.once("ready", function () {
 			con.sftp(function (err, sftp) {
 				if (err) {
 					cb(err);
@@ -382,6 +372,7 @@
 		var con = new FTP();
 		con.once("error", function (err) {
 			if (err) {
+				console.log({location: "getList > error ", err: err});
 				cb(err);
 			}
 			ftpClose(con);
@@ -389,6 +380,7 @@
 		con.once("ready", function () {
 			con.list(remotePath, function (err, list) {
 				if (err) {
+					console.log({location: "getList > ready > list > err ", err: err});
 					cb(err);
 					ftpClose(con);
 				} else {
@@ -409,14 +401,11 @@
 	sftpGetList = function (setting, remotePath, cb) {
 		setting = resolveSetting(setting);
 		var con = new SFTP();
-		con.on("error", function (err) {
+		con.once("error", function (err) {
 			cb(err);
 			con.end();
 		});
-		if (setting.auth === "key") {
-			setting.privateKey = fs.readFileSync(setting.privateKeyPath);
-		}
-		con.on("ready", function () {
+		con.once("ready", function () {
 			con.sftp(function (err, sftp) {
 				if (err) {
 					cb(err);
@@ -500,20 +489,21 @@
 	removeDirectory = function (setting, remotePath, cb) {
 		setting = resolveSetting(setting);
 		var con = new FTP();
-		con.on("error", function (err) {
+		con.once("error", function (err) {
 			if (err) {
 				cb(err);
 			}
 			ftpClose(con);
 		});
-		con.on("ready", function () {
+		con.once("ready", function () {
 			con.rmdir(remotePath, true, function (err) {
 				if (err) {
 					cb(err);
+					ftpClose(con);
 				} else {
 					cb(null, true);
+					ftpClose(con);
 				}
-				ftpClose(con);
 			});
 		});
 		con.connect(setting);
@@ -521,31 +511,34 @@
 	sftpRemoveDirectory = function (setting, remotePath, cb) {
 		setting = resolveSetting(setting);
 		var con = new SFTP();
-		con.on("error", function (err) {
+		con.once("error", function (err) {
 			cb(err);
 			con.end();
 		});
-		if (setting.auth === "key") {
-			setting.privateKey = fs.readFileSync(setting.privateKeyPath);
-		}
-		con.on("ready", function () {
-			con.sftp(function (err, sftp) {
+		con.once("ready", function () {
+			con.exec("rm -rf " + '"' + remotePath + '"', function (err, stream) {
 				if (err) {
 					cb(err);
-					cb.end();
 				} else {
-					con.rmdir(remotePath, true, function (err) {
-						if (err) {
-							cb(err);
-						} else {
+					stream.on("close", function (code, signal) {
+						if (code === 0) {
 							cb(null, true);
+							con.end();
+						} else
+						if (code === 1) {
+							cb(null, false);
+							con.end();
 						}
-						con.end();
+					}).on("data", function (data) {
+						// console.log(1, data);
+					}).stderr.on("data", function (data) {
+						// console.log(2, data);
 					});
 				}
 			});
 		}).connect(setting);
 	};
+	
 	removeFile = function (setting, remotePath, cb) {
 		setting = resolveSetting(setting);
 		var con = new FTP();
@@ -574,7 +567,7 @@
 		var con = new SFTP();
 		con.on("error", function (err) {
 			cb(err);
-			cb.end();
+			con.end();
 		});
 		if (setting.auth === "key") {
 			setting.privateKey = fs.readFileSync(setting.privateKeyPath);
@@ -583,7 +576,7 @@
 			con.sftp(function (err, sftp) {
 				if (err) {
 					cb(err);
-					cb.end();
+					con.end();
 				} else {
 					sftp.unlink(remotePath, function (err) {
 						if (err) {
@@ -610,7 +603,7 @@
 			}
 			ftpClose(con);
 		});
-		con.on("ready", function () {
+		con.once("ready", function () {
 			con.mkdir(path, false, function (err) {
 				if (err) {
 					cb(err);
@@ -632,9 +625,6 @@
 			}
 			con.end();
 		});
-		if (setting.auth === "key") {
-			setting.privateKey = fs.readFileSync(setting.privateKeyPath);
-		}
 		con.once("ready", function () {
 			con.sftp(function (err, sftp) {
 				if (err) {
@@ -643,10 +633,11 @@
 					sftp.mkdir(path, function (err) {
 						if (err) {
 							cb(err);
+							con.end();
 						} else {
 							cb(null, true);
+							con.end();
 						}
-						con.end();
 					});
 				}
 			});
@@ -684,22 +675,20 @@
 			cb(err);
 			con.end();
 		});
-		if (setting.auth === "key") {
-			setting.privateKey = fs.readFileSync(setting.privateKeyPath);
-		}
-		con.on("ready", function () {
+		con.once("ready", function () {
 			con.sftp(function (err, sftp) {
 				if (err) {
 					cb(err);
-					cb.end();
+					con.end();
 				} else {
 					sftp.fastPut(localPath, remotePath, function (err) {
 						if (err) {
 							cb(err);
+							con.end();
 						} else {
 							cb(null, true);
+							con.end();
 						}
-						cb.end();
 					});
 				}
 			});
@@ -715,7 +704,7 @@
 			}
 			ftpClose();
 		});
-		con.on("ready", function () {
+		con.once("ready", function () {
 			con.get(remotePath, function (err, stream) {
 				if (err) {
 					cb(err);
@@ -723,9 +712,8 @@
 				} else {
 					stream.pipe(fs.createWriteStream(localPath));
 					stream.once("close", function () {
-						con.end();
+						cb(null, true);
 						ftpClose(con);
-						con(null, true);
 					});
 				}
 			});
@@ -735,20 +723,18 @@
 	sftpDownload = function (setting, localPath, remotePath, cb) {
 		setting = resolveSetting(setting);
 		var con = new SFTP();
-		con.on("error", function (err) {
+		
+		con.once("error", function (err) {
 			cb(err);
 			con.end();
 		});
-		if (setting.auth === "key") {
-			setting.privateKey = fs.readFileSync(setting.privateKeyPath);
-		}
-		con.on("ready", function () {
+		con.once("ready", function () {
 			con.sftp(function (err, sftp) {
 				if (err) {
 					cb(err);
 					con.end();
 				} else {
-					sftp.fastGet(remotePath, localPath, function (err, nb, data) {
+					sftp.fastGet(remotePath, localPath, function (err) {
 						if (err) {
 							cb(err);
 							con.end();
@@ -761,6 +747,7 @@
 			});
 		}).connect(setting);
 	};
+	
 	
 	/**
 	 * Initialize DomainManager.
@@ -843,7 +830,7 @@
 		
 		domainManager.registerCommand(
 			"synapse",
-			"List",
+			"getList",
 			getList,
 			true,
 			"", 
@@ -930,6 +917,8 @@
 				name: "remotePath",
 				type: "string"
 			}], [{
+				name: "res",
+				type: "boolean"
 			}]
 		);
 		domainManager.registerCommand(
@@ -1016,9 +1005,6 @@
 				name: "setting",
 				type: "object"
 			}, {
-				name: "setting",
-				type: "object"
-			}, {
 				name: "localPath",
 				type: "string"
 			}, {
@@ -1071,7 +1057,43 @@
 				type: "boolean"
 			}]
 		);
-			
+		
+		domainManager.registerCommand(
+			"synapse",
+			"createDirectory",
+			createDirectory, 
+			true,
+			"",
+			[{
+				name: "setting",
+				type: "object"
+			}, {
+				name: "remotePath",
+				type: "string"
+			}], [{
+				name: "res",
+				type: "boolean"
+			}]
+		);
+		domainManager.registerCommand(
+			"synapse",
+			"sftpCreateDirectory",
+			sftpCreateDirectory, 
+			true,
+			"",
+			[{
+				name: "setting",
+				type: "object"
+			}, {
+				name: "remotePath",
+				type: "string"
+			}], [{
+				name: "res",
+				type: "boolean"
+			}]
+		);
+		
+		
 	};
 	exports.init = init;
 }());

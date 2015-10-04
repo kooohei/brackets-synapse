@@ -52,6 +52,7 @@ define(function (require, exports, module) {
 	};
 	AppInit.appReady(function () {
 		Shared.domain = new NodeDomain("synapse", ExtensionUtils.getModulePath(module, "node/SynapseDomain"));
+		
 		var promises = [];
 		var p;
 		Log.initView()

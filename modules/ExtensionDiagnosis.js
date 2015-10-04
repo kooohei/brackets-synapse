@@ -36,7 +36,7 @@ define(function (require, exports, module) {
 			var version = JSON.parse(text).version;
 			d.resolve(version);
 		}, function (err) {
-			throw Utils.getError("", "ExtensionDiagnosis", "_getVersionFromPackageJson", err);
+			//throw Utils.getError("", "ExtensionDiagnosis", "_getVersionFromPackageJson", err);
 		});
 		return d.promise();
 	};

@@ -31,6 +31,8 @@ define(function (require, exports, module) {
 	
 	var _disableTreeViewContextMenuAllItem;
 	
+	//<<
+	
 	var ContextMenuIds 				= {
 			TREEVIEW_CTX_MENU: "kohei-synapse-treeview-context-menu"
 	};
@@ -50,13 +52,23 @@ define(function (require, exports, module) {
 	};
 	
 	var Open_TreeView_Context_Menu_On_Directory_State = [
-			ContextMenuCommandIds.SYNAPSE_FILE_NEW,
-			ContextMenuCommandIds.SYNAPSE_DIRECTORY_NEW,
-			ContextMenuCommandIds.SYNAPSE_DELETE,
-			ContextMenuCommandIds.SYNAPSE_FILE_REFRESH,
-			ContextMenuCommandIds.SYNAPSE_FILE_RENAME
-		];
+				ContextMenuCommandIds.SYNAPSE_FILE_NEW,
+				ContextMenuCommandIds.SYNAPSE_DIRECTORY_NEW,
+				ContextMenuCommandIds.SYNAPSE_DELETE,
+				ContextMenuCommandIds.SYNAPSE_FILE_REFRESH,
+				ContextMenuCommandIds.SYNAPSE_FILE_RENAME
+			];
+	var Open_TreeView_Context_Menu_On_Linked_Directory_State = [
+				ContextMenuCommandIds.SYNAPSE_FILE_NEW,
+				ContextMenuCommandIds.SYNAPSE_DIRECTORY_NEW,
+				ContextMenuCommandIds.SYNAPSE_DELETE,
+				ContextMenuCommandIds.SYNAPSE_FILE_REFRESH
+			];
 	var Open_TreeView_Context_Menu_On_File_State = [
+				ContextMenuCommandIds.SYNAPSE_FILE_RENAME,
+				ContextMenuCommandIds.SYNAPSE_DELETE
+			];
+	var Open_TreeView_Context_Menu_On_Linked_File_State = [
 				ContextMenuCommandIds.SYNAPSE_FILE_RENAME,
 				ContextMenuCommandIds.SYNAPSE_DELETE
 			];
@@ -65,9 +77,8 @@ define(function (require, exports, module) {
 				ContextMenuCommandIds.SYNAPSE_DIRECTORY_NEW,
 				ContextMenuCommandIds.SYNAPSE_FILE_REFRESH
 			];
-	// <<
 	
-	showMainPanel = function() {
+	showMainPanel 	= function () {
 		CommandManager.execute("kohei.synapse.mainPanel");
 	};
 	
@@ -85,7 +96,15 @@ define(function (require, exports, module) {
 				CommandManager.get(id).setEnabled(true);
 			});
 			return;
-		} else if (entity.class === "treeview-file") {
+		} else
+		if (entity.class === "treeview-ldirectory") {
+			Open_TreeView_Context_Menu_On_Linked_Directory_State.forEach(function (id) {
+				CommandManager.get(id).setEnabled(true);
+			});
+			return;
+			
+		} else
+		if (entity.class === "treeview-file") {
 			Open_TreeView_Context_Menu_On_File_State.forEach(function (id) {
 				CommandManager.get(id).setEnabled(true);
 			});
@@ -93,7 +112,7 @@ define(function (require, exports, module) {
 		}
 	};
 	
-	setRootMenu = function (domain) {
+	setRootMenu 		= function (domain) {
 		var menu = CommandManager.register(
 			"Synapse",
 			"kohei.synapse.mainPanel",
@@ -110,7 +129,7 @@ define(function (require, exports, module) {
 		return new $.Deferred().resolve(domain).promise();
 	};
 	
-	setDebugMenu = function () {
+	setDebugMenu 		= function () {
 		var menu = CommandManager.register(
 			"Reload App wiz Node",
 			"kohei.syanpse.reloadBrackets",
@@ -134,7 +153,7 @@ define(function (require, exports, module) {
 		});
 	};
 	
-	reloadBrackets = function () {
+	reloadBrackets 	= function () {
 		try {
 			_nodeConnection.domains.base.restartNode();
 			CommandManager.execute(Commands.APP_RELOAD);
@@ -176,6 +195,7 @@ define(function (require, exports, module) {
 			FileTreeView.onTreeViewContextMenu(e, treeViewContextMenu);
 		});
 	};
+	
 	/* Private Methods */
 	_disableTreeViewContextMenuAllItem = function () {
 		if (treeViewContextMenu === null) {

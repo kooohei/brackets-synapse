@@ -6,14 +6,21 @@ define(function (require, exports, module) {
 
 
 	// HEADER >>
-	var PreferencesManager = brackets.getModule("preferences/PreferencesManager"),
-			_ = brackets.getModule("thirdparty/lodash"),
-			Async = brackets.getModule("utils/Async"),
-			CryptoManager = require("modules/CryptoManager"),
-			Log = require("modules/Log"),
-			Utils = require("modules/Utils"),
-			SettingManager = require("modules/SettingManager");
+	
+	/**
+	 * External modules.
+	 */
+	var PreferencesManager 	= brackets.getModule("preferences/PreferencesManager"),
+			_ 									= brackets.getModule("thirdparty/lodash"),
+			Async 							= brackets.getModule("utils/Async"),
+			CryptoManager 			= require("modules/CryptoManager"),
+			Log 								= require("modules/Log"),
+			Utils 							= require("modules/Utils"),
+			SettingManager 			= require("modules/SettingManager");
 
+	/**
+	 *  Persistent properties for this extension.
+	 */
 	var members = [{
 		key: "version",
 		type: "string",
@@ -28,9 +35,7 @@ define(function (require, exports, module) {
 		default: false
 	}];
 
-
-	var _cacheServerSettings = [];
-
+	
 	var init,
 			getVersion,
 			setVersion,
@@ -45,6 +50,8 @@ define(function (require, exports, module) {
 
 	/**
 	 * Initialize Module.
+	 ** Check properties is exists on the preferences file.
+	 ** defined properties if is not exists.
 	 * 
 	 * @param domain {NodeDomain}
 	 * @return {$.Promise}
@@ -62,7 +69,7 @@ define(function (require, exports, module) {
 				.then(function () {
 					return new $.Deferred().resolve().promise();
 				}, function (err) {
-					throw Utils.getError("", "ExtensionDiagnosis", "init", err);
+					Log.q("Initial settings could not defined to preferences file.", true, err);
 				});
 			} else {
 				promise = new $.Deferred().resolve().promise();
@@ -77,9 +84,10 @@ define(function (require, exports, module) {
 		return d.promise();
 	};
 
-
 	/**
-	 * return extension prefs.
+	 * Get properties for this extension from preferences file.
+	 * 
+	 * return {string}
 	 */
 	_getExtensionPrefs = function () {
 		return PreferencesManager.getExtensionPrefs("brackets-synapse");
@@ -88,13 +96,21 @@ define(function (require, exports, module) {
 	/**
 	 * return version of the synapse from preference file.
 	 *
-	 * @return {String}
+	 * @return {string}
 	 */
 	getVersion = function () {
 		return _getExtensionPrefs().get("version");
 	};
+	
+	/**
+	 * The version of this extension, that save to preferences file.
+	 ** Usually, never use this function directly.
+	 ** It takes from package.json.
+	 * 
+	 * @param version {string}
+	 * @return {$.Promise}
+	 */
 	setVersion = function (version) {
-		
 		var prefs = _getExtensionPrefs();
 		prefs.set("version", version);
 		return prefs.save();
@@ -102,7 +118,9 @@ define(function (require, exports, module) {
 
 
 	/**
-	 * return Server settings state whether crypted or plain.
+	 * Get value whether or not setting had encrypted.
+	 * 
+	 * @return {string}
 	 */
 	getUseCrypt = function () {
 		return _getExtensionPrefs().get("use-crypt");
@@ -120,9 +138,8 @@ define(function (require, exports, module) {
 	};
 
 	/**
-	 * get server settings from preferences file.
-	 * * if setting was encrypted, then decrypted to that.
-	 * * set to _cacheServerSettings when the ready settings is valid format.
+	 * get server settings from preferences file.(.brackets.json)
+	 * * if setting was encrypted, it will be decrypted.
 	 *
 	 * @return {Array} array of server setting.
 	 */

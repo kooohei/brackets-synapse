@@ -570,7 +570,7 @@
 					if (err) {
 						cb(err);
 					} else {
-						sftp.fastGet(remotePath, localPath, function (err, nb, data) {
+						sftp.fastGet(remotePath, localPath, function (err) {
 							if (err) {
 								cb(err);
 							} else {

@@ -67,7 +67,6 @@ define(function (require, exports, module) {
 			clearCurrentTree,
 			open,
 			loadTreeView,
-			showAlert,
 			updateTreeviewContainerSize,
 			onClick,
 			onDirClicked,
@@ -99,11 +98,13 @@ define(function (require, exports, module) {
 				}
 			};
 	var Icon = {
-				file: "fa fa-file-o",
-				link: "fa fa-link",
+				file: "fa fa-file-text",
+				lFile: "fa fa-file-text-o",
 				folder: "fa fa-folder",
 				folder_open: "fa fa-folder-open",
-				folder_disable: "fa fa-folder-o"
+				lFolder: "fa fa-folder-o",
+				lFolder_open: "fa fa-folder_o_open",
+				block: "fa fa-unlink"
 			};
 	var Entity = function (param) {
 				if (param.class === undefined ||
@@ -123,6 +124,8 @@ define(function (require, exports, module) {
 				this.index = param.index;
 				this.id = param.id;
 				this.downloaded = false;
+				this.target = param.target || null;
+				this.destType = param.destType || null;
 				this.children = {};
 			};
 
@@ -172,37 +175,49 @@ define(function (require, exports, module) {
 	};
 
 	setEntities = function (list, parent) {
-		if (parent.type !== "directory") {
+		
+		
+		if (parent.type !== "directory" && parent.type !== "ldirectory") {
 			throw new Error("the type property of the parent object must set directory");
 		}
-		var deferred = new $.Deferred();
-		var promises = [];
-		var params = [];
+		
+		//list = _.pluck(_.sortBy(list, "name"), "name");
+		
+		var deferred = new $.Deferred(),
+				promises = [],
+				params = [];
 
 		var dirs = _.where(list, {type: "d"});
 		var files = _.where(list, {type: "-"});
-		var links = _.where(list, {type: "l"});
-
-		_.pluck(_.sortBy(list, "name"), "name");
-
+		
+		var links = _.where(list, {type: "l"}),
+				blocks = _.where(links, {destType: "block"}),
+				ldirs = _.where(links, {destType: "ldirectory"}),
+				lfiles = _.where(links, {destType: "lfile"});
+		
 		list = [];
 		list = list
 						.concat(dirs)
+						.concat(ldirs)
 						.concat(files)
-						.concat(links);
+						.concat(lfiles)
+						.concat(blocks);
 
 		var depth = parent.depth + 1;
 		list.forEach(function (item, index) {
-			var type = "file";
+			var type = "block";
 			switch (item.type) {
 				case "d":
 					type = "directory";
 					break;
+				case "-":
+					type = "file";
+					break;
 				case "l":
-					type = "symlink";
+					type = item.destType;
 					break;
 				default:
-					type = "file";
+					type = "block";
 					break;
 			}
 			var param = {
@@ -214,6 +229,8 @@ define(function (require, exports, module) {
 				date: item.date,
 				depth: depth,
 				index: index,
+				target: item.target,
+				destType: item.destType,
 				id: parent.id + "-" + index,
 				parent: parent
 			};
@@ -241,8 +258,13 @@ define(function (require, exports, module) {
 		$("#tv-" + _ctxMenuCurrentEntity.id + " > ul.treeview-contents").remove();
 
 		_loadDirectory(_ctxMenuCurrentEntity)
-			.then(deferred.resolve, function (err) {
-				// TODO: ファイル一覧の更新が失敗しました。。
+			.then(function () {
+			
+				deferred.resolve();
+			
+		}, function (err) {
+			
+			// TODO: ERROR could not download filelist.
 				deferred.reject();
 			});
 		return deferred.promise();
@@ -281,7 +303,6 @@ define(function (require, exports, module) {
 						DocumentManager.notifyPathNameChanged(oldLocalPath, newLocalPath);
 						deferred.resolve();
 					}, function (err) {
-						showAlert("Could not rename to remote file<br>" + err);
 						deferred.reject(err);
 					});
 				}
@@ -297,7 +318,6 @@ define(function (require, exports, module) {
 		if (_ctxMenuCurrentEntity === null) {
 			return deferred.reject().promise();
 		}
-
 		if (_ctxMenuCurrentEntity.type === "file") {
 			deleteFile()
 			.then(deferred.resolve, deferred.reject);
@@ -322,12 +342,13 @@ define(function (require, exports, module) {
 			.done(function (res) {
 				if (res === "Yes") {
 					RemoteManager.removeDirectory(_currentServerSetting, remotePath)
-						.then(function () {
+					.then(function (res) {
+						if (res) {
 							_deleteEntity(_ctxMenuCurrentEntity);
-						}, function (err) {
-							showAlert("ERROR", "Could not remove directory from server");
-							deferred.reject(err);
-						});
+						}
+					}, function (err) {
+						deferred.reject(err);
+					});
 				} else {
 					deferred.resolve();
 				}
@@ -340,8 +361,7 @@ define(function (require, exports, module) {
 		if (_ctxMenuCurrentEntity === null) {
 			return deferred.reject().promise();
 		}
-
-		if (_ctxMenuCurrentEntity.type === "directory") {
+		if (_ctxMenuCurrentEntity.type === "directory" || _ctxMenuCurrentEntity.type === "ldirectory") {
 			if (!_getElementWithEntity(_ctxMenuCurrentEntity).hasClass("loaded")) {
 				_loadDirectory(_ctxMenuCurrentEntity)
 				.then(function () {
@@ -363,7 +383,8 @@ define(function (require, exports, module) {
 
 	newFile = function () {
 		var deferred = new $.Deferred();
-		if (_ctxMenuCurrentEntity === null || _ctxMenuCurrentEntity.type !== "directory") {
+		if (_ctxMenuCurrentEntity === null ||
+				(_ctxMenuCurrentEntity.type !== "directory" && _ctxMenuCurrentEntity.type !== "ldirectory")) {
 			// TODO: 選択されたカレントディレクトリでファイルの作成はできません。
 			deferred.reject();
 			return deferred.promise();
@@ -371,7 +392,7 @@ define(function (require, exports, module) {
 
 		var $elem = _getElementWithEntity(_ctxMenuCurrentEntity);
 
-		if (_ctxMenuCurrentEntity.type === "directory") {
+		if (_ctxMenuCurrentEntity.type === "directory" || _ctxMenuCurrentEntity.type === "ldirectory") {
 			if (!$elem.hasClass("loaded")) {
 				_loadDirectory(_ctxMenuCurrentEntity)
 				.then(function () {
@@ -413,7 +434,6 @@ define(function (require, exports, module) {
 						}, function (err) {
 							// TODO: showAlert is deprecated instead Log.q
 							// TODO: サーバファイルの削除に失敗しました。
-							showAlert("ERROR", "Could not delete file from server");
 							deferred.reject(err);
 						});
 				} else {
@@ -423,51 +443,7 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 
-	showAlert = function (title, message) {
-		var $container = $("<div/>").addClass("synapse-treeview-alert")
-			.html($("<p/>").addClass("title").html(title))
-			.append($("<p/>").addClass("caption").html(message)).hide();
-		var $treeviewcontainer = $("#synapse-treeview-container");
-		$treeviewcontainer.append($container);
-		var height = $container.outerHeight();
-		var left = $treeviewcontainer.outerWidth();
-		var treeHeight = $treeviewcontainer.outerHeight();
-		var top = ((treeHeight - height) / 2);
-		$container.css({
-			"top": top + "px",
-			"left": "-" + left + "px"
-		}).show();
-
-		$("#synapse-tree").animate({
-				"opacity": 0.3
-		}, 100).promise()
-		.done(function () {
-			$("#synapse-tree").addClass("disabled");
-			$container.animate({
-				"left": 0,
-					"opacity": 1
-				}, 150).promise()
-				.done(function () {
-					_detachEvent();
-					$container.one("click", function () {
-						$(this).animate({
-								"left": left + "px",
-								"opacity": 0
-							}, 150).promise()
-							.done(function () {
-								$container.remove();
-								return $("#synapse-tree").animate({
-									"opacity": 1
-								}, 100).promise();
-							})
-							.done(function () {
-								$("#synapse-tree").removeClass("disabled");
-								_attachEvent();
-							});
-						});
-					});
-			});
-	};
+	
 
 	getEntityWithPath = function (localPath) {
 		var split = localPath.split("/");
@@ -496,7 +472,7 @@ define(function (require, exports, module) {
 		} else {
 			$parent = _getElementWithEntity(entity);
 		}
-		if ($parent === null || $parent === undefined) {
+		if ($parent === null || $parent === undefined || typeof ($parent) === "undefined") {
 			throw new Error("Unexpected Exception. could not found the element");
 		}
 
@@ -611,14 +587,25 @@ define(function (require, exports, module) {
 		var $text = $("<span/>").addClass("filename").html(entity.text);
 		var $icon = $("<i/>");
 
-		if (entity.type === "directory") {
+		if (entity.type === "directory") {	
 			$li.addClass("treeview-close");
 			$icon.addClass(Icon.folder);
-		} else if (entity.type === "file") {
+		
+		} else
+		if (entity.type === "ldirectory") {
+			$li.addClass("treeview-close");
+			$icon.addClass(Icon.lFolder);
+		} else
+		if (entity.type === "file") {
 			$icon.addClass(Icon.file);
-		} else if (entity.type === "symlink") {
-			$icon.addClass(Icon.link);
-			$li.addClass("treeview-symlink");
+		} else
+		if (entity.type === "lfile") {
+			$icon.addClass(Icon.lFile);
+		} else
+		if (entity.type === "block") {
+			$icon.addClass(Icon.block);
+			$li.addClass("treeview-block");
+		
 		}
 		$p.append($icon)
 			.append($text);
@@ -636,13 +623,25 @@ define(function (require, exports, module) {
 		var $icon = $("#tv-" + entity.id + " > p.treeview-row > i.fa");
 		var $ul = $("#tv-" + entity.id + " > ul.treeview-contents");
 		if ($ul.is(":hidden")) {
-			$icon.addClass("fa-folder-open");
-			$icon.removeClass("fa-folder");
+			if (entity.type === "directory") {
+				$icon.addClass("fa-folder-open");
+				$icon.removeClass("fa-folder");
+			} else
+			if (entity.type === "ldirectory") {
+				$icon.addClass("fa-folder-open-o");
+				$icon.removeClass("fa-folder-o");
+			}
 			$jqElem.removeClass("treeview-close");
 			$jqElem.addClass("treeview-open");
 		} else if ($ul.is(":visible")) {
-			$icon.removeClass("fa-folder-open");
-			$icon.addClass("fa-folder");
+			if (entity.type === "directory") {
+				$icon.removeClass("fa-folder-open");
+				$icon.addClass("fa-folder");
+			} else
+			if (entity.type === "ldirectory") {
+				$icon.removeClass("fa-folder-open-o");
+				$icon.addClass("fa-folder-o");
+			}
 			$jqElem.addClass("treeview-close");
 			$jqElem.removeClass("treeview-open");
 		}
@@ -654,7 +653,12 @@ define(function (require, exports, module) {
 
 	_loadDirectory = function (entity) {
 		var deferred = new $.Deferred();
-		var path = PathManager.completionRemotePath(_getPathArray(entity));
+		var path = "";
+		if (entity.type === "ldirectory") {
+			path = entity.target;
+		} else {
+			path = PathManager.completionRemotePath(_getPathArray(entity));
+		}
 		RemoteManager.getList(entity, _currentServerSetting, path)
 			.then(function (list) {
 				return setEntities(list, entity);
@@ -737,7 +741,8 @@ define(function (require, exports, module) {
 				if (ent.text.match(/^New File(\([0-9]+?\))?$/)) {
 					cnt++;
 				}
-			} else {
+			} else
+			if (type === "directory") {
 				if (ent.text.match(/^New Directory(\([0-9]+?\))?$/)) {
 					cnt++;
 				}
@@ -746,7 +751,8 @@ define(function (require, exports, module) {
 		var newName = "";
 		if (type === "file") {
 			newName = (cnt === 0) ? "New File" : "New File(" + cnt + ")";
-		} else {
+		} else
+		if (type === "directory") {
 			newName = (cnt === 0) ? "New Directory" : "New Directory(" + cnt + ")";
 		}
 
@@ -782,20 +788,20 @@ define(function (require, exports, module) {
 						deferred.resolve();
 					}, function (err) {
 						_deleteEntity(ent);
-						showAlert("ERROR", "New file could not upload to server.<br>" + err);
 						deferred.reject();
 					});
 				});
-			} else {
+			} else
+			if (type === "directory") {
 				_rename(newEntity, function (ent) {
 					var remotePath = PathManager.completionRemotePath(_getPathArray(ent));
+					console.log(remotePath);
 					RemoteManager.mkdir(_currentServerSetting, remotePath)
 					.then(function () {
 						//deferred.resolve();
 						return Project.createDirectoryIfExists(PathManager.completionLocalPath(_getPathArray(ent)));
 					}, function (err) {
 						_deleteEntity(ent);
-						showAlert("ERROR", "New directory could not upload to server.<br>" + err);
 						deferred.reject();
 					});
 				});
@@ -862,9 +868,19 @@ define(function (require, exports, module) {
 	};
 
 	_openFile = function (entity) {
+		
 		var deferred = new $.Deferred();
-		var remotePath = PathManager.completionRemotePath(_getPathArray(entity));
-		var localPath = PathManager.completionLocalPath(_getPathArray(entity));
+		var remotePath = "";
+		var localPath = "";
+		if (entity.type === "file") {
+			remotePath = PathManager.completionRemotePath(_getPathArray(entity));
+		} else
+		if (entity.type === "lfile") {
+			remotePath = entity.target;
+		}
+		localPath = PathManager.completionLocalPath(_getPathArray(entity));
+		deferred.resolve();
+		
 		if (!entity.downloaded) {
 			_makeBaseDirectoryIfIsNotExists(localPath)
 			.then(function (baseDir) {
@@ -874,12 +890,7 @@ define(function (require, exports, module) {
 					FileManager.openFile(localPath);
 					deferred.resolve();
 				}, function (err) {
-
-					if (err.code === 550) {
-						showAlert("ERROR", "Permission denied");
-					} else {
-						showAlert("ERROR", "Error Code: " + err.code);
-					}
+					// TODO: ERROR
 				});
 			}, function(err) {
 				throw new Error(err);
@@ -928,17 +939,17 @@ define(function (require, exports, module) {
 
 	onClick = function (e) {
 		var $elem = $(e.target);
-
+		
 		if ($elem.hasClass("treeview-contents") || $elem.hasClass("filename") || $elem.hasClass("fa")) {
 			$elem = $elem.parent().parent();
 		} else if ($elem.hasClass("treeview-row")) {
 			$elem = $elem.parent();
 		}
-
-		if ($elem.hasClass("treeview-directory") || $elem.hasClass("treeview-root")) {
+		
+		if ($elem.hasClass("treeview-directory") || $elem.hasClass("treeview-ldirectory") || $elem.hasClass("treeview-root")) {
 			onDirClicked($elem);
 		}
-		if ($elem.hasClass("treeview-file")) {
+		if ($elem.hasClass("treeview-file") || $elem.hasClass("treeview-lfile")) {
 			onFileClicked($elem);
 		}
 	};
@@ -951,7 +962,7 @@ define(function (require, exports, module) {
 	onDirClicked = function ($elem) {
 		var id = $elem.attr("id");
 		var entity = _getEntityWithId(id);
-
+		
 		if ($elem.hasClass("loaded")) {
 			_toggleDir(entity);
 		} else {
@@ -990,7 +1001,6 @@ define(function (require, exports, module) {
 	exports.loadTreeView = loadTreeView;
 	exports.refresh = refresh;
 	exports.rename = rename;
-	exports.showAlert = showAlert;
 	exports.removeFile = removeFile;
 	exports.newFile = newFile;
 	exports.getEntityWithPath = getEntityWithPath;

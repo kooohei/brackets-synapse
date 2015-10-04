@@ -35,48 +35,48 @@ define(function (require, exports, module) {
 		_projectDir = null;
 
 	var
-		init,
-		closeProject,
-		reloadServerSettingList,
-		hideMain,
-		showSpinner,
-		hideSpinner,
-		showMain,
-		connect,
-		showServerList,
+			init,
+			closeProject,
+			reloadServerSettingList,
+			hideMain,
+			showSpinner,
+			hideSpinner,
+			showMain,
+			connect,
+			showServerList,
 
-		_initServerSettingUI,
-		_initMainUI,
-		_reloadServerSettingListWhenDelete,
-		_hideServerSetting,
-		_hideServerList,
-		_showServerSetting,
-		_enableToolbarIcon,
-		_disableToolbarIcon,
-		_fadeOutMain,
-		_toggleConnectBtn,
-		_removeServerSettingListRow,
-		_readPrivateKeyFile,
-		_setCurrentPrivateKeyText,
-		_readPrivateKeyPath,
-		_removeTreeviewRow,
+			_initServerSettingUI,
+			_initMainUI,
+			_reloadServerSettingListWhenDelete,
+			_hideServerSetting,
+			_hideServerList,
+			_showServerSetting,
+			_enableToolbarIcon,
+			_disableToolbarIcon,
+			_fadeOutMain,
+			_toggleConnectBtn,
+			_removeServerSettingListRow,
+			_readPrivateKeyFile,
+			_setCurrentPrivateKeyText,
+			_readPrivateKeyPath,
+			_removeTreeviewRow,
 
-		onProtocolGroup,
-		onAuthGroup,
-		onClickConnectBtn,
-		onClickDeleteBtn,
-		onLeaveListBtns,
-		onEdit,
-		onEnterListBtns,
-		onClickEditBtn,
-		onProjectStateChanged,
+			onProtocolGroup,
+			onAuthGroup,
+			onClickConnectBtn,
+			onClickDeleteBtn,
+			onLeaveListBtns,
+			onEdit,
+			onEnterListBtns,
+			onClickEditBtn,
+			onProjectStateChanged,
 
-		_attachWorkingSetStateChanged,
-		_detachWorkingSetStateChanged,
+			_attachWorkingSetStateChanged,
+			_detachWorkingSetStateChanged,
 
-		resetExcludeFile,
-		openFileSelect,
-		resetPrivateKey;
+			resetExcludeFile,
+			openFileSelect,
+			resetPrivateKey;
 
 	var j = {
 			get sb() {
@@ -214,14 +214,12 @@ define(function (require, exports, module) {
 	showSpinner = function () {
 		$("#synapse-header .spinner").addClass("spin").removeClass("hide");
 	};
-
 	/**
 	 * Hide Progress spinner when the connection.
 	 */
 	hideSpinner = function () {
 		$("#synapse-header .spinner").addClass("hide").removeClass("spin");
 	};
-
 	/**
 	 * Show server list on top of the main panel.
 	 *
@@ -263,7 +261,6 @@ define(function (require, exports, module) {
 		}
 		return deferred.promise();
 	};
-
 	/**
 	 * Close main panel
 	 */
@@ -278,7 +275,6 @@ define(function (require, exports, module) {
 			_fadeOutMain();
 		}
 	};
-
 	/**
 	 * check unsaved files and project closed then fadeout panel.
 	 *
@@ -303,7 +299,6 @@ define(function (require, exports, module) {
 			});
 		return deferred.promise();
 	};
-
 	/**
 	 * Reload server setting list in the server list panel from preference file.
 	 *
@@ -341,7 +336,7 @@ define(function (require, exports, module) {
 		}
 		return new $.Deferred().resolve().promise();
 	};
-
+	
 	/**
 	 * PrivateMethods
 	 */
@@ -369,7 +364,6 @@ define(function (require, exports, module) {
 					.done(_disableToolbarIcon);
 			});
 	};
-
 	/**
 	 * Initialize main panel, and register some events.
 	 *
@@ -400,7 +394,6 @@ define(function (require, exports, module) {
 
 		return new $.Deferred().resolve().promise();
 	};
-
 	/**
 	 * Initialize server setting panel and some events;
 	 *
@@ -433,7 +426,6 @@ define(function (require, exports, module) {
 
 		return new $.Deferred().resolve().promise();
 	};
-
 	/**
 	 * Initialize server list panel and some events.
 	 *
@@ -829,7 +821,6 @@ define(function (require, exports, module) {
 			}
 
 			Log.q("Project is already opened");
-			FileTreeView.showAlert("Project is already opened.", "Please close current project before open other project.");
 			return;
 		}
 
@@ -856,7 +847,7 @@ define(function (require, exports, module) {
 		var deferred = new $.Deferred();
 
 		if (_projectState === Project.OPEN) {
-			FileTreeView.showAlert("Failed.", "Could not delete setting when the project is openning");
+			Log.q("The setting was not deleted when the openning project", true);
 			return deferred.reject().promise();
 		}
 

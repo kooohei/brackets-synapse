@@ -144,7 +144,7 @@ define(function (require, exports, module) {
 					Log.q("Success. The server setting was encrypted. ", false);
 					d.resolve();
 				}, function (err) {
-					throw Utils.getError("", "Notify", "showSecureWarning", err);
+					//throw Utils.getError("", "Notify", "showSecureWarning", err);
 				});
 			}
 		});

@@ -3,7 +3,7 @@
 define(function (require, exports, module) {
 	"use strict";
 
-	/* region Modules */
+	// HEADER >>
 	var EditorManager = brackets.getModule("editor/EditorManager");
 	var CommandManager = brackets.getModule("command/CommandManager");
 	var Commands = brackets.getModule("command/Commands");
@@ -16,29 +16,23 @@ define(function (require, exports, module) {
 	var FileTreeView = require("modules/FileTreeView");
 	var Project = require("modules/Project");
 	var RemoteManager = require("modules/RemoteManager");
-	/* endregion */
-
 	
-	/* region Private Methods */
-	var _attachEvent;
-	/* endregion */
+	var _attachEvent,
+			_detachEvent;
 	
-	/* region Public Methods */
 	var init,
 			openFile;
-	/* endregion */
 
-	/* region Handlers */
 	var onSaved;
 	var onDirtyFlagChange;
 	var onBeforeProjectClose;
 	var onBeforeAppClose;
-	/* endregion */
 
-	/* region Private vars and methods */
 	var _projectState = Project.CLOSE;
 	var _modulePath = FileUtils.getParentPath(ExtensionUtils.getModulePath(module));
-	/* endregion */
+	//<<
+	
+	
 	
 	init = function () {
 		var d = new $.Deferred();
@@ -61,12 +55,17 @@ define(function (require, exports, module) {
 	_attachEvent = function attachEvent() {
 		Project.on(Project.PROJECT_STATE_CHANGED, function (evt, obj) {
 			_projectState = obj.state;
+			_detachEvent();
 			ProjectManager.on("beforeAppClose", onBeforeAppClose);
 			DocumentManager.on("dirtyFlagChange", onDirtyFlagChange);
 			DocumentManager.on("documentSaved", onSaved);
 		});
 	};
-
+	_detachEvent = function () {
+		ProjectManager.off("beforeAppClose", onBeforeAppClose);
+		DocumentManager.off("dirtyFlagChange", onDirtyFlagChange);
+		DocumentManager.off("documentSaved", onSaved);
+	};
 
 	/* Handlers */
 	onBeforeAppClose = function () {
@@ -92,12 +91,11 @@ define(function (require, exports, module) {
 		
 		RemoteManager.uploadFile(Project.getServerSetting(), localPath, remotePath)
 		.then(function () {
-			
+			// TODO onsaved complete.
 		},
 		function (err) {
 			var ent = FileTreeView.getEntityWithPath(remotePath);
 			ent.downloaded = false;
-			FileTreeView.showAlert("ERROR", "Could not save file to server <br>" + err);
 			throw new Error("Could not save file to server<br>" + err);
 		});
 	};

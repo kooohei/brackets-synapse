@@ -26,7 +26,7 @@ div#synapse-tree ul.treeview-contents li.treeview-entity p.treeview-row {
 	padding-top:3px;
 	padding-bottom: 3px;
 }
-div#synapse-tree ul.treeview-contents li.treeview-symlink span {
+div#synapse-tree ul.treeview-contents li.treeview-block span {
 	text-decoration: line-through;
 	opacity: 0.7;
 }
@@ -53,25 +53,5 @@ div#synapse-tree ul.treeview-contents i.fa {
 }
 div#synapse-tree ul.treeview-contents i.fa-link {
 	opacity: 0.5;
-}
-
-#synapse .synapse-treeview-alert {
-	position: absolute;
-	left: 0;
-	width: 100%;
-	height: auto;
-	padding: 20px;
-	opacity: 0;
-	background-color: rgba(168, 35, 35, 0.95);
-}
-#synapse .synapse-treeview-alert p.title {
-	text-shadow: 0 0 5px #000;
-	color: #fff;
-	letter-spacing: 1px;
-	font-size: 16px;
-	font-weight: bold;
-}
-#synapse .synapse-treeview-alert p.caption {
-	color: #a3a3a3;
 }
 

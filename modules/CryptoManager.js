@@ -6,11 +6,7 @@ define(function (require, exports, module) {
 	var _ = brackets.getModule("thirdparty/lodash");
 	var CryptoJS = require("../node_modules/crypto-js/crypto-js");
 
-
 	var	_currentSessionPassword = false;
-
-	
-	
 	var getSessionPassword,
 			setSessionPassword,
 			_getKey,

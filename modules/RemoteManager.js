@@ -11,6 +11,7 @@ define(function (require, exports, module) {
 	var PathManager = require("modules/PathManager");
 	var Project = require("modules/Project");
 	var Shared = require("modules/Shared");
+	var Log = require("modules/Log");
 
 	var _currentServerSetting;
 
@@ -117,10 +118,7 @@ define(function (require, exports, module) {
 			if (setting.protocol === "sftp") {
 				list = _convObjectLikeFTP(list);
 			}
-			console.log(list);
 			list = getListIgnoreExclude(setting, list);
-			
-			
 			return FileTreeView.setEntities(list, _rootEntity);
 		}, function (err) { console.error(err); })
 		.then(function (list) {
@@ -141,15 +139,25 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 
-	getList = function (entity, serverSetting, remotePath) {
-		var deferred = new $.Deferred();
+	getList = function (entity, setting, remotePath) {
+		var deferred = new $.Deferred(),
+				method = "";
+		
 		Panel.showSpinner();
-		Shared.domain.exec("List", serverSetting, remotePath)
+		
+		if (setting.protocol === "ftp") {
+			method = "getList";
+		} else
+		if (setting.protocol === "sftp") {
+			method = "sftpGetList";
+		}
+		
+		Shared.domain.exec(method, setting, remotePath)
 		.then(function (list) {
-			if (serverSetting.protocol === "sftp") {
+			if (setting.protocol === "sftp") {
 				list = _convObjectLikeFTP(list);
 			}
-			list = getListIgnoreExclude(serverSetting, list);
+			list = getListIgnoreExclude(setting, list);
 			deferred.resolve(list);
 		}, function (err) {
 			console.error(err);
@@ -159,10 +167,20 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 
-	uploadFile = function (serverSetting, localPath, remotePath) {
+	uploadFile = function (setting, localPath, remotePath) {
 		var deferred = new $.Deferred();
-		Shared.domain.exec("UploadFile", serverSetting, localPath, remotePath)
-		.then(deferred.resolve, function (err) {
+		var method = "";
+		if (setting.protocol === "ftp") {
+			method = "upload";
+		} else
+		if (setting.protocol === "sftp") {
+			method = "sftpUpload";
+		}
+		Shared.domain.exec(method, setting, localPath, remotePath)
+		.then(function () {
+			console.log("upload completed");
+			deferred.resolve();
+		}, function (err) {
 			if (err.code === 553) {
 				err = "Permission denied";
 			} else {
@@ -173,30 +191,58 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 
-	mkdir = function (serverSetting, remotePath) {
+	mkdir = function (setting, remotePath) {
 		var deferred =new $.Deferred();
-		Shared.domain.exec("Mkdir", serverSetting, remotePath)
+		var method = "";
+		if (setting.protocol === "ftp") {
+			method = "createDirectory";
+		} else
+		if (setting.protocol === "sftp") {
+			method = "sftpCreateDirectory";
+		}
+		Shared.domain.exec(method, setting, remotePath)
 		.then(function () {
 			deferred.resolve(true);
 		}, deferred.reject);
 		return deferred.promise();
 	};
 
-	removeDirectory = function (serverSetting, remotePath) {
+	removeDirectory = function (setting, remotePath) {
 		var deferred = new $.Deferred();
-		Shared.domain.exec("RemoveDirectory", serverSetting, remotePath)
-		.then(function () {
-			deferred.resolve(true);
+		var method = "";
+		if (setting.protocol === "ftp") {
+			method = "removeDirectory";
+		} else
+		if (setting.protocol === "sftp") {
+			method = "sftpRemoveDirectory";
+		}
+		Shared.domain.exec(method, setting, remotePath)
+		.then(function (res) {
+			if (res) {
+				deferred.resolve(true);
+				// TODO: DELETED
+				Log.q("The directory was deleted.");
+			} else {
+				deferred.resolve(false);
+				// TODO: FAILED
+				Log.q("The directory was not deleted.", true);
+			}
 		}, function (err) {
-			console.error(err);
 			deferred.reject(err);
+			// TODO: FAILED
 		});
 		return deferred.promise();
 	};
 
-	deleteFile = function (serverSetting, remotePath) {
+	deleteFile = function (setting, remotePath) {
 		var deferred = new $.Deferred();
-		Shared.domain.exec("DeleteFile", serverSetting, remotePath)
+		var method = "";
+		if (setting.protocol === "ftp") {
+			method = "removeFile";
+		} else {
+			method = "sftpRemoveFile";
+		}
+		Shared.domain.exec(method, setting, remotePath)
 		.then(function () {
 			deferred.resolve(true);
 		}, deferred.reject);
@@ -212,15 +258,21 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 
-	download = function (serverSetting, localPath, remotePath) {
+	download = function (setting, localPath, remotePath) {
 		var deferred = new $.Deferred();
-		Shared.domain.exec("Download", serverSetting, localPath, remotePath)
+		var method = "";
+		if (setting.protocol === "ftp") {
+			method = "download";
+		} else
+		if (setting.protocol === "sftp") {
+			method = "sftpDownload";
+		}
+		Shared.domain.exec(method, setting, localPath, remotePath)
 			.then(function () {
 				deferred.resolve(true);
 			}, deferred.reject);
 		return deferred.promise();
 	};
-
 
 	_convObjectLikeFTP = function (ents) {
 		var list = [];
@@ -269,8 +321,6 @@ define(function (require, exports, module) {
 			rights.group = digitToString(octMode.substr(-2, 1));
 			rights.user = digitToString(octMode.substr(-3, 1));
 
-			console.log(rights);
-			
 			obj.acl = false;
 			obj.owner = ent.attrs.uid;
 			obj.group = ent.attrs.gid;
@@ -282,11 +332,11 @@ define(function (require, exports, module) {
 			obj.type = ent.type;
 			obj.destType = ent.destType;
 			obj.target = ent.target;
+			obj.destType = ent.destType;
 			list.push(obj);
 		});
 		return list;
 	};
-
 
 	EventDispatcher.makeEventDispatcher(exports);
 
