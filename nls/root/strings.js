@@ -27,6 +27,10 @@
 define({
 	"APP_TITLE": "Synapse",
 
+	"SYNAPSE_RESET_KEYFILE_TILTE": "NOTE",
+	"SYNAPSE_RESET_KEYFILE_MESSAGE": "<p>You have set private key to the server setting.</p><p>however, Synapse deleted information for key just now.</p><p>It is because changed the save method for key file from this version.</p><p>I am sorry for the inconvenience, but please reselect that in the server setting panel.</p>",
+	
+	
 	"SYNAPSE_CTX_FILE_NEW": "New File",
 	"SYNAPSE_CTX_DIRECTORY_NEW": "New Directory",
 	"SYNAPSE_CTX_FILE_REFRESH": "Refresh",

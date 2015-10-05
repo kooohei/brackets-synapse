@@ -100,19 +100,21 @@ define(function (require, exports, module) {
 	 * called by [Panel.onClickConnectBtn]
 	 */
 	connect = function (setting) {
-		var deferred =  new $.Deferred();
-		var _rootEntity = FileTreeView.loadTreeView(setting);
-
-		var result = [];
+		var method 			= "",
+				result 			= [],
+				deferred 		=  new $.Deferred(),
+				_rootEntity = FileTreeView.loadTreeView(setting);
+		
 		Panel.showSpinner();
+		
 		var remoteRoot = PathManager.getRemoteRoot();
 		
-		var method = "";
 		if (setting.protocol === "ftp") {
 			method = "connect";
 		} else {
 			method = "sftpConnect";
 		}
+		
 		Shared.domain.exec(method, setting, remoteRoot)
 		.then(function (list) {
 			if (setting.protocol === "sftp") {
@@ -120,17 +122,20 @@ define(function (require, exports, module) {
 			}
 			list = getListIgnoreExclude(setting, list);
 			return FileTreeView.setEntities(list, _rootEntity);
-		}, function (err) { console.error(err); })
+		}, function (err) {
+			console.error(err);
+		})
 		.then(function (list) {
 			return Project.open(setting);
-		}, function (err) { console.error(err); })
+		}, function (err) {
+			console.error(err);
+		})
 		.then(function () {
 			_currentServerSetting = setting;
 			State.mode = ONLINE;
 			deferred.resolve(result);
 		})
 		.fail(function (err) {
-			// TODO: 接続に失敗。
 			console.error(err);
 		})
 		.always(function () {

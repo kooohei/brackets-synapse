@@ -1,10 +1,12 @@
+
 #synapse-log-container * {
 	padding: 0;
 	margin: 0;
 	border: 0;
 	text-shadow: none;
+	z-index: 2;
 }
-div#sidebar > div#synapse-log-container {
+div#synapse > div#synapse-log-container {
 	position: absolute;
 	width: 100%;
 	bottom: 0;

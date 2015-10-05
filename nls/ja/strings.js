@@ -26,6 +26,9 @@
 
 define({
 	"APP_TITLE": "Synapse",
+	
+	"SYNAPSE_RESET_KEYFILE_TILTE": "NOTE",
+	"SYNAPSE_RESET_KEYFILE_MESSAGE": "<p>Synapseはこのバージョンから鍵ファイルの保存方法が変わりました。</p><p>お手数ではありますが、サーバアカウント設定パネルより、SFTP接続で鍵認証をご利用とされているアカウントにおいては、鍵ファイルの再選択を行っていただきますようお願い申し上げます。</p>",
 
 	"SYNAPSE_CTX_FILE_NEW": "新規ファイル",
 	"SYNAPSE_CTX_DIRECTORY_NEW": "新規ディレクトリ",

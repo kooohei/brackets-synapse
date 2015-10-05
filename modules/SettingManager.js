@@ -147,7 +147,7 @@ define(function (require, exports, module) {
 			host 				: {form: $("#synapse-server-host", $serverSetting), icon: $("i.fa-desktop"), invalid: false},
 			port 				: {form: $("#synapse-server-port", $serverSetting), icon: $("i.fa-plug"), invalid: false},
 			user 				: {form: $("#synapse-server-user", $serverSetting), icon: $("i.fa-user"), invalid: false},
-			privateKey	: {form: $("#synapse-server-privateKey-path", $serverSetting), icon: $("i.fa-key"), invalid: false},
+			privateKeyPath	: {form: $("#synapse-server-privateKey-path", $serverSetting), icon: $("i.fa-key"), invalid: false},
 			passphrase	: {form: $("#synapse-server-passphrase", $serverSetting), icon: $("i.fa-unlock-alt"), invalid: false},
 			name				: {form: $("#synapse-server-setting-name", $serverSetting), icon: $("i.fa-barcode"), invalid: false},
 			dir	 				: {form: $("#synapse-server-dir", $serverSetting), icon: $("i.fa-sitemap"), invalid: false},
@@ -230,7 +230,7 @@ define(function (require, exports, module) {
 		if (prop === "password") {
 			return value !== "";
 		}
-		if (prop === "privateKey") {
+		if (prop === "privateKeyPath") {
 			return value !== "";
 		}
 		if (prop === "passphrase") {

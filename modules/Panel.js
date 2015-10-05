@@ -3,7 +3,7 @@
 define(function (require, exports, module) {
 	"use strict";
 
-	// HEADER >>
+	// External Modules >>
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
 	var Resizer = brackets.getModule("utils/Resizer");
 	var MainViewManager = brackets.getModule("view/MainViewManager");
@@ -29,7 +29,10 @@ define(function (require, exports, module) {
 	var CryptoManager = require("modules/CryptoManager");
 	var PreferenceManager = require("modules/PreferenceManager");
 	var l = require("modules/Utils").l;
-
+	
+	// <<
+	
+	// Vars Functions >>
 	var _projectState = Project.CLOSE,
 		_currentServerIndex = null,
 		_projectDir = null;
@@ -56,9 +59,6 @@ define(function (require, exports, module) {
 			_fadeOutMain,
 			_toggleConnectBtn,
 			_removeServerSettingListRow,
-			_readPrivateKeyFile,
-			_setCurrentPrivateKeyText,
-			_readPrivateKeyPath,
 			_removeTreeviewRow,
 
 			onProtocolGroup,
@@ -77,7 +77,9 @@ define(function (require, exports, module) {
 			resetExcludeFile,
 			openFileSelect,
 			resetPrivateKey;
-
+	// <<
+	
+	// UI >>
 	var j = {
 			get sb() {
 				return $("#sidebar");
@@ -114,11 +116,10 @@ define(function (require, exports, module) {
 		server_setting_html = require("text!../ui/serverSetting.html"),
 		server_list_html = require("text!../ui/serverList.html"),
 		$sidebar = $("#sidebar");
-
+	// <<
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/style.css");
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/treeview.css");
 	ExtensionUtils.loadStyleSheet(module, "../node_modules/font-awesome/css/font-awesome.min.css");
-	// <<
 
 
 	/**
@@ -133,6 +134,7 @@ define(function (require, exports, module) {
 
 		_initMainUI()
 			.then(_initServerSettingUI)
+			.then(Log.initView)
 			.then(function () {
 				Project.on(Project.PROJECT_STATE_CHANGED, onProjectStateChanged);
 				//for Devel
@@ -146,6 +148,7 @@ define(function (require, exports, module) {
 	 * Show Main Panel to side view.
 	 */
 	showMain = function () {
+		
 		if ($("#synapse-icon").hasClass("enabled")) {
 			return;
 		}
@@ -175,8 +178,43 @@ define(function (require, exports, module) {
 			return d.promise();
 		})
 		.then(function (obj) {
-			// this hook, I have to write something. but im forgot lol.
-			return new $.Deferred().resolve().promise();
+			// TODO: deprecated to 1.2.3
+			var d = new $.Deferred(),
+					settings = SettingManager.getServerSettingsCache();
+			if (settings.length === 0) {
+				return new d.resolve().promise();
+			}
+			var settingList = [];
+			var match = 0;
+			settings.forEach(function (setting) {
+				var keys = Object.keys(setting);
+				_.forEach(keys, function (key) {
+					if (key === "privateKey") {
+						if (setting.privateKey  !== "") {
+							delete setting.privateKey;
+							setting.privateKeyPath = "";
+							match++;
+							return false;
+						}
+					}
+				});
+				settingList.push(setting);
+			});
+			
+			if (match > 0) {
+				PreferenceManager.saveServerSettings(settingList)
+				.then(function () {
+					SettingManager.setServerSettings(settingList);
+					DialogCollection.showAlert(Strings.SYNAPSE_RESET_KEYFILE_TILTE, Strings.SYNAPSE_RESET_KEYFILE_MESSAGE);
+					d.resolve();
+				}, function (err) {
+					console.error("ERROR");
+					d.reject(err);
+				});
+			} else {
+				d.resolve();
+			}
+			return d.promise();
 		})
 		.then(function () {
 
@@ -311,7 +349,7 @@ define(function (require, exports, module) {
 				$("button.btn-edit", j.l).off("click", onClickEditBtn);
 				$("button.btn-delete", j.l).off("click", onClickDeleteBtn);
 				$(".close-btn", j.l).off("click", _hideServerList);
-				$("div.item", j.l).off({
+				$("div.item .synapse-server-list-info", j.l).off({
 					"mouseenter": onEnterListBtns,
 					"mouseleave": onLeaveListBtns
 				});
@@ -328,7 +366,7 @@ define(function (require, exports, module) {
 			$("button.btn-edit", j.l).on("click", onClickEditBtn);
 			$("button.btn-delete", j.l).on("click", onClickDeleteBtn);
 			$(".close-btn", j.l).on("click", _hideServerList);
-			$("div.item", j.l).on({
+			$("div.item .synapse-server-list-info", j.l).on({
 				"mouseenter": onEnterListBtns,
 				"mouseleave": onLeaveListBtns
 			});
@@ -389,7 +427,7 @@ define(function (require, exports, module) {
 				_showServerSetting(e, "insert", null);
 			}
 		});
-
+		
 		_attachWorkingSetStateChanged();
 
 		return new $.Deferred().resolve().promise();
@@ -716,8 +754,6 @@ define(function (require, exports, module) {
 			$currentBtn.edit.prop("disabled", true);
 			$currentBtn.delete.prop("disabled", true);
 			$currentBtn.connect.html(Strings.SYNAPSE_LIST_DISCONNECT);
-
-
 		}
 	};
 
@@ -928,9 +964,6 @@ define(function (require, exports, module) {
 	};
 
 	resetPrivateKey = function (e) {
-		if ($("#synapse-server-privateKey").length) {
-			$("#synapse-server-privateKey").remove();
-		}
 		$("#synapse-server-privateKey-path").val("");
 		SettingManager.validateAll();
 	};
@@ -940,32 +973,8 @@ define(function (require, exports, module) {
 	};
 
 	
-	/* unuse */
-	_readPrivateKeyPath = function (file) {
-		var reader = new FileReader();
-		var deferred = new $.Deferred();
-		reader.onload = function (e) {
-			deferred.resolve(e.target.result);
-		};
-		reader.onerror = function () {
-			deferred.reject();
-		};
-		reader.readAsDataURL(file);
-
-		return deferred.promise();
-	};
-	_readPrivateKeyFile = function (file) {
-		var reader = new FileReader();
-		var deferred = new $.Deferred();
-		reader.onload = function (e) {
-			deferred.resolve(e.target.result);
-		};
-		reader.onerror = function () {
-			deferred.reject();
-		};
-		reader.readAsText(file);
-		return deferred.promise();
-	};
+	
+	
 	_attachWorkingSetStateChanged = function () {
 		MainViewManager.on("workingSetAdd workingSetAddList workingSetRemove workingSetRemoveList workingSetUpdate", function () {
 			FileTreeView.updateTreeviewContainerSize();

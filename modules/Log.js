@@ -70,8 +70,6 @@ define(function (require, exports, module) {
 	};
 
 	initView = function () {
-		
-		
 		Shared.errorFile = FileSystem.getFileForPath(FileUtils.getParentPath(ExtensionUtils.getModulePath(module)) + "error.log");
 		FileUtils.readAsText(Shared.errorFile)
 		.then(function (text, time) {
@@ -79,7 +77,7 @@ define(function (require, exports, module) {
 		});
 		
 		var html = Mustache.render(viewSrc,{});
-		$("#sidebar").append($(html));
+		$("#synapse").append($(html));
 		$("#synapse-log-rows").hide();
 		$("#synapse-log-notice-count").hide();
 

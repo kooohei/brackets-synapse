@@ -175,8 +175,6 @@ define(function (require, exports, module) {
 	};
 
 	setEntities = function (list, parent) {
-		
-		
 		if (parent.type !== "directory" && parent.type !== "ldirectory") {
 			throw new Error("the type property of the parent object must set directory");
 		}
@@ -215,6 +213,7 @@ define(function (require, exports, module) {
 					break;
 				case "l":
 					type = item.destType;
+					
 					break;
 				default:
 					type = "block";
@@ -605,7 +604,6 @@ define(function (require, exports, module) {
 		if (entity.type === "block") {
 			$icon.addClass(Icon.block);
 			$li.addClass("treeview-block");
-		
 		}
 		$p.append($icon)
 			.append($text);
@@ -795,10 +793,8 @@ define(function (require, exports, module) {
 			if (type === "directory") {
 				_rename(newEntity, function (ent) {
 					var remotePath = PathManager.completionRemotePath(_getPathArray(ent));
-					console.log(remotePath);
 					RemoteManager.mkdir(_currentServerSetting, remotePath)
 					.then(function () {
-						//deferred.resolve();
 						return Project.createDirectoryIfExists(PathManager.completionLocalPath(_getPathArray(ent)));
 					}, function (err) {
 						_deleteEntity(ent);

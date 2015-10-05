@@ -1,4 +1,4 @@
-/*jslint node:true, vars:true, plusplus:true, devel:true, nomen:true, regexp:true, white:true, indent:2, maxerr:50 */
+/*jslint node:true, esnext: true, vars:true, plusplus:true, devel:true, nomen:true, regexp:true, white:true, indent:2, maxerr:50 */
 /*global define, $, brackets, Mustache, window, console */
 (function () {
 	"use strict";
@@ -10,6 +10,7 @@
 	var fs = require("fs");
 	var path = require("path");
 	var Q = require("q");
+	var _ = require("lodash");
 	var _domainManager = null;
 	
 	var init;
@@ -51,8 +52,6 @@
 		CommandTimeout: 5000
 	};
 	// <<
-	
-	
 	resolveSetting = function (setting) {
 		if (setting.protocol === "ftp") {
 			setting.conTimeout = ENV.ConnectionTimeout;
@@ -61,184 +60,164 @@
 		
 		if (setting.protocol === "sftp") {
 			setting.username = setting.user;
-			setting.readyTimeout = ENV.ConnectionTimeou;
-			
+			setting.readyTimeout = ENV.ConnectionTimeout;
+			setting.keepaliveCountMax = 5;
+//			setting.debug = function (arg) {
+//				console.log({SSH2_DEBUG: arg});
+//			};
 			if (setting.auth === "key") {
 				setting.privateKey = fs.readFileSync(setting.privateKeyPath);
 			}
 		}
 		return setting;
 	};
-	
-	
-	/**
-	 * Utility functions.
-	 * 
-	 * octet (100: file) (40: directory) (120: link)
-	 */
-	ftpResolveEntity = function (list, remotePath, setting) {
-		var links = [],
-				result = [],
-				promises = [],
+	ftpResolveEntity = function (setting, remotePath) {
+		var	promises = [],
 				masterQ = Q.defer(),
-				setType = null;
-		if (list.length === 0) {
-			masterQ.resolve();
-			return masterQ.promise;
-		}
+				con = new FTP();
 		
-		
-		setType = function (entity, setting) {
+		function setType (con, entity) {
 			var q = Q.defer();
-			
-			var con = new FTP();
+			con.cwd(entity.target, function (err, cwd) {
+				if (err) {
+					entity.destType = "block";
+				} else {
+					entity.destType = "ldirectory";
+				}
+				q.resolve(entity);
+			});
+			return q.promise;
+		}
+		con.on("error", function (err) {
+			masterQ.reject(err);
+			ftpClose(con);
+			return masterQ.promise;
+		});
+		con.on("ready", function () {
+			con.list(remotePath, function (err, list) {
+				if (err) {
+					masterQ.reject(err);
+					ftpClose(con);
+					return masterQ.promise;
+				}
+				
+				if (list.length === 0) {
+					masterQ.resolve([]);
+					ftpClose(con);
+					return masterQ.promise;
+				}
+				var links = _.filter(list, function (ent) { return ent.type === "l"; }),
+						result = _.filter(list, function (ent) { return ent.type !== "l"; });
+				if (links.length === 0) {
+					masterQ.resolve(list);
+					ftpClose(con);
+					return masterQ.promise;
+				}
+				Q.all(links.map(function (link) {
+					return setType(con, link);
+				}))
+				.then(function (values) {
+					values.forEach(function (val) {
+						result.push(val);
+					});
+					masterQ.resolve(result);
+					ftpClose(con);
+				}, function (err) {
+					masterQ.reject(err);
+				});
+			});
+		});
+		con.connect(setting);
+		return masterQ.promise;
+	};
+	sftpResolveEntity = function (setting, remotePath) {
+			var	con = new SFTP();
+			var masterQ = Q.defer();
+		
+			function stat(sftp, ent) {
+				var q = Q.defer(),
+						stats = ent.attrs;
+				
+				if (stats.isDirectory()) {
+					ent.type = "d";
+					q.resolve(ent);
+				} else
+				if (stats.isFile()) {
+					ent.type = "-";
+					q.resolve(ent);
+				} else
+				if (stats.isSymbolicLink()) {
+					ent.type = "l";
+					//------------------------------------------------
+					sftp.readlink(path.join(remotePath, ent.filename), function (err, target) {
+						if (err) {
+							//console.log({ERROR_1: err});
+							ent.destType = "block";
+						} else {
+							//console.log({TARGET_1: target});
+							ent.target = target;
+							//------------------------------------------------
+							sftp.lstat(ent.target, function (err, stat) {
+								if (err) {
+									//console.log({ERROR_2: err});
+									ent.destType = "block";
+									q.resolve(ent);
+								} else {
+									if (stat.isDirectory()) {
+										ent.destType = "ldirectory";
+									} else
+									if (stat.isFile()) {
+										ent.destType = "lFile";
+									} else {
+										ent.destType = "block";
+									}
+									q.resolve(ent);
+								}
+							});
+							
+							//------------------------------------------------
+						}
+					});
+					
+					//------------------------------------------------
+				}
+				return q.promise;
+			}
+		
 			con.once("error", function (err) {
-				q.reject(err);
-				ftpClose(con);
+				//console.log({sftpListError_0: err});
+				masterQ.reject(err);
 			});
 			con.once("ready", function () {
-				con.cwd(entity.target, function (err, cwd) {
+				con.sftp(function (err, sftp) {
 					if (err) {
-						entity.destType = "block";
+						//console.log({sftpListError_1: err});
+						con.end();
+						masterQ.reject(err);
+						
 					} else {
-						entity.destType = "ldirectory";
+						sftp.readdir(remotePath, function (err, list) {
+							if (err) {
+								//console.log({sftpListError_2: err});
+								con.end();
+								masterQ.reject(err);
+							} else {
+								
+								Q.all(list.map(function (ent) {
+									return stat(sftp, ent);
+								}))
+								.then(function (ents) {
+									masterQ.resolve(ents);
+									con.end();
+								});
+							}
+						});
 					}
-					q.resolve(entity);
-					ftpClose(con);
 				});
-			}).connect(setting);
-			
-			return q.promise;
-		};
-		
-		list.forEach(function (entity) {
-			if (entity.type === "l") {
-				links.push(entity);
-			} else {
-				result.push(entity);
-			}
-		});
-		
-		if (links.length === 0) {
-			masterQ.resolve(result);
-		} else {
-			var i = 0;
-			for (; i < links.length; i++) {
-				var promise = setType(links[i], setting);
-				promise.timeout(5000);
-				promises.push(promise);
-			}
-			Q.all(promises)
-			.then(function (values) {
-				values.forEach(function (val) {
-					result.push(val);
-				});
-				masterQ.resolve(result);
-			}, function (err) {
-				masterQ.reject(err);
-			});
-		}
+		}).connect(setting);
 		return masterQ.promise;
 	};
-	sftpResolveEntity = function (list, remotePath, sftp) {
-		var masterQ = Q.defer();
-		if (list.length === 0) {
-			masterQ.resolve(list);
-			return masterQ.promise;
-		}
-		var setType = function (entity) {
-			var mode = parseInt(entity.attrs.mode);
-			var octal = mode.toString(8);
-			if (octal.match(/^120[0-9]+?/)) {
-				entity.type = "l";
-			} else 
-			if (octal.match(/^100[0-9]+?/)) {
-				entity.type = "-";
-			} else 
-			if (octal.match(/^40[0-9]?/)) {
-				entity.type = "d";
-			} else {
-				entity.type = "unknonw";
-			}
-			return entity;
-		};
-		var getRealPath = function (symlinkPath) {
-			var q = Q.defer();
-			sftp.realpath(symlinkPath, function (err, realPath) {
-				if (err) {
-					q.reject(err);
-				} else {
-					q.resolve(realPath);
-				}
-			});
-			return q.promise;
-		};
-		var getDestType = function (entity) {
-			var q = Q.defer();
-			sftp.stat(entity.target, function (err, stat) {
-				if (err) {
-					q.reject(err);
-				} else {
-					var octal = stat.mode.toString(8);
-					if (octal.match(/^40[0-9]+?/)) {
-						entity.destType = "ldirectory";
-					} else
-					if (octal.match(/^100[0-9]+?/)) {
-						entity.destType = "lfile";
-					} else {
-						q.reject(new Error("File mode unknown."));
-					}
-					q.resolve(entity);
-				}
-			});
-			return q.promise;
-		};
-		var links = [],
-				result = [],
-				promises = [];
-		
-		list.forEach(function (entity) {
-			entity = setType(entity);
-			if (entity.type === "l") {
-				links.push(entity);
-			} else {
-				result.push(entity);
-			}
-		});
-		if (links.length === 0) {
-			masterQ.resolve(result);
-		} else {
-			links.forEach(function (entity) {
-				var destPath = path.join(remotePath, entity.filename);
-				var promise = (function () {
-					var q = Q.defer();
-					getRealPath(destPath)
-					.then(function (realPath) {
-						entity.target = realPath;
-						return getDestType(entity);
-					})
-					.then(function () {
-						q.resolve(entity);
-					})
-					.fail(function (err) {
-						q.reject(err);
-					});
-					return q.promise;
-				}(entity));
-				promises.push(promise);
-			});
-			Q.all(promises)
-			.then(function (values) {
-				values.forEach(function (val) {
-					result.push(val);
-				});
-				masterQ.resolve(result);
-			}, function (err) {
-				masterQ.reject(err);
-			});
-		}
-		return masterQ.promise;
-	};
+	
 	ftpClose = function (con) {
 		con.once("close", function () {});
 		con.once("end", function () {});
@@ -281,11 +260,11 @@
 		setting = resolveSetting(setting);
 		
 		var con = new SFTP();
-		con.on("error", function (err) {
+		con.once("error", function (err) {
 			cb(err);
 			con.end();
 		});
-		con.on("ready", function () {
+		con.once("ready", function () {
 			con.sftp(function (err, sftp) {
 				if (err) {
 					cb(err);
@@ -297,71 +276,24 @@
 			});
 		}).connect(setting);
 	};
-	
 	connect = function (setting, remotePath, cb) {
 		setting = resolveSetting(setting);
-		
-		var con = new FTP();
-		con.once("error", function (err) {
+		ftpResolveEntity(setting, remotePath)
+		.then(function (res) {
+			cb(null, res);
+		}, function (err) {
 			cb(err);
-			ftpClose(con);
 		});
-		
-		con.once("ready", function () {
-			con.list(remotePath, function (err, items) {
-				if (err) {
-					console.error(err);
-					cb(err);
-					ftpClose(con);
-				} else {
-					ftpResolveEntity(items, remotePath, setting)
-					.then(function (result) {
-						cb(null, result);
-					}, function (err) {
-						console.error(err);
-						cb(err);
-					})
-					.finally(function () {
-						ftpClose(con);
-					});
-				}
-			});
-		});
-		con.connect(setting);
 	};
 	sftpConnect = function (setting, remotePath, cb) {
 		setting = resolveSetting(setting);
-		
-		var con = new SFTP();
-		con.once("error", function (err) {
+		sftpResolveEntity(setting, remotePath)
+		.then(function (list) {
+			cb(null, list);
+		})
+		.fail(function (err) {
 			cb(err);
-			con.end();
 		});
-		con.once("ready", function () {
-			con.sftp(function (err, sftp) {
-				if (err) {
-					cb(err);
-					con.end();
-				} else {
-					sftp.readdir(remotePath, function (err, list) {
-						if (err) {
-							cb(err);
-							con.end();
-						} else {
-							sftpResolveEntity(list, remotePath, sftp)
-							.then(function (result) {
-								cb(null, result);
-							}, function (err) {
-								cb(err);
-							})
-							.finally(function () {
-								con.end();
-							});
-						}
-					});
-				}
-			});
-		}).connect(setting);
 	};
 	
 	/**
@@ -369,67 +301,23 @@
 	 */
 	getList = function (setting, remotePath, cb) {
 		setting = resolveSetting(setting);
-		var con = new FTP();
-		con.once("error", function (err) {
-			if (err) {
-				console.log({location: "getList > error ", err: err});
-				cb(err);
-			}
-			ftpClose(con);
+		
+		ftpResolveEntity(setting, remotePath)
+		.then(function (res) {
+			cb(null, res);
+		}, function (err) {
+			cb(err);
 		});
-		con.once("ready", function () {
-			con.list(remotePath, function (err, list) {
-				if (err) {
-					console.log({location: "getList > ready > list > err ", err: err});
-					cb(err);
-					ftpClose(con);
-				} else {
-					ftpResolveEntity(list, remotePath, con)
-					.then(function (result) {
-						cb(null, result);
-					}, function (err) {
-						cb(err);
-					})
-					.finally(function () {
-						ftpClose(con);
-					});
-				}
-			});
-		});
-		con.connect(setting);
 	};
 	sftpGetList = function (setting, remotePath, cb) {
 		setting = resolveSetting(setting);
-		var con = new SFTP();
-		con.once("error", function (err) {
+		sftpResolveEntity(setting, remotePath)
+		.then(function (list) {
+			cb(null, list);
+		})
+		.fail(function (err) {
 			cb(err);
-			con.end();
 		});
-		con.once("ready", function () {
-			con.sftp(function (err, sftp) {
-				if (err) {
-					cb(err);
-					con.end();
-				} else {
-					sftp.readdir(remotePath, function (err, list) {
-						if (err) {
-							cb(err);
-							con.end();
-						} else {
-							sftpResolveEntity(list, remotePath, sftp)
-							.then(function (result) {
-								cb(null, result);
-							}, function (err) {
-								cb(err);
-							})
-							.finally(function () {
-								con.end();
-							});
-						}
-					});
-				}
-			});
-		}).connect(setting);
 	};
 	
 	/**

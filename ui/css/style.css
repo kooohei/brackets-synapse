@@ -1,5 +1,4 @@
 
-
 #synapse {
 	-webkit-box-flex: 1;
 	-webkit-font-smoothing: antialiased;
@@ -304,13 +303,11 @@
 
 div#synapse-tree {
 	box-sizing: border-box;
-	/*-webkit-backface-visibility: hidden;
 	position: absolute;
 	top: 0;
 	left: 0;*/
 	background-color: rgb(25, 25, 25);
 	height: 100%;
-/*	z-index: 2;*/
 }
 div#synapse-tree-back {
 	background-color: rgb(22, 22, 22);

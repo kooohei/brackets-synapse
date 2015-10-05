@@ -55,10 +55,8 @@ define(function (require, exports, module) {
 		
 		var promises = [];
 		var p;
-		Log.initView()
+		PreferenceManager.init()
 		.then(function () {
-			p = PreferenceManager.init();
-			promises.push(p);
 
 			p = ExtensionDiagnosis.init();
 			promises.push(p);
@@ -68,7 +66,7 @@ define(function (require, exports, module) {
 
 			p = Panel.init();
 			promises.push(p);
-
+			
 			p = Notify.init();
 			promises.push(p);
 
