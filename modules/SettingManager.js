@@ -148,7 +148,7 @@ define(function (require, exports, module) {
 			port 				: {form: $("#synapse-server-port", $serverSetting), icon: $("i.fa-plug"), invalid: false},
 			user 				: {form: $("#synapse-server-user", $serverSetting), icon: $("i.fa-user"), invalid: false},
 			privateKeyPath	: {form: $("#synapse-server-privateKey-path", $serverSetting), icon: $("i.fa-key"), invalid: false},
-			passphrase	: {form: $("#synapse-server-passphrase", $serverSetting), icon: $("i.fa-unlock-alt"), invalid: false},
+			passphrase	: {form: $("#synapse-server-passphrase", $serverSetting), icon: $("i.fa-lock-alt"), invalid: false},
 			name				: {form: $("#synapse-server-setting-name", $serverSetting), icon: $("i.fa-barcode"), invalid: false},
 			dir	 				: {form: $("#synapse-server-dir", $serverSetting), icon: $("i.fa-sitemap"), invalid: false},
 			exclude			: {form: $("#synapse-server-exclude", $serverSetting), icon: $("i.fa-ban"), invalid: false}
@@ -304,8 +304,6 @@ define(function (require, exports, module) {
 		});
 		return res;
 	};
-	
-
 	
 	/* Private Methods */
 	_appendServerBtnState = function (state) {

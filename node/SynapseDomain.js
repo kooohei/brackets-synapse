@@ -4,7 +4,6 @@
 	"use strict";
 	
 	// HEADER >>
-	var JSFTP = require("jsftp");
 	var FTP = require("ftp");
 	var SFTP = require("ssh2").Client;
 	var fs = require("fs");
