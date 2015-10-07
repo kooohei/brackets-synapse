@@ -1,7 +1,6 @@
 {
   "name": "brackets-synapse-domain",
   "dependencies": {
-    "crypto-js": "^3.1.5",
     "ftp": "0.3.10",
     "jsftp": "^1.5.2",
     "lodash": "^3.10.1",

@@ -182,7 +182,7 @@ define(function (require, exports, module) {
 			var d = new $.Deferred(),
 					settings = SettingManager.getServerSettingsCache();
 			if (settings.length === 0) {
-				return new d.resolve().promise();
+				return d.resolve().promise();
 			}
 			var settingList = [];
 			var match = 0;
