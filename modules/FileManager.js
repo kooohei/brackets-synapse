@@ -16,6 +16,7 @@ define(function (require, exports, module) {
 	var FileTreeView = require("modules/FileTreeView");
 	var Project = require("modules/Project");
 	var RemoteManager = require("modules/RemoteManager");
+	var Log = require("modules/Log");
 	
 	var _attachEvent,
 			_detachEvent;
@@ -96,7 +97,7 @@ define(function (require, exports, module) {
 		function (err) {
 			var ent = FileTreeView.getEntityWithPath(remotePath);
 			ent.downloaded = false;
-			throw new Error("Could not save file to server<br>" + err);
+			throw new Error("Could not save file to server", err);
 		});
 	};
 

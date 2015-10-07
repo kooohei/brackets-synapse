@@ -163,6 +163,7 @@ define(function (require, exports, module) {
 	};
 	
 	initTreeViewContextMenu = function () {
+		var d = new $.Deferred();
 		CommandManager
 			.register(MenuText.SYNAPSE_CTX_FILE_REFRESH, 	ContextMenuCommandIds.SYNAPSE_FILE_REFRESH, 	FileTreeView.refresh);
 		CommandManager
@@ -194,6 +195,7 @@ define(function (require, exports, module) {
 		$("#synapse-treeview-container").contextmenu(function (e) {
 			FileTreeView.onTreeViewContextMenu(e, treeViewContextMenu);
 		});
+		return d.resolve().promise();
 	};
 	
 	/* Private Methods */

@@ -43,7 +43,8 @@ define(function (require, exports, module) {
 			_onEnter,
 			_threeSecondsAfter,
 			_fadeAttach,
-			_fadeDetach;
+			_fadeDetach,
+			writeToFile;
 
 
 
@@ -118,18 +119,22 @@ define(function (require, exports, module) {
 		}
 		queue.push(obj);
 		
-		var writeStr = "";
-		if (typeof (toFile) === "object") {
-			writeStr = JSON.stringify(toFile);
-		} else
-		if (typeof (toFile) === "string") {
-			writeStr = toFile;
+		writeToFile(obj, now);
+		
+	};
+	
+	writeToFile = function (param, now) {
+		now = now | moment().format("HH:mm:ss MMM DD").toString();
+		param = param | "no message.";
+		var str = "";
+		if (typeof (obj) === "string") {
+			str = param;
 		} else {
-			writeStr = null;
+			str = JSON.stringify(param);
 		}
-		if(writeStr) {
-			console.log(writeStr);
-			fileQueue.push("[" + now + "]:" + writeStr);
+		
+		if (str) {
+			fileQueue.push("[" + now + "]:" + str);
 		}
 	};
 
@@ -260,4 +265,5 @@ define(function (require, exports, module) {
 	exports.q = q;
 	exports.initView = initView;
 	exports.test = test;
+	exports.writeToFile = writeToFile;
 });

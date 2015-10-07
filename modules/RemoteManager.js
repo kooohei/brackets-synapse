@@ -188,8 +188,6 @@ define(function (require, exports, module) {
 		}, function (err) {
 			if (err.code === 553) {
 				err = "Permission denied";
-			} else {
-				err = "";
 			}
 			deferred.reject(err);
 		});

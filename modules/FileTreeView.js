@@ -13,6 +13,7 @@ define(function (require, exports, module) {
 	var FileSystem = brackets.getModule("filesystem/FileSystem");
 	var MainViewManager = brackets.getModule("view/MainViewManager");
 	var _ = brackets.getModule("thirdparty/lodash");
+	var Log = require("modules/Log");
 
 	var DialogCollection = require("modules/DialogCollection");
 	var PathManager = require("modules/PathManager");
@@ -159,19 +160,20 @@ define(function (require, exports, module) {
 			id: "0"
 		};
 		_setEntity(param)
-			.then(function (entity) {
-				rootEntity = entity;
-				_setElement(null);
-			});
+		.then(function (entity) {
+			rootEntity = entity;
+		})
+		.then(function () {
+			return _setElement(null);
+		})
 		return rootEntity;
 	};
 
 	clearCurrentTree = function () {
-		var deferred = new $.Deferred();
 		_currentServerSetting = null;
 		_remoteRootPath = null;
 		j.root_ul.remove();
-		return deferred.resolve().promise();
+		return new $.Deferred().resolve().promise();
 	};
 
 	setEntities = function (list, parent) {
@@ -886,7 +888,7 @@ define(function (require, exports, module) {
 					FileManager.openFile(localPath);
 					deferred.resolve();
 				}, function (err) {
-					// TODO: ERROR
+					Log.writeToFile(err);
 				});
 			}, function(err) {
 				throw new Error(err);
