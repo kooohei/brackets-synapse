@@ -9,7 +9,7 @@
 	var fs = require("fs");
 	var path = require("path");
 	var Q = require("q");
-	var _ = require("lodash");
+	var _ = require("../node_modules/lodash/index");
 	var _domainManager = null;
 	
 	var init;
