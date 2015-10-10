@@ -31,6 +31,7 @@
     "adobe",
     "edit"
   ],
+	"categories": ["editing", "external"],
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/kooohei/brackets-synapse/issues"

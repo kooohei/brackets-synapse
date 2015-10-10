@@ -44,7 +44,7 @@ Temporary Items
 
 node_modules
 node/node_modules
-__PROJ__
+__PROJ__/*
 .jsbeautifyrc
 tmp.js
 __KEYS__/*
