@@ -135,14 +135,23 @@ define(function (require, exports, module) {
 
 
 	init = function () {
-		var deferred = new $.Deferred();
+		var d = new $.Deferred();
 		_attachEvent();
-		Menu.initTreeViewContextMenu();
 		Project.on(Project.PROJECT_STATE_CHANGED, onProjectStateChanged);
-		return deferred.resolve().promise();
+		Menu.initTreeViewContextMenu()
+		.then(d.resolve);
+		return d.promise();
 	};
 
+	/**
+	 * Initialize file tree view with root entity,
+	 * root entity created by parameter.
+	 * 
+	 * @param {object} server setting object.
+	 * @return {$.Promise} 	a promise that will be resolved with root entity, that never rejected.
+	 */
 	loadTreeView = function (serverSetting) {
+		var d = new $.Deferred();
 		_currentServerSetting = serverSetting;
 		_remoteRootPath = _currentServerSetting.dir;
 		PathManager.setRemoteRoot(_remoteRootPath);
@@ -162,11 +171,12 @@ define(function (require, exports, module) {
 		_setEntity(param)
 		.then(function (entity) {
 			rootEntity = entity;
-		})
-		.then(function () {
 			return _setElement(null);
 		})
-		return rootEntity;
+		.then(function () {
+			d.resolve(rootEntity);
+		});
+		return d.promise();
 	};
 
 	clearCurrentTree = function () {
@@ -464,17 +474,23 @@ define(function (require, exports, module) {
 	};
 
 
-	/* Private Methods */
+	/**
+	 * Create UI element from Entity.
+	 * 
+	 * @param {object} the entity object.
+	 * @return {$.Promise} a promise will be resolved when create element, that never rejected.
+	 */
 	_setElement = function (entity) {
-		var deferred = new $.Deferred();
-		var $parent = null;
+		var d = new $.Deferred(),
+				$parent = null;
+		
 		if (entity === null) {
 			$parent = $("#synapse-tree");
 		} else {
 			$parent = _getElementWithEntity(entity);
 		}
 		if ($parent === null || $parent === undefined || typeof ($parent) === "undefined") {
-			throw new Error("Unexpected Exception. could not found the element");
+			return d.reject(new Error("Unexpected Exception. could not found the element")).promise();
 		}
 
 		$parent.find("ul.treeview-contents").remove();
@@ -489,7 +505,7 @@ define(function (require, exports, module) {
 			} else {
 				$ul.css({"display": "block"});
 			}
-			deferred.resolve();
+			d.resolve();
 		} else {
 			_.forEach(entity.children, function (ent) {
 				_makeRowElement(ent, $parent, $ul);
@@ -499,11 +515,17 @@ define(function (require, exports, module) {
 			} else {
 				$ul.css({"display": "block"});
 			}
-			deferred.resolve();
+			d.resolve();
 		}
-		return deferred.promise();
+		return d.promise();
 	};
-
+	
+	/**
+	 * Create Entity object with parameter.
+	 * 
+	 * @param {object} the entity object for the synapse.
+	 * @return {$.Promise} a promise that will be resolved if the entity created, that never rejected.
+	 */
 	_setEntity = function (param) {
 		var deferred = new $.Deferred();
 		var entity = new Entity(param);
@@ -541,11 +563,6 @@ define(function (require, exports, module) {
 		return entities;
 	};
 
-	/**
-	 * Return entity from corresponding jQuery object.
-	 * @param   {Object} $elem
-	 * @returns {[[Type]]} [[Description]]
-	 */
 	_getEntityWithElement = function ($elem) {
 		var id = $elem.attr("id");
 		return _getEntityWithId(id);

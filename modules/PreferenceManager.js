@@ -16,7 +16,8 @@ define(function (require, exports, module) {
 			CryptoManager 			= require("modules/CryptoManager"),
 			Log 								= require("modules/Log"),
 			Utils 							= require("modules/Utils"),
-			SettingManager 			= require("modules/SettingManager");
+			SettingManager 			= require("modules/SettingManager"),
+			Notify							= require("modules/Notify");
 
 	/**
 	 *  Persistent properties for this extension.
@@ -138,7 +139,7 @@ define(function (require, exports, module) {
 	};
 
 	/**
-	 * get server settings from preferences file.(.brackets.json)
+	 * get server settings from preferences file.(brackets.json)
 	 * * if setting was encrypted, it will be decrypted.
 	 *
 	 * @return {Array} array of server setting.
@@ -146,7 +147,7 @@ define(function (require, exports, module) {
 	loadServerSettings = function () {
 		var sessionPassword = CryptoManager.getSessionPassword(),
 				settings = _getExtensionPrefs().get("server-settings"),
-				res;
+				res = null;
 		
 		if (sessionPassword) {
 			try {
@@ -184,14 +185,14 @@ define(function (require, exports, module) {
 
 		if (safeSetting()) {
 			if (password) {
-				try {
-					STR_settings = CryptoManager.encrypt(password, STR_settings);
-				} catch(e) {
-					d.reject(new Error("could not ecrypt, unknown error.")).promise();
-
-				}
+				STR_settings = CryptoManager.encrypt(password, STR_settings);
 			} else {
-				d.reject(new Error("could not encrypt, session password is not exists.")).promise();
+				Notify.showDecryptPassword()
+				.then(function () {
+					saveServerSettings(settings);
+				}, function (err) {
+					throw new Error(err);
+				});
 			}
 		}
 		var prefs = _getExtensionPrefs();
@@ -202,8 +203,8 @@ define(function (require, exports, module) {
 			SettingManager.setServerSettings(settings);
 			d.resolve();
 		}, function (err) {
-			throw new Error(err);
-			//d.reject(err);
+			err = new Error({message: "Faild to save the server settings", err: err});
+			d.reject(err);
 		});
 		return d.promise();
 	};

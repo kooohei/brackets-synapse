@@ -31,7 +31,7 @@ define(function (require, exports, module) {
 	
 	var	_editServerSetting,
 			_connectTest,
-			_appendServerBtnState
+			_setServerBtnState
 			;
 	
 	var SERVER_SETTING_REMOVED = "SERVER_SETTING_REMOVED";
@@ -69,7 +69,11 @@ define(function (require, exports, module) {
 
 	// <<
 	
-	/* Public Methods */
+	/**
+	 * Initialize module.
+	 * 
+	 * @Return {$.Promise} promise never rejected.
+	 */
 	init = function () {
 		var deferred = new $.Deferred();
 		
@@ -84,11 +88,17 @@ define(function (require, exports, module) {
 		$("th > i.fa-plug", $serverSetting).addClass("done");
 		$("button.btn-add").addClass("disabled");
 		
-		return deferred.resolve(domain).promise();
+		return deferred.resolve().promise();
 	};
 
 	/**
-	 * called by [Panel.onEdit]
+	 * The clicked listener of setting panel.
+	 * * this function execute some process for the save server setting preprocess.
+	 * * 1. validate string input values.
+	 * * 2. validate whether the account could established connection.
+	 * 
+	 * @param {string} state value whether "update" or "insert"
+	 * 
 	 */
 	edit = function (state) {
 		var deferred = new $.Deferred();
@@ -100,36 +110,32 @@ define(function (require, exports, module) {
 			setting.auth = $("#currentAuth").val();
 		}
 		if (setting !== false) {
-			_appendServerBtnState("disabled");
+			_setServerBtnState("disabled");
+			
 			_connectTest(setting)
 			.then(function () {
-				return $.Deferred().resolve().promise();
+				Log.q("Authentication was successful with your new setting");
+				return _editServerSetting(state, setting);
 			}, function (err) {
-				Log.q("Authentication Error. Please check the setting you input.", true, err);
-				return $.Deferred().reject().promise();
+				Log.q("Failed to authentication please confirm your account setting.", true, err);
+				deferred.reject(err);
 			})
 			.then(function () {
-				_editServerSetting(state, setting)
-					.then(function () {
-						// TODO: サーバ設定が追加されました。
-						if (state === "update") {
-							Log.q("Complete, update the server setting.", false);
-						} else {
-						// TODO: サーバ設定の編集が完了しました。
-							Log.q("the server setting stored.", false);
-						}
-						Panel.showServerList();
-					}, deferred.reject);
-			}, function (err) {
-				// Log is shown at the above depend funcs.
-				deferred.reject(err);
-			}).always(function () {
-				_appendServerBtnState("enabled");
+				Panel.showServerList();
+				deferred.resolve();
+			}, deferred.reject)
+			.always(function () {
+				_setServerBtnState("enabled");
 			});
 		}
 		return deferred.promise();
 	};
-
+	
+	/**
+	 * Validate all values for server setting.
+	 * 
+	 * @return {boolean} that will be true if all values passed validate, or false if some value is invalid.
+	 */
 	validateAll = function () {
 		var deferred = new $.Deferred();
 		var invalid = [];
@@ -148,7 +154,7 @@ define(function (require, exports, module) {
 			port 				: {form: $("#synapse-server-port", $serverSetting), icon: $("i.fa-plug"), invalid: false},
 			user 				: {form: $("#synapse-server-user", $serverSetting), icon: $("i.fa-user"), invalid: false},
 			privateKeyPath	: {form: $("#synapse-server-privateKey-path", $serverSetting), icon: $("i.fa-key"), invalid: false},
-			passphrase	: {form: $("#synapse-server-passphrase", $serverSetting), icon: $("i.fa-lock-alt"), invalid: false},
+			passphrase	: {form: $("#synapse-server-passphrase", $serverSetting), icon: $("i.fa-unlock-alt"), invalid: false},
 			name				: {form: $("#synapse-server-setting-name", $serverSetting), icon: $("i.fa-barcode"), invalid: false},
 			dir	 				: {form: $("#synapse-server-dir", $serverSetting), icon: $("i.fa-sitemap"), invalid: false},
 			exclude			: {form: $("#synapse-server-exclude", $serverSetting), icon: $("i.fa-ban"), invalid: false}
@@ -208,15 +214,22 @@ define(function (require, exports, module) {
 			keys.forEach(function(key) {
 				result[key] = values[key].form.val();
 			});
-			_appendServerBtnState("enabled");
+			_setServerBtnState("enabled");
 			returnValue = result;
 		} else {
-			_appendServerBtnState("disabled");
+			_setServerBtnState("disabled");
 		}
 
 		return returnValue;
 	};
 
+	/**
+	 * Validate each properties of server setting
+	 * 
+	 * @param {string} target property name.
+	 * @param {value} entered value.
+	 * @return {boolean} that will be true if value passed validate, or false if value is invalid.
+	 */
 	validate = function (prop, value) {
 		if (prop === "host") {
 			return value !== "" && value.match(regexp.host);
@@ -265,26 +278,30 @@ define(function (require, exports, module) {
 
 	};
 
+	
 	reset = function () {
 		return init(domain);
 	};
-
+	
+	/**
+	 * Remove server setting at index
+	 * 
+	 * @param {integer} the index of setting in the server list..
+	 */
 	deleteServerSetting = function (index) {
-		var deferred = new $.Deferred();
-		var slist = getServerSettingsCache();
-		
-		var result = getServerSetting(index);
-		var list = _.filter(slist, function (item, idx, ary) {
+		var deferred = new $.Deferred(),
+				slist = getServerSettingsCache(),
+				result = getServerSetting(index),
+				list = _.filter(slist, function (item, idx, ary) {
 			return item.index !== index;
 		});
 		setServerSettings(list);
-
 		PreferenceManager.saveServerSettings(list)
 		.then(function () {
-			// TODO: サーバ設定を削除しました。
+			Log.q("Delete the server setting was successful.");
 			deferred.resolve();
 		}, function (err) {
-			// TODO: サーバ設定の削除に失敗しました。
+			Log.q("Failed to the server setting deleted.", true, err);
 			deferred.reject();
 		});
 		return deferred.promise();
@@ -305,8 +322,7 @@ define(function (require, exports, module) {
 		return res;
 	};
 	
-	/* Private Methods */
-	_appendServerBtnState = function (state) {
+	_setServerBtnState = function (state) {
 		var dev_null = null;
 		var _state = state;
 		if (state !== "enabled" && state !== "disabled") {
@@ -335,6 +351,17 @@ define(function (require, exports, module) {
 		return _serverSettings;
 	};
 
+	/**
+	 * The function is the save server setting main process.
+	 * * main process invoked by edit function,
+	 * * this function has some process, 
+	 * * first, fairing entered current directory value by protocol.
+	 * * next, create name value if that is not enterred.
+	 * 
+	 * @param {string} state "update" or "insert"
+	 * @param {object} entered values of server setting
+	 * @return {$.Promise} passthrough from PreferenceManager.saveServerSettings
+	 */
 	_editServerSetting = function (state, setting) {
 		var list = getServerSettingsCache(),
 				deferred = new $.Deferred(),
@@ -378,14 +405,29 @@ define(function (require, exports, module) {
 			list[index].index = index+1;
 		}
 		PreferenceManager.saveServerSettings(list)
-		.then(deferred.resolve, deferred.reject);
+		.then(function () {
+			var msg = "";
+			if (state === "update") {
+				msg = "Update the server setting was successful.";
+			} else {
+				msg = "Append the server setting was successful.";
+			}
+			Log.q(msg);
+			deferred.resolve();
+		}, function (err) {
+			Log.q("Failed to save the server settings", true, err);
+			deferred.reject(err);
+		});
 		
 		return deferred.promise();
 	};
 	
 
 	/**
-	 * called by edit())
+	 * Do connect to server for confirm whether authentication will be pass or not.
+	 * 
+	 * @param {object} entered values.
+	 * @return {$.Promise} a promise that will be resolved, if account pass auth.
 	 */
 	_connectTest = function (setting) {
 		var deferred = new $.Deferred();
@@ -396,11 +438,12 @@ define(function (require, exports, module) {
 			method = "connectTest";
 		}
 		Panel.showSpinner();
-		console.log(setting);
 		Shared.domain.exec(method, setting)
 		.then(function (res) {
 			deferred.resolve();
 		}, function (err) {
+			err = new Error({message: "Failed to authentication, please confirm your server setting.", err:err});
+			console.error(err);
 			deferred.reject(err);
 		})
 		.always(function () {

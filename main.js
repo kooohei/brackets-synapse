@@ -3,7 +3,7 @@
 define(function (require, exports, module) {
 	"use strict";
 
-	// >>
+	// External modules >>
 	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils"),
 			AppInit = brackets.getModule("utils/AppInit"),
 			NodeDomain = brackets.getModule("utils/NodeDomain"),
@@ -25,6 +25,7 @@ define(function (require, exports, module) {
 			Log = require("modules/Log"),
 			Shared = require("modules/Shared");
 	// <<
+	
 	var COMMAND_ID = "kohei.synapse.mainPanel";
 	var $brackets = {
 				get toolbar() {
@@ -90,12 +91,12 @@ define(function (require, exports, module) {
 
 			Async.waitForAll(promises, true)
 			.then(function () {
-				Log.q("Synapse initialized done.");
+				Log.q("Initialized completed successfully.");
 			}, function (err) {
-				throw new Error(err);
+				throw new Error({message: "Initialized failed", error: err});
 			});
 		}, function (err) {
-			console.error("Initialize Log module failed.");
+			console.error("Initialize PreferenceManager module failed.");
 		});
 		
 	});

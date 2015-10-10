@@ -125,7 +125,7 @@ define(function (require, exports, module) {
 		});
 		//For Debug >
 		//Panel.showMain();
-		//setDebugMenu();
+		setDebugMenu();
 		return new $.Deferred().resolve(domain).promise();
 	};
 	
@@ -135,21 +135,11 @@ define(function (require, exports, module) {
 			"kohei.syanpse.reloadBrackets",
 			reloadBrackets);
 		
-		var test = CommandManager.register(
-			"Test function",
-			"kohei.synapse.test",
-			Log.test);
-
 		var topMenu = Menus.getMenu(Menus.AppMenuBar.VIEW_MENU);
 		topMenu.addMenuDivider();
 		topMenu.addMenuItem(menu, {
 			key: "Ctrl-Shift-F6",
 			displeyKey: "Ctrl-Shift-F6"
-		});
-		topMenu.addMenuDivider();
-		topMenu.addMenuItem(test, {
-			key: "Ctrl-Alt-F1",
-			displayKey: "Ctrl-Alt-F1"
 		});
 	};
 	

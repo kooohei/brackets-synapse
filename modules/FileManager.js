@@ -3,7 +3,7 @@
 define(function (require, exports, module) {
 	"use strict";
 
-	// HEADER >>
+	// Modules >>
 	var EditorManager = brackets.getModule("editor/EditorManager");
 	var CommandManager = brackets.getModule("command/CommandManager");
 	var Commands = brackets.getModule("command/Commands");
@@ -17,20 +17,19 @@ define(function (require, exports, module) {
 	var Project = require("modules/Project");
 	var RemoteManager = require("modules/RemoteManager");
 	var Log = require("modules/Log");
+	// <<
 	
+	// Vars & Functions >>
 	var _attachEvent,
 			_detachEvent;
-	
 	var init,
 			openFile;
-
-	var onSaved;
-	var onDirtyFlagChange;
-	var onBeforeProjectClose;
-	var onBeforeAppClose;
-
-	var _projectState = Project.CLOSE;
-	var _modulePath = FileUtils.getParentPath(ExtensionUtils.getModulePath(module));
+	var onSaved,
+			onDirtyFlagChange,
+			onBeforeProjectClose,
+			onBeforeAppClose,
+			_projectState = Project.CLOSE,
+			_modulePath = FileUtils.getParentPath(ExtensionUtils.getModulePath(module));
 	//<<
 	
 	

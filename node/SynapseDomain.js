@@ -257,7 +257,6 @@
 	sftpConnectTest = function (setting, cb) {
 		
 		setting = resolveSetting(setting);
-		
 		var con = new SFTP();
 		con.once("error", function (err) {
 			cb(err);

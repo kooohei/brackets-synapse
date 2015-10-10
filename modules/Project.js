@@ -4,19 +4,20 @@ define(function (require, exports, module) {
 	"use strict";
 
 	// HEADER >>
-	var PathManager = require("modules/PathManager");
-	var FileSystem = brackets.getModule("filesystem/FileSystem");
-	var ProjectManager = brackets.getModule("project/ProjectManager");
-	var Async = brackets.getModule("utils/Async");
-	var FileUtils = brackets.getModule("file/FileUtils");
-	var PreferencesManager = brackets.getModule("preferences/PreferencesManager");
-	var ExtentionUtils = brackets.getModule("utils/ExtensionUtils");
-	var FileTreeView = require("modules/FileTreeView");
-	var MainViewManager = brackets.getModule("view/MainViewManager");
-	var EventDispatcher = brackets.getModule("utils/EventDispatcher");
-	var moment = require("node_modules/moment/moment");
-	var _ = brackets.getModule("thirdparty/lodash");
-	var DocumentManager = brackets.getModule("document/DocumentManager");
+	var PathManager = require("modules/PathManager"),
+			FileSystem = brackets.getModule("filesystem/FileSystem"),
+			ProjectManager = brackets.getModule("project/ProjectManager"),
+			Async = brackets.getModule("utils/Async"),
+			FileUtils = brackets.getModule("file/FileUtils"),
+			PreferencesManager = brackets.getModule("preferences/PreferencesManager"),
+			ExtentionUtils = brackets.getModule("utils/ExtensionUtils"),
+			FileTreeView = require("modules/FileTreeView"),
+			MainViewManager = brackets.getModule("view/MainViewManager"),
+			EventDispatcher = brackets.getModule("utils/EventDispatcher"),
+			moment = require("node_modules/moment/moment"),
+			_ = brackets.getModule("thirdparty/lodash"),
+			DocumentManager = brackets.getModule("document/DocumentManager"),
+			Log = require("modules/Log");
 
 	var open,
 			close,
@@ -30,7 +31,7 @@ define(function (require, exports, module) {
 
 	var
 			_initProjectContext,
-			_makeProjectDirIfIsNotExists,
+			_createSettingDirIfIsNotExists,
 			_createDirectory;
 
 	var _currentServer,
@@ -38,7 +39,6 @@ define(function (require, exports, module) {
 			_projectDir,
 			_projectBaseDir,
 			_fallbackProjectRoot,
-			_baseDirectoryIsExists,
 			_getDirectoryContents,
 			_removeDirectoryContents,
 			_removeContent,
@@ -65,7 +65,7 @@ define(function (require, exports, module) {
 
 
 	/**
-	 * Open the project when the success connected to server, then get files list.
+	 * Open the project when the success connected to server.
 	 *
 	 * * and this function, that will checked. is that exists tmporary diredtory and make.
 	 * * and this function will checked backup number via maxProjectHistory.
@@ -74,90 +74,88 @@ define(function (require, exports, module) {
 	 * @returns {$.Promise}
 	 */
 	open = function (server) {
-		/*
-		if (Connection.state === OPEN) {
-			throw new Error("Unexpected exception: Project mode should be OFFLINE before open project.");
-		}
-		*/
 		_currentServer = server;
 		var deferred = new $.Deferred();
+		
+		/**
+		 * The function will be confirm whether __PROJ__ directory is exists or not.
+		 */
 		_initProjectContext()
-			.then(_baseDirectoryIsExists,
-						function (err) {console.error(err); deferred.reject(err);})
-			.then(function () {
-				return _makeProjectDirIfIsNotExists(_currentServer);
-			},
-						function (err) {console.error(err); deferred.reject(err);})
-			.then(_getDirectoryContents,
-						function (err) {console.error(err); deferred.reject(err);})
-			.then(function (contents) {
-				var d = new $.Deferred();
-				var m = moment();
-				var now = m.format("YYYYMMDDHHmmss");
-				_projectDir =
-					FileSystem.getDirectoryForPath(
-						PathManager.getProjectDirectoryPath(server.host + "-" + server.user + "/" + now));
+		.then(function () {
+			return _createSettingDirIfIsNotExists(_currentServer);
+		}, function (err) {
+			deferred.reject(err);
+		})
+		.then(_getDirectoryContents, function (err) {
+			deferred.reject(err);
+		})
+		.then(function (contents) {
+			var d = new $.Deferred();
+			var m = moment();
+			var now = m.format("YYYYMMDDHHmmss");
+			_projectDir =
+				FileSystem.getDirectoryForPath(
+					PathManager.getProjectDirectoryPath(server.name + "_" + server.host + "_" + server.user + "/" + now));
 
-				_projectDir.create(function (err, stats) {
-					if (err) {
-						d.reject("could not create current time directory").promise();
-					} else {
-						var tmp = [];
-						if ((contents.length + 1) > maxProjectHistory) {
-							_.forEach(contents, function (content) {
-								tmp.push(content.name);
+			_projectDir.create(function (err, stats) {
+				if (err) {
+					Log.q("Failed to create the current project directory", true, err);
+					d.reject(err).promise();
+				} else {
+					var tmp = [];
+					if ((contents.length + 1) > maxProjectHistory) {
+						_.forEach(contents, function (content) {
+							tmp.push(content.name);
+						});
+						var dirs = _.sortBy(tmp, function (num) {
+							return num;
+						});
+						var offset = (contents.length + 1) - maxProjectHistory;
+						var i = 0;
+
+						var _moveToTrash = function (server, dirNames) {
+							var dd = new $.Deferred();
+							var item = FileSystem.getDirectoryForPath(PathManager.getProjectDirectoryPath(server.name + "_" + server.host + "_" + server.user + "/" + dirNames));
+
+							ProjectManager.deleteItem(item)
+							.then(dd.resolve, function (err) {
+								Log.q("Failed to delete the old project.", true, err);
+								dd.reject(err);
 							});
-							var dirs = _.sortBy(tmp, function (num) {
-								return num;
-							});
-							var offset = (contents.length + 1) - maxProjectHistory;
-							var i = 0;
-							
-							var _moveToTrash = function (server, dirNames) {
-								var dd = new $.Deferred();
-								var item = FileSystem.getDirectoryForPath(PathManager.getProjectDirectoryPath(server.host + "-" + server.user + "/" + dirNames));
-								
-								ProjectManager.deleteItem(item)
-								.then(dd.resolve, function (err) {
-									dd.reject(err);
-									throw new Error(err);
-								});
-								return dd.promise();
-							};
-							
-							var promises = [];
-							for (; i < offset; i++) {
-								var dirNames = dirs.shift();
-								promises.push(_moveToTrash(server, dirNames));
-							}
-							
-							Async.waitForAll(promises, true, 3000)
-							.then(d.resolve, d.reject);
-						} else {
-							d.resolve();
+							return dd.promise();
+						};
+
+						var promises = [];
+						for (; i < offset; i++) {
+							var dirNames = dirs.shift();
+							promises.push(_moveToTrash(server, dirNames));
 						}
+
+						Async.waitForAll(promises, true, 3000)
+						.then(d.resolve, function (err) {
+							err = new Error({message: "Error occured at the _Project.open function", err: err});
+							d.reject(err);
+						});
+					} else {
+						d.resolve();
 					}
-				});
-				return d.promise();
-			},
-						function (err) {console.error(err); deferred.reject(err);})
-			.then(function () {
-				var d = new $.Deferred();
-				_fallbackProjectRoot = ProjectManager.getProjectRoot().fullPath;
-				
-				ProjectManager.openProject(_projectDir.fullPath)
-				.then(function () {
-					STATE.setOpen();
-					d.resolve();
-				}, function (err) {
-					STATE.setClose();
-					d.reject(err);
-				});
-				return d.promise();
-			},
-						function (err) {console.error(err); deferred.reject(err);})
-			.then(deferred.resolve,
-						function (err) {console.error(err); deferred.reject(err);});
+				}
+			});
+			return d.promise();
+		}, deferred.reject)
+		.then(function () {
+			_fallbackProjectRoot = ProjectManager.getProjectRoot().fullPath;
+			return ProjectManager.openProject(_projectDir.fullPath);
+		})
+		.then(function () {
+			STATE.setOpen();
+			deferred.resolve();
+		}, function (err) {
+			STATE.setClose();
+			Log.q("Failed to open the project", true, err);
+			deferred.reject(err);
+		});
+
 		return deferred.promise();
 	};
 
@@ -178,7 +176,7 @@ define(function (require, exports, module) {
 	};
 
 	/**
-	 * Close brackets projects then opened project, that is opend when before the connected remove
+	 * Open stored project, that is stored at before connection established
 	 *
 	 * @returns {$.Promise}
 	 */
@@ -275,75 +273,102 @@ define(function (require, exports, module) {
 	};
 
 
-	/* Private Methods */
-
-	_makeProjectDirIfIsNotExists = function (server) {
-		var deferred = new $.Deferred();
-		_hostDir = FileSystem.getDirectoryForPath(PathManager.getProjectDirectoryPath(server.host + "-" + server.user));
-		_hostDir.exists(function (err, exists) {
-			if (err) {
-				return deferred.reject(err).promise();
-			} else {
-				if (!exists) {
-					_hostDir.create(function (err, res) {
-						if (err) {
-							return deferred.reject(err).promise();
-						} else {
-							deferred.resolve(_hostDir);
-						}
-					});
+	
+	/**
+	 * This function will be confirm whether the individual server setting directory is exists of not,
+	 * create that if is not exists.
+	 */
+	_createSettingDirIfIsNotExists = function (server) {
+		var deferred = new $.Deferred(),
+				_settingDir = FileSystem.getDirectoryForPath(PathManager.getProjectDirectoryPath(server.name + "_" + server.host + "_" + server.user));
+		
+		(function () {
+			var d = new $.Deferred();
+			_settingDir.exists(function (err, exists) {
+				if (err) {
+					Log.q("Failed to confirm whether the individual server setting directory is exists or not.", true, err);
+					console.error(err);
+					d.reject(err);
 				} else {
-					deferred.resolve(_hostDir);
+					d.resolve(_settingDir, exists);
 				}
+			});
+			return d.promise();
+		}())
+		.then(function (_settingDir, exists) {
+			var d = new $.Deferred();
+			if (!exists) {
+				_settingDir.create(function (err, res) {
+					if (err) {
+						Log.q("Failed to create the individual server setting directory.", true, err);
+						console.error(err);
+						d.reject(err);
+					} else {
+						d.resolve(_settingDir);
+					}
+				});
+			} else {
+				d.resolve(_settingDir);
 			}
-		});
+			return d.promise();
+		}, function (err) {
+			// anonymous function rejected.
+			err = new Error({message: "Error occured at Project._createSettingDirIfIsNotExists.", err: err});
+			console.error(err);
+			deferred.reject(err);
+		})
+		.then(deferred.resolve, deferred.reject);
 		return deferred.promise();
 	};
 
+	/**
+	 * This function will be confirm whether the directory for the remote project (__PROJ__ directory) for project is exists or not.
+	 * 
+	 * @return {$.Promise} a promise, that will be resolved when the base directory is exists
+	 * 																or that created if is not exists, or rejected.
+	 */
 	_initProjectContext = function () {
 		var deferred = new $.Deferred();
 		_projectBaseDir = FileSystem.getDirectoryForPath(PathManager.getProjectDirectoryPath());
-		_projectBaseDir.exists(function (err, res) {
-			if (err) {
-				return deferred.reject(err).promise();
-			} else {
-				if (!res) {
-					_projectBaseDir.create(function (err, res) {
-						if (err) {
-							return deferred.reject(err).promise();
-						} else {
-							deferred.resolve();
-						}
-					});
+		(function () {
+			var d = new $.Deferred();
+			_projectBaseDir.exists(function (err, res) {
+				if (err) {
+					Log.q("Failed to confirm function whether __PROJ__ directory is not exists or not.", true, err);
+					d.reject(err);
 				} else {
-					deferred.resolve();
+					d.resolve(res);
 				}
+			});
+			return d.promise();
+		}())
+		.then(function (res) {
+			if (!res) {
+				_projectBaseDir.create(function (err, res) {
+					if (err) {
+						return deferred.reject(err).promise();
+					} else {
+						deferred.resolve();
+					}
+				});
+			} else {
+				deferred.resolve();
 			}
+		}, function (err) {
+			// _projectBaseDir.exists is rejected
+			Log.q("Failed to confirm whether the directory for the remote project is exists or not.", true, err);
+			deferred.reject(err);
 		});
 		return deferred.promise();
 	};
 
-	_baseDirectoryIsExists = function () {
-		var deferred = new $.Deferred();
-		var directory = _projectBaseDir;
-		directory.exists(function (err, exists) {
-			if (err) {
-				deferred.reject(err);
-			} else {
-				if (exists) {
-					deferred.resolve(directory);
-				} else {
-					deferred.reject(new ReferenceError(directory + " does not exists."));
-				}
-			}
-		});
-		return deferred.promise();
-	};
+	
 
 	_getDirectoryContents = function (directory) {
 		var deferred = new $.Deferred();
 		directory.getContents(function (err, contents, stats, obj) {
 			if (err) {
+				Log.q("Failed to read the directory contents", true, err);
 				deferred.rejecte(err);
 			} else {
 				deferred.resolve(contents);

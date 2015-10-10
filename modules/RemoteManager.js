@@ -4,14 +4,15 @@ define(function (require, exports, module) {
 	"use strict";
 	
 	// HEADER >>
-	var _ = brackets.getModule("thirdparty/lodash");
-	var EventDispatcher = brackets.getModule("utils/EventDispatcher");
-	var FileTreeView = require("modules/FileTreeView");
-	var Panel = require("modules/Panel");
-	var PathManager = require("modules/PathManager");
-	var Project = require("modules/Project");
-	var Shared = require("modules/Shared");
-	var Log = require("modules/Log");
+	var _ = brackets.getModule("thirdparty/lodash"),
+			EventDispatcher = brackets.getModule("utils/EventDispatcher"),
+			FileUtils = brackets.getModule("file/FileUtils"),
+			FileTreeView = require("modules/FileTreeView"),
+			Panel = require("modules/Panel"),
+			PathManager = require("modules/PathManager"),
+			Project = require("modules/Project"),
+			Shared = require("modules/Shared"),
+			Log = require("modules/Log");
 
 	var _currentServerSetting;
 
@@ -56,6 +57,7 @@ define(function (require, exports, module) {
 		return new $.Deferred().resolve().promise();
 	};
 
+	
 	clear = function () {
 		jq.tv.html("");
 	};
@@ -97,13 +99,15 @@ define(function (require, exports, module) {
 	};
 
 	/**
-	 * called by [Panel.onClickConnectBtn]
+	 * This function will connect to server and get files list from server
+	 * and the project open with created entities.
+	 * 
+	 * @param {object} server setting object.
+	 * @return {$.Promise} a promise that will be resolved when opened project, or rejected.
 	 */
 	connect = function (setting) {
 		var method 			= "",
-				result 			= [],
-				deferred 		=  new $.Deferred(),
-				_rootEntity = FileTreeView.loadTreeView(setting);
+				deferred 		=  new $.Deferred();
 		
 		Panel.showSpinner();
 		
@@ -117,26 +121,48 @@ define(function (require, exports, module) {
 		
 		Shared.domain.exec(method, setting, remoteRoot)
 		.then(function (list) {
+			Log.q("Found " + list.length + " files in the directory (" + remoteRoot + ")");
+			var d = new $.Deferred();
 			if (setting.protocol === "sftp") {
 				list = _convObjectLikeFTP(list);
 			}
 			list = getListIgnoreExclude(setting, list);
-			return FileTreeView.setEntities(list, _rootEntity);
+			return d.resolve(list).promise();
 		}, function (err) {
-			console.error(err);
+			Log.q("Failed to connection established.", true, err);
+			deferred.reject(err);
+		})
+		.then(function (list) {
+			var d = new $.Deferred();
+			FileTreeView.loadTreeView(setting)
+			.then(function (rootEntity) {
+				d.resolve(list, rootEntity);
+			});
+			return d.promise();
+		})
+		.then(function (list, rootEntity) {
+			var d = new $.Deferred();
+			FileTreeView.setEntities(list, rootEntity)
+			.then(function () {
+				d.resolve(list);
+			}, function (err) {
+				Log.q("Error occured when create the entities.", true, err);
+				d.reject(err);
+			});
+			return d.promise();
 		})
 		.then(function (list) {
 			return Project.open(setting);
 		}, function (err) {
-			console.error(err);
+			deferred.reject(err);
 		})
 		.then(function () {
 			_currentServerSetting = setting;
 			State.mode = ONLINE;
-			deferred.resolve(result);
-		})
-		.fail(function (err) {
-			console.error(err);
+			deferred.resolve();
+		}, function (err) {
+			Log.q("Failed to open the project.", true, err);
+			deferred.reject(err);
 		})
 		.always(function () {
 			Panel.hideSpinner();
@@ -163,9 +189,12 @@ define(function (require, exports, module) {
 				list = _convObjectLikeFTP(list);
 			}
 			list = getListIgnoreExclude(setting, list);
+			Log.q("Found " + list.length + " files in the directory (" + remotePath + ")");
 			deferred.resolve(list);
 		}, function (err) {
-			console.error(err);
+			err = new Error({err: err, protocol: setting.protocol});
+			Log.q("Faild to read the list from the server.", true, err);
+			deferred.reject(err);
 		}).always(function () {
 			Panel.hideSpinner();
 		});
@@ -181,15 +210,18 @@ define(function (require, exports, module) {
 		if (setting.protocol === "sftp") {
 			method = "sftpUpload";
 		}
+		var filename = FileUtils.getBaseName(remotePath);
+		Panel.showSpinner();
 		Shared.domain.exec(method, setting, localPath, remotePath)
 		.then(function () {
-			console.log("upload completed");
+			Log.q(filename + " have been uploaded successfully.");
 			deferred.resolve();
 		}, function (err) {
-			if (err.code === 553) {
-				err = "Permission denied";
-			}
+			Log.q(filename + " upload to the server failed.", true, err);
 			deferred.reject(err);
+		})
+		.always(function () {
+			Panel.hideSpinner();
 		});
 		return deferred.promise();
 	};
@@ -205,8 +237,12 @@ define(function (require, exports, module) {
 		}
 		Shared.domain.exec(method, setting, remotePath)
 		.then(function () {
+			Log.q("The directory successfully created");
 			deferred.resolve(true);
-		}, deferred.reject);
+		}, function (err) {
+			Log.q("Failed to creat directory to the server", true, err);
+			deferred.reject(err);
+		});
 		return deferred.promise();
 	};
 
@@ -222,17 +258,15 @@ define(function (require, exports, module) {
 		Shared.domain.exec(method, setting, remotePath)
 		.then(function (res) {
 			if (res) {
+				Log.q("The remote directory successfully deleted");
 				deferred.resolve(true);
-				// TODO: DELETED
-				Log.q("The directory was deleted.");
 			} else {
+				Log.q("Failed to delete the remote directory", true);
 				deferred.resolve(false);
-				// TODO: FAILED
-				Log.q("The directory was not deleted.", true);
 			}
 		}, function (err) {
+			Log.q("Failed to delete the remote directory.", true, err);
 			deferred.reject(err);
-			// TODO: FAILED
 		});
 		return deferred.promise();
 	};
@@ -247,8 +281,12 @@ define(function (require, exports, module) {
 		}
 		Shared.domain.exec(method, setting, remotePath)
 		.then(function () {
+			Log.q("The remote file successfully deleted.");
 			deferred.resolve(true);
-		}, deferred.reject);
+		}, function (err) {
+			Log.q("Failed to delete the remote file.", true, err);
+			deferred.reject(err);
+		});
 		return deferred.promise();
 	};
 
@@ -256,8 +294,12 @@ define(function (require, exports, module) {
 		var deferred = new $.Deferred();
 		Shared.domain.exec("Rename", serverSetting, oldPath, newPath)
 			.then(function () {
+				Log.q("The remote file successfully renamed");
 				deferred.resolve(true);
-			}, deferred.reject);
+			}, function (err) {
+				Log.q("Failed to rename the remote file", true, err);
+				deferred.reject(err);
+			});
 		return deferred.promise();
 	};
 
@@ -272,8 +314,12 @@ define(function (require, exports, module) {
 		}
 		Shared.domain.exec(method, setting, localPath, remotePath)
 			.then(function () {
+				Log.q("The file successfully downloaded");
 				deferred.resolve(true);
-			}, deferred.reject);
+			}, function (err){
+				Log.q("Failed to download the remote file", true, err);
+				deferred.reject(err);
+			});
 		return deferred.promise();
 	};
 

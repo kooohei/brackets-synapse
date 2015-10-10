@@ -5,16 +5,17 @@ define(function (require, exports, module) {
 
 	
 	// Modules >>
-	var FileSystem = brackets.getModule("filesystem/FileSystem");
-	var FileUtils = brackets.getModule("file/FileUtils");
-
-	var _ = brackets.getModule("thirdparty/lodash");
-	var Directory = brackets.getModule("filesystem/Directory");
-	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
-	var Async = brackets.getModule("utils/Async");
-	var DialogCollection = require("modules/DialogCollection");
-	var PreferenceManager = require("modules/PreferenceManager");
-	var Utils = require("modules/Utils");
+	var FileSystem 				= brackets.getModule("filesystem/FileSystem"),
+			FileUtils 				= brackets.getModule("file/FileUtils"),
+			_ 								= brackets.getModule("thirdparty/lodash"),
+			Directory 				= brackets.getModule("filesystem/Directory"),
+			ExtensionUtils 		= brackets.getModule("utils/ExtensionUtils"),
+			Async 						= brackets.getModule("utils/Async");
+	
+	var DialogCollection 	= require("modules/DialogCollection"),
+			PreferenceManager = require("modules/PreferenceManager"),
+			Utils 						= require("modules/Utils"),
+			Log 							= require("modules/Log");
 	
 	var PATH_TO_PACKAGE_JSON = FileUtils.getParentPath(ExtensionUtils.getModulePath(module)) + "package.json";
 	var _getVersionFromPackageJson,
@@ -27,6 +28,12 @@ define(function (require, exports, module) {
 	// <<
 
 	
+	/**
+	 * Return a string version number from the extension's package.json.
+	 * (Real version)
+	 * 
+	 * @Return {$.Promise} a promise that will be resolved with the version number, and that never rejected.
+	 */
 	_getVersionFromPackageJson = function () {
 		var d							= new $.Deferred(),
 				file = FileSystem.getFileForPath(PATH_TO_PACKAGE_JSON);
@@ -36,11 +43,20 @@ define(function (require, exports, module) {
 			var version = JSON.parse(text).version;
 			d.resolve(version);
 		}, function (err) {
-			//throw Utils.getError("", "ExtensionDiagnosis", "_getVersionFromPackageJson", err);
+			err =  new Error({message: "SYNAPSE: The version number failed to read from extension's package.json.", err: err});
+			console.error(err);
+			d.reject(err);
 		});
 		return d.promise();
 	};
 
+	
+	/**
+	 * Invoke other function for check to environment for this extension at first launch,
+	 * after Synapse  will be updated or installed.
+	 * 
+	 * @Return {$.Promise} a promise never rejected.
+	 */
 	_firstLaunch = function () {
 		if (PreferenceManager.getVersion() !== _getVersionFromPackageJson()) {
 			return _checkKeysDirectory();
@@ -49,10 +65,17 @@ define(function (require, exports, module) {
 		}
 	};
 
+	/**
+	 * Get child contents in the directory
+	 * 
+	 * @Return {$.Promise} a promise will be resolved with the contents, or rejected if the directory contents fails to load.
+	 */
 	_getDirectoryContents = function (dir) {
 		var d = $.Deferred();
 		dir.getContents(function (err, contents, stats, statsErrors) {
 			if (err) {
+				err =new Error({message: "SYNAPSE: Failed to load contents", err: err});
+				console.error(err);
 				d.reject(err);
 			} else {
 				d.resolve(contents);
@@ -61,6 +84,11 @@ define(function (require, exports, module) {
 		return d.promise();
 	};
 
+	/**
+	 * The function checked whether deprecated environment is exists or not.
+	 * 
+	 * @Return {$.Promise} a promise will be rejected if the could not remove deprecated environment or resolved if the process completed.
+	 */
 	_checkKeysDirectory = function () {
 		var d = new $.Deferred();
 		var path = FileUtils.getParentPath(ExtensionUtils.getModulePath(module)) + "__KEYS__";
@@ -79,12 +107,16 @@ define(function (require, exports, module) {
 						});
 						keysdir.moveToTrash(function (err) {
 							if (err) {
+								err = new Error({message: "SYNAPSE: Failed to remove file for deprecated environment", err: err});
+								console.error(err);
 								d.reject(err);
 							}
 						});
 						DialogCollection.showAlert("Alert", message);
 					} else {
 						keysdir.moveToTrash(function (err) {
+							err = new Error({message: "SYNAPSE: Failed to remove file for deprecated environment", err: err});
+							console.error(err);
 							d.reject(err);
 						});
 					}
@@ -99,6 +131,12 @@ define(function (require, exports, module) {
 		return d.promise();
 	};
 	
+	/**
+	 * The function checked whether file for the error log is exists or not.
+	 * that will be create if the file is not exists.
+	 * 
+	 * @Return {$.Promise} a promise will be rejected if the file could not created, or resolved if the process completed
+	 */
 	_chkErrorLog = function () {
 		var d = new $.Deferred();
 		var file = FileSystem.getFileForPath(FileUtils.getParentPath(ExtensionUtils.getModulePath(module)) + "error.log");
@@ -108,6 +146,8 @@ define(function (require, exports, module) {
 				.then(function () {
 					d.resolve();
 				}, function (err) {
+					err = new Error({message: "SYNAPSE: ailed to create file for error log.", err: err});
+					console.error(err);
 					d.reject(err);
 				});
 			} else {
@@ -118,7 +158,11 @@ define(function (require, exports, module) {
 		return d.promise();
 	};
 
-	
+	/**
+	 * Invoke function, which is divided into individual functions for initialization.
+	 * 
+	 * @Return {$.Promise} a promise will be rejected with the error object, or resolved if the all processes completed.
+	 */
 	init = function () {
 		var d = new $.Deferred();
 		_firstLaunch()
@@ -135,7 +179,5 @@ define(function (require, exports, module) {
 	};
 
 	exports.init = init;
-	
-	
 	
 });

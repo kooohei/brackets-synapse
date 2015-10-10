@@ -123,7 +123,7 @@ define(function (require, exports, module) {
 
 
 	/**
-	 * Initialize to module.
+	 * Initialize module.
 	 *
 	 * @param   {NodeDomain} domain
 	 * @returns {$.Promise} never rejected.
@@ -133,15 +133,15 @@ define(function (require, exports, module) {
 		_projectState = Project.CLOSE;
 
 		_initMainUI()
-			.then(_initServerSettingUI)
-			.then(Log.initView)
-			.then(function () {
-				Project.on(Project.PROJECT_STATE_CHANGED, onProjectStateChanged);
-				//for Devel
-				//showMain();
-				//brackets.app.showDeveloperTools();
-				d.resolve();
-			});
+		.then(_initServerSettingUI)
+		.then(Log.init)
+		.then(function () {
+			Project.on(Project.PROJECT_STATE_CHANGED, onProjectStateChanged);
+			//for Devel
+			//showMain();
+			//brackets.app.showDeveloperTools();
+			d.resolve();
+		});
 		return d.promise();
 	};
 	/**
@@ -154,16 +154,28 @@ define(function (require, exports, module) {
 		}
 
 		var d = new $.Deferred();
+		
+		/**
+		 * if setting is encrypted then show dialog for the entered password
+		 * 
+		 * @return {$.Promise} a promise never rejected.
+		 */
 		(function () {
 			var d = new $.Deferred();
 			if (PreferenceManager.safeSetting()) {
-				return Notify.showDecryptPassword();
+				Notify.showDecryptPassword()
+				.then(d.resolve);
 			} else {
 				d.resolve();
 			}
-			return new $.Deferred().resolve().promise();
+			return d.promise();
 		}())
 		.then(function () {
+			/**
+			 * if setting is not encrypted then show dialog for the notify security alert.
+			 * 
+			 * @return {$.Promise} a promise never rejected.
+			 */
 			var d = new $.Deferred();
 			if (!PreferenceManager.safeSetting()) {
 				var list = PreferenceManager.loadServerSettings();
@@ -178,7 +190,11 @@ define(function (require, exports, module) {
 			return d.promise();
 		})
 		.then(function (obj) {
-			// TODO: deprecated to 1.2.3
+			/**
+			 * this section is looking for a property that have been deprecated
+			 * and delete if that is exists.
+			 */
+			// TODO: deprecated to 1.2.5
 			var d = new $.Deferred(),
 					settings = SettingManager.getServerSettingsCache();
 			if (settings.length === 0) {
@@ -208,7 +224,7 @@ define(function (require, exports, module) {
 					DialogCollection.showAlert(Strings.SYNAPSE_RESET_KEYFILE_TILTE, Strings.SYNAPSE_RESET_KEYFILE_MESSAGE);
 					d.resolve();
 				}, function (err) {
-					console.error("ERROR");
+					Log.q("Failed to encrypted the server settings", true, err);
 					d.reject(err);
 				});
 			} else {
@@ -322,17 +338,17 @@ define(function (require, exports, module) {
 		var tvcHeight = j.tvc.outerHeight() + "px";
 		var deferred = new $.Deferred();
 		CommandManager.execute(Commands.FILE_CLOSE_ALL)
-			.then(function () {
-				return Project.closeProject();
-			})
-			.then(function () {
-				return Project.close();
+			.then(Project.closeProject)
+			.then(Project.close, function (err) {
+				Log.q("Failed to open the fallback project.", true, err);
+				deferred.reject(err);
 			})
 			.then(function () {
 				deferred.resolve();
 			})
 			.fail(function (err) {
-				Log.q("coud not terminate function for close project", true);
+				err = new Error({message: "Failed to close the project", err: err});
+				console.error(err);
 				deferred.reject(err);
 			});
 		return deferred.promise();
@@ -403,9 +419,9 @@ define(function (require, exports, module) {
 			});
 	};
 	/**
-	 * Initialize main panel, and register some events.
+	 * Initialize Synapse main UI.
 	 *
-	 * @returns {$.Promise}
+	 * @returns {$.Promise} a promise never rejected.
 	 */
 	_initMainUI = function () {
 		var source = Mustache.render(main_html, {
@@ -855,16 +871,18 @@ define(function (require, exports, module) {
 				});
 				return;
 			}
-
 			Log.q("Project is already opened");
 			return;
 		}
 
 		RemoteManager.connect(server)
-			.then(function () {
-				_currentServerIndex = index;
-				_toggleConnectBtn();
-			});
+		.then(function () {
+			_currentServerIndex = index;
+			_toggleConnectBtn();
+		}, function (err) {
+			err = new Error({message: "Failed to connection established.", err: err});
+			console.error(err);
+		});
 	};
 
 	onClickEditBtn = function (e) {
@@ -883,7 +901,7 @@ define(function (require, exports, module) {
 		var deferred = new $.Deferred();
 
 		if (_projectState === Project.OPEN) {
-			Log.q("The setting was not deleted when the openning project", true);
+			Log.q("Failed to the server setting deleted", true);
 			return deferred.reject().promise();
 		}
 
@@ -957,7 +975,7 @@ define(function (require, exports, module) {
 				}
 			} else {
 				console.error(err);
-				Log.q("Some error has occurred.", true);
+				Log.q("Some error has occurred.", true, err);
 			}
 		});
 		return d.promise();

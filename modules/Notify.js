@@ -133,7 +133,7 @@ define(function (require, exports, module) {
 					settings = PreferenceManager.loadServerSettings();
 				} catch(e) {
 					console.error(e);
-					Log.q("The server settings could not load from Preference files", true);
+					Log.q("The server settings could not load from Preference files", true, e);
 				}
 				CryptoManager.setSessionPassword($password.val());
 				PreferenceManager.setUseCrypt(true);
@@ -141,10 +141,11 @@ define(function (require, exports, module) {
 				PreferenceManager.saveServerSettings(settings)
 				.then(close)
 				.then(function () {
-					Log.q("Success. The server setting was encrypted. ", false);
+					Log.q("Encrypt the server setting was sucessful.");
 					d.resolve();
 				}, function (err) {
-					//throw Utils.getError("", "Notify", "showSecureWarning", err);
+					Log.q("Failed to the server setting encrypted", true, err);
+					d.reject(err);
 				});
 			}
 		});

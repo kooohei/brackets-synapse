@@ -31,9 +31,8 @@ define(function (require, exports, module) {
 	
 	var _bounding = false;
 
-	var initView,
+	var init,
 			q,
-			test,
 			_toggle,
 			_expand,
 			_collapse,
@@ -51,7 +50,6 @@ define(function (require, exports, module) {
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/log.css");
 	// <<
 
-
 	Array.observe(queue, function (changes) {
 		_.forEach(changes, function (change) {
 			if ((change.type === "splice" || change.type === "remove") && change.object.length > 0) {
@@ -67,14 +65,18 @@ define(function (require, exports, module) {
 		});
 	});
 
-	test = function () {
-	};
-
-	initView = function () {
+	/**
+	 * Initialize module.
+	 * 
+	 * @Return {$.Promise} a promise never rejected.
+	 */
+	init = function () {
 		Shared.errorFile = FileSystem.getFileForPath(FileUtils.getParentPath(ExtensionUtils.getModulePath(module)) + "error.log");
 		FileUtils.readAsText(Shared.errorFile)
 		.then(function (text, time) {
 			errorFileBuffer = text.split(/\n/);
+		}, function (err) {
+			throw new Error({message: "Failed to read from error log", err: err});
 		});
 		
 		var html = Mustache.render(viewSrc,{});
@@ -100,7 +102,18 @@ define(function (require, exports, module) {
 		return new $.Deferred().resolve().promise();
 	};
 
+	/**
+	 * Append new message to the log queue.
+	 * 
+	 * @param {string} 	message
+	 * @param {object} 	error
+	 * @param {mix} 		toFile It will be write to error log, after that change to string if the value is object.
+	 */
 	q = function (message, error, toFile) {
+		
+		error = error | false;
+		toFile = toFile | null;
+		
 		var m = moment(),
 				now = m.format("HH:mm:ss MMM DD").toString();
 		if (error) {
@@ -118,11 +131,16 @@ define(function (require, exports, module) {
 			_onLeave();
 		}
 		queue.push(obj);
-		
-		writeToFile(obj, now);
-		
+		if (toFile) {
+			writeToFile(obj, now);
+		}
 	};
 	
+	/**
+	 * Append new message to the file queue.
+	 * this function invoked by above the function "q"
+	 * actual write to file by the queue's array observer.
+	 */
 	writeToFile = function (param, now) {
 		now = now | moment().format("HH:mm:ss MMM DD").toString();
 		param = param | "no message.";
@@ -136,8 +154,14 @@ define(function (require, exports, module) {
 		if (str) {
 			fileQueue.push("[" + now + "]:" + str);
 		}
+		throw new Error(param);
 	};
 
+	/**
+	 * Toggle display console panel
+	 * 
+	 * @return {$.Promise} a promise that will be resolved if complete animation. that never rejected.
+	 */
 	_toggle = function () {
 		var d = new $.Deferred(),
 				$container = $("#synapse-log-container"),
@@ -165,6 +189,11 @@ define(function (require, exports, module) {
 		return d.promise();
 	};
 
+	/**
+	 * Hide console panel.
+	 * 
+	 * @return {$.Promise} a promise that will be resolved if the panel closed. that never rejected.
+	 */
 	_collapse = function () {
 		var d = new $.Deferred(),
 				$container = $("#synapse-log-container"),
@@ -182,6 +211,11 @@ define(function (require, exports, module) {
 		return d.promise();
 	};
 
+	/**
+	 * Show console panel.
+	 * 
+	 * @return {$.Promise} a promise that will be resolved if the panel shown. that never rejected.
+	 */
 	_expand = function () {
 		var d = new $.Deferred(),
 				$container = $("#synapse-log-container"),
@@ -197,10 +231,14 @@ define(function (require, exports, module) {
 			$("#synapse-log-rows").show();
 			_fadeDetach();
 			d.resolve();
-		}, d.reject);
+		});
 		return d.promise();
 	};
 
+	/**
+	 * Append message object to console panel.
+	 * * create actual display element from message object then it will be append console.
+	 */
 	_add = function (item) {
 		var d = new $.Deferred(),
 				$rows = $("#synapse-log-rows"),
@@ -221,10 +259,17 @@ define(function (require, exports, module) {
 		$rows.prepend($row);
 	};
 
+	/**
+	 * Attach fade animation listener
+	 * * This handler is one shot, because that invoke when the execute toggled console.
+	 */
 	_fadeAttach = function () {
 		j.area.one("mouseenter", _onEnter);
 	};
 	
+	/**
+	 * Detach fade animation listener.
+	 */
 	_fadeDetach = function () {
 		if (fadeTimer !== null) {
 			clearTimeout(fadeTimer);
@@ -235,6 +280,9 @@ define(function (require, exports, module) {
 		j.area.off("mouseleave", _onLeave);
 	};
 	
+	/**
+	 * The listener of mouse enter for the change console opacity.
+	 */
 	_onEnter = function (e) {
 		if (fadeTimer !== null) {
 			clearTimeout(fadeTimer);
@@ -243,6 +291,9 @@ define(function (require, exports, module) {
 		j.area.removeClass("transparency");
 		j.area.one("mouseleave", _onLeave);
 	};
+	/**
+	 * The listener of mouse leave for the change console opacity.
+	 */
 	_onLeave = function (e) {
 		if (fadeTimer !== null) {
 			clearTimeout(fadeTimer);
@@ -251,19 +302,26 @@ define(function (require, exports, module) {
 		fadeTimer = setTimeout(_threeSecondsAfter, 3000);
 		j.area.one("mouseenter", _onEnter);
 	};
+	/**
+	 * This listener will be called after 3 seconds of call of _onLeave function for automatic fade out.
+	 * * 
+	 */
 	_threeSecondsAfter = function (e) {
 		j.area.addClass("transparency");
 		fadeTimer = null;
 	};
 
-	
+	/**
+	 * Write to the head of error log file actually.
+	 * 
+	 * @param {string}
+	 */
 	_prependFile = function (line) {
 		errorFileBuffer.unshift(line);
 		FileUtils.writeText(Shared.errorFile, errorFileBuffer.join("\n"));
 	};
 
 	exports.q = q;
-	exports.initView = initView;
-	exports.test = test;
+	exports.init = init;
 	exports.writeToFile = writeToFile;
 });

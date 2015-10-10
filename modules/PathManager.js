@@ -55,8 +55,8 @@ define(function (require, exports, module) {
 		} else {
 			var ary = _path.split('/');
 			remoteRoot = ary.filter(function (item) {
-										return (item !== "") && (item !== ".") && (item !== "..");
-									});
+				return (item !== "") && (item !== ".") && (item !== "..");
+			});
 		}
 	};
 
@@ -102,7 +102,7 @@ define(function (require, exports, module) {
 	};
 
 
-
+	
 	getProjectDirectoryPath = function (_path) {
 		var path = _path || "";
 		var modulePath = FileUtils.getParentPath(ExtensionUtils.getModulePath(module));
