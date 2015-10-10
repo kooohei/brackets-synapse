@@ -17,6 +17,7 @@
   },
   "i18n": [
     "en",
+		"de",
     "jp"
   ],
   "main": "main.js",
