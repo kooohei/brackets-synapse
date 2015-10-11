@@ -42,8 +42,8 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
-# node/node_modules/*
-# !node/node_modules/ftp
+node/node_modules/*
+!node/node_modules/ftp
 __PROJ__/*
 .jsbeautifyrc
 error.log
