@@ -125,7 +125,7 @@ define(function (require, exports, module) {
 		});
 		//For Debug >
 		//Panel.showMain();
-		//setDebugMenu();
+		setDebugMenu();
 		return new $.Deferred().resolve(domain).promise();
 	};
 	
