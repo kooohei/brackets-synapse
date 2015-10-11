@@ -132,7 +132,7 @@ define(function (require, exports, module) {
 
 						Async.waitForAll(promises, true, 3000)
 						.then(d.resolve, function (err) {
-							err = new Error({message: "Error occured at the _Project.open function", err: err});
+							err = new Error({message: "Error occured at the _Project.open function", err: err.toString()});
 							d.reject(err);
 						});
 					} else {
@@ -312,7 +312,7 @@ define(function (require, exports, module) {
 			return d.promise();
 		}, function (err) {
 			// anonymous function rejected.
-			err = new Error({message: "Error occured at Project._createSettingDirIfIsNotExists.", err: err});
+			err = new Error({message: "Error occured at Project._createSettingDirIfIsNotExists.", err: err.toString()});
 			console.error(err);
 			deferred.reject(err);
 		})

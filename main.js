@@ -94,7 +94,7 @@ define(function (require, exports, module) {
 			.then(function () {
 				Log.q("Initialized completed successfully.");
 			}, function (err) {
-				throw new Error({message: "Initialized failed", error: err});
+				throw new Error({message: "Initialized failed", error: err.toString()});
 			});
 		}, function (err) {
 			console.error("Initialize PreferenceManager module failed.");

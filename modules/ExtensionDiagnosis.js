@@ -42,7 +42,7 @@ define(function (require, exports, module) {
 			var version = JSON.parse(text).version;
 			d.resolve(version);
 		}, function (err) {
-			err =  new Error({message: "SYNAPSE: The version number failed to read from extension's package.json.", err: err});
+			err =  new Error({message: "SYNAPSE: The version number failed to read from extension's package.json.", err: err.toString()});
 			console.error(err);
 			d.reject(err);
 		});
@@ -73,7 +73,7 @@ define(function (require, exports, module) {
 		var d = $.Deferred();
 		dir.getContents(function (err, contents, stats, statsErrors) {
 			if (err) {
-				err =new Error({message: "SYNAPSE: Failed to load contents", err: err});
+				err =new Error({message: "SYNAPSE: Failed to load contents", err: err.toString()});
 				console.error(err);
 				d.reject(err);
 			} else {
@@ -108,7 +108,7 @@ define(function (require, exports, module) {
 						
 						keysdir.moveToTrash(function (err) {
 							if (err) {
-								err = new Error({message: "SYNAPSE: Failed to remove file for deprecated environment", err: err});
+								err = new Error({message: "SYNAPSE: Failed to remove file for deprecated environment", err: err.toString()});
 								console.error(err);
 								d.reject(err);
 							}
@@ -116,7 +116,7 @@ define(function (require, exports, module) {
 						DialogCollection.showAlert("Alert", message);
 					} else {
 						keysdir.moveToTrash(function (err) {
-							err = new Error({message: "SYNAPSE: Failed to remove file for deprecated environment", err: err});
+							err = new Error({message: "SYNAPSE: Failed to remove file for deprecated environment", err: err.toString()});
 							console.error(err);
 							d.reject(err);
 						});
@@ -147,7 +147,7 @@ define(function (require, exports, module) {
 				.then(function () {
 					d.resolve();
 				}, function (err) {
-					err = new Error({message: "SYNAPSE: ailed to create file for error log.", err: err});
+					err = new Error({message: "SYNAPSE: ailed to create file for error log.", err: err.toString()});
 					console.error(err);
 					d.reject(err);
 				});

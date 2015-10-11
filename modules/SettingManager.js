@@ -442,7 +442,7 @@ define(function (require, exports, module) {
 		.then(function (res) {
 			deferred.resolve();
 		}, function (err) {
-			err = new Error({message: "Failed to authentication, please confirm your server setting.", err:err});
+			err = new Error({message: "Failed to authentication, please confirm your server setting.", err:err.toString()});
 			console.error(err);
 			deferred.reject(err);
 		})

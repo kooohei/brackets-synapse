@@ -76,7 +76,7 @@ define(function (require, exports, module) {
 		.then(function (text, time) {
 			errorFileBuffer = text.split(/\n/);
 		}, function (err) {
-			throw new Error({message: "Failed to read from error log", err: err});
+			throw new Error({message: "Failed to read from error log", err: err.toString()});
 		});
 		
 		var html = Mustache.render(viewSrc,{});
@@ -110,16 +110,16 @@ define(function (require, exports, module) {
 	 * @param {mix} 		toFile It will be write to error log, after that change to string if the value is object.
 	 */
 	q = function (message, error, toFile) {
-		
+		var mess = message;
 		error = error | false;
 		toFile = toFile | null;
 		
 		var now = Utils.now();
 		if (error) {
-			message = "<span class='synapse-log-error'>ERROR</span>" + message;
+			mess = "<span class='synapse-log-error'>ERROR</span>" + message;
 		}
 		var obj = {
-			message: message,
+			message: mess,
 			now: now,
 			error: error
 		};
@@ -131,7 +131,13 @@ define(function (require, exports, module) {
 		}
 		queue.push(obj);
 		if (toFile) {
-			writeToFile(obj, now);
+			var param = {
+				message: message,
+				now: now,
+				error: toFile
+				
+			};
+			writeToFile(param, now);
 		}
 	};
 	
@@ -147,7 +153,7 @@ define(function (require, exports, module) {
 		if (typeof (obj) === "string") {
 			str = param;
 		} else {
-			str = JSON.stringify(param);
+			str = param.toString();
 		}
 		
 		if (str) {

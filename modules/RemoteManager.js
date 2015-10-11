@@ -192,7 +192,7 @@ define(function (require, exports, module) {
 			Log.q("Found " + list.length + " files in the directory (" + remotePath + ")");
 			deferred.resolve(list);
 		}, function (err) {
-			err = new Error({err: err, protocol: setting.protocol});
+			err = new Error({err: err.toString(), protocol: setting.protocol});
 			Log.q("Faild to read the list from the server.", true, err);
 			deferred.reject(err);
 		}).always(function () {

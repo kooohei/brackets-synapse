@@ -10,6 +10,7 @@ define(function (require, exports, module) {
 			DocumentManager		= brackets.getModule("document/DocumentManager"),
 			CommandManager		= brackets.getModule("command/CommandManager"),
 			FileSystem				= brackets.getModule("filesystem/FileSystem"),
+			_									= brackets.getModule("thirdparty/lodash"),
 			FileUtils					= brackets.getModule("file/FileUtils"),
 			Commands					= brackets.getModule("command/Commands"),
 			Async							= brackets.getModule("utils/Async"),
@@ -26,7 +27,6 @@ define(function (require, exports, module) {
 			Log								= require("modules/Log"),
 			CryptoManager			= require("modules/CryptoManager"),
 			PreferenceManager	= require("modules/PreferenceManager"),
-			_									= require("node/node_modules/lodash/index"),
 			l									= require("modules/Utils").l;
 	
 	// <<
@@ -346,7 +346,7 @@ define(function (require, exports, module) {
 				deferred.resolve();
 			})
 			.fail(function (err) {
-				err = new Error({message: "Failed to close the project", err: err});
+				err = new Error({message: "Failed to close the project", err: err.toString()});
 				console.error(err);
 				deferred.reject(err);
 			});
@@ -879,7 +879,7 @@ define(function (require, exports, module) {
 			_currentServerIndex = index;
 			_toggleConnectBtn();
 		}, function (err) {
-			err = new Error({message: "Failed to connection established.", err: err});
+			err = new Error({message: "Failed to connection established.", err: err.toString()});
 			console.error(err);
 		});
 	};
