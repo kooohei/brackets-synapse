@@ -105,6 +105,9 @@
 					ftpClose(con);
 					return masterQ.promise;
 				}
+				
+				list = _.filter(list, function (ent) { return ent.name !== "." && ent.name !== ".."; });
+				
 				var links = _.filter(list, function (ent) { return ent.type === "l"; }),
 						result = _.filter(list, function (ent) { return ent.type !== "l"; });
 				if (links.length === 0) {

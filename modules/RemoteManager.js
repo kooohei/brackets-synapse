@@ -64,7 +64,7 @@ define(function (require, exports, module) {
 
 	getListIgnoreExclude = function (serverSetting, list) {
 		if (serverSetting.exclude === undefined || serverSetting.exclude  === "") {
-			serverSetting.exclude = "^\.$, ^\.\.$, ^\..+$";
+			//serverSetting.exclude = "^\.$, ^\.\.$, ^\..+$";
 			return list;
 		}
 		
