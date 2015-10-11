@@ -13,11 +13,11 @@ define(function (require, exports, module) {
 			MainViewManager			= brackets.getModule("view/MainViewManager"),
 			EventDispatcher			= brackets.getModule("utils/EventDispatcher"),
 			DocumentManager			= brackets.getModule("document/DocumentManager"),
+			_										= brackets.getModule("thirdparty/lodash"),
 			PathManager					= require("modules/PathManager"),
 			Log									= require("modules/Log"),
-			FileTreeView				= require("modules/FileTreeView"),
-			_										= require("node/node_modules/lodash/index"),
-			moment							= require("node/node_modules/moment/moment");
+			Utils								= require("modules/Utils"),
+			FileTreeView				= require("modules/FileTreeView");
 
 	var open,
 			close,
@@ -91,8 +91,7 @@ define(function (require, exports, module) {
 		})
 		.then(function (contents) {
 			var d = new $.Deferred();
-			var m = moment();
-			var now = m.format("YYYYMMDDHHmmss");
+			var now = Utils.now("YYYYMMDDhhmmss");
 			_projectDir =
 				FileSystem.getDirectoryForPath(
 					PathManager.getProjectDirectoryPath(server.name + "_" + server.host + "_" + server.user + "/" + now));

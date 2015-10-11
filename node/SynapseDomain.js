@@ -8,9 +8,8 @@
 			path						= require("path"),
 			FTP							= require("ftp"),
 			SFTP						= require("ssh2").Client,
-			Q								= require("q"),
-			_								= require("lodash"),
-			_domainManager	= null;
+			Q								= require("q");
+			
 	
 	var init;
 	
@@ -43,7 +42,7 @@
 			download,
 			sftpDownload;
 	
-	
+	var _domainManager	= null;
 	
 	var ENV = {
 		//milseconds.
@@ -106,10 +105,17 @@
 					return masterQ.promise;
 				}
 				
-				list = _.filter(list, function (ent) { return ent.name !== "." && ent.name !== ".."; });
+				list = list.filter(function (elem, idx, ary) {
+					return elem.name !== "." && elem.name !== "..";
+				});
 				
-				var links = _.filter(list, function (ent) { return ent.type === "l"; }),
-						result = _.filter(list, function (ent) { return ent.type !== "l"; });
+				var links = list.filter(function (elem, idx, ary) {
+							return elem.type === "l";
+						}),
+						result = list.filter(function (elem, idx, ary) {
+							return elem.type !== "l";
+						});
+				
 				if (links.length === 0) {
 					masterQ.resolve(list);
 					ftpClose(con);

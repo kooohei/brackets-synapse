@@ -12,11 +12,11 @@ define(function (require, exports, module) {
 	 */
 	var PreferencesManager 	= brackets.getModule("preferences/PreferencesManager"),
 			Async 							= brackets.getModule("utils/Async"),
+			_										= brackets.getModule("thirdparty/lodash"),
 			CryptoManager 			= require("modules/CryptoManager"),
 			Log 								= require("modules/Log"),
 			Utils 							= require("modules/Utils"),
 			SettingManager 			= require("modules/SettingManager"),
-			_										= require("node/node_modules/lodash/index"),
 			Notify							= require("modules/Notify");
 
 	/**

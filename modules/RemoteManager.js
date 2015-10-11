@@ -6,12 +6,12 @@ define(function (require, exports, module) {
 	// HEADER >>
 	var	EventDispatcher	= brackets.getModule("utils/EventDispatcher"),
 			FileUtils				= brackets.getModule("file/FileUtils"),
+			_								= brackets.getModule("thirdparty/lodash"),
 			FileTreeView		= require("modules/FileTreeView"),
 			Panel						= require("modules/Panel"),
 			PathManager			= require("modules/PathManager"),
 			Project					= require("modules/Project"),
 			Shared					= require("modules/Shared"),
-			_								= require("node/node_modules/lodash/index"),
 			Log							= require("modules/Log");
 
 	var _currentServerSetting;

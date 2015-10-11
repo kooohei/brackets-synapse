@@ -14,7 +14,6 @@ define(function (require, exports, module) {
 	var DialogCollection 	= require("modules/DialogCollection"),
 			PreferenceManager = require("modules/PreferenceManager"),
 			Utils 						= require("modules/Utils"),
-			_									= require("node/node_modules/lodash/index"),
 			Log 							= require("modules/Log");
 	
 	var PATH_TO_PACKAGE_JSON = FileUtils.getParentPath(ExtensionUtils.getModulePath(module)) + "package.json";
@@ -99,12 +98,14 @@ define(function (require, exports, module) {
 				_getDirectoryContents(keysdir)
 				.then(function (contents) {
 					if (contents.length) {
-						_.forEach(contents, function (entry) {
+						
+						contents.forEach(function (entry) {
 							var tmp = entry.name.split("@"),
 									host = tmp[0],
 									user = tmp[1];
 							message += "Host @ User : " + host + " @ " + user + "<br>";
 						});
+						
 						keysdir.moveToTrash(function (err) {
 							if (err) {
 								err = new Error({message: "SYNAPSE: Failed to remove file for deprecated environment", err: err});

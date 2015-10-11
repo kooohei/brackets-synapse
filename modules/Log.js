@@ -6,8 +6,8 @@ define(function (require, exports, module) {
 	var ExtensionUtils	= brackets.getModule("utils/ExtensionUtils"),
 			FileSystem			= brackets.getModule("filesystem/FileSystem"),
 			FileUtils				= brackets.getModule("file/FileUtils"),
-			moment					= require("node/node_modules/moment/moment"),
-			_								= require("node/node_modules/lodash/index"),
+			_								= brackets.getModule("thirdparty/lodash"),
+			Utils						= require("modules/Utils"),
 			Shared					= require("modules/Shared");
 
 	var fadeTimer = null,
@@ -114,8 +114,7 @@ define(function (require, exports, module) {
 		error = error | false;
 		toFile = toFile | null;
 		
-		var m = moment(),
-				now = m.format("HH:mm:ss MMM DD").toString();
+		var now = Utils.now();
 		if (error) {
 			message = "<span class='synapse-log-error'>ERROR</span>" + message;
 		}
@@ -142,7 +141,7 @@ define(function (require, exports, module) {
 	 * actual write to file by the queue's array observer.
 	 */
 	writeToFile = function (param, now) {
-		now = now | moment().format("HH:mm:ss MMM DD").toString();
+		now = now | Utils.now();
 		param = param | "no message.";
 		var str = "";
 		if (typeof (obj) === "string") {

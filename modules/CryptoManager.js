@@ -3,8 +3,7 @@
 define(function (require, exports, module) {
 	"use strict";
 
-	var _ 				= require("node/node_modules/lodash/index"),
-			CryptoJS	= require("node/node_modules/crypto-js/crypto-js");
+	var	CryptoJS	= require("node/node_modules/crypto-js/crypto-js");
 
 	var	_currentSessionPassword = false,
 			getSessionPassword,

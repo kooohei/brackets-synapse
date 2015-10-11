@@ -12,7 +12,7 @@ define(function (require, exports, module) {
 			EditorManager		= brackets.getModule("editor/EditorManager"),
 			FileSystem			= brackets.getModule("filesystem/FileSystem"),
 			MainViewManager	= brackets.getModule("view/MainViewManager"),
-			_								= require("node/node_modules/lodash/index"),
+			_								= brackets.getModule("thirdparty/lodash"),
 			Log							= require("modules/Log");
 
 	var DialogCollection = require("modules/DialogCollection");

@@ -6,6 +6,7 @@ define(function (require, exports, module) {
 	// HEADER >>
 	var PreferencesManager	= brackets.getModule("preferences/PreferencesManager"),
 			EventDispatcher			= brackets.getModule("utils/EventDispatcher"),
+			_										= brackets.getModule("thirdparty/lodash"),
 			PathManager					= require("modules/PathManager"),
 			FileManager					= require("modules/FileManager"),
 			Panel								= require("modules/Panel"),
@@ -16,7 +17,6 @@ define(function (require, exports, module) {
 			Notify							= require("modules/Notify"),
 			l										= require("modules/Utils").l,
 			Log									= require("modules/Log"),
-			_										= require("node/node_modules/lodash/index"),
 			Shared							= require("modules/Shared");
 
 	var init,

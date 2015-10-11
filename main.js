@@ -4,26 +4,27 @@ define(function (require, exports, module) {
 	"use strict";
 
 	// External modules >>
-	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils"),
-			AppInit = brackets.getModule("utils/AppInit"),
-			NodeDomain = brackets.getModule("utils/NodeDomain"),
-			FileSystem = brackets.getModule("filesystem/FileSystem"),
-			FileUtils = brackets.getModule("file/FileUtils"),
-			CommandManager = brackets.getModule("command/CommandManager"),
-			PathManager = require("modules/PathManager"),
-			ExtensionDiagnosis = require("modules/ExtensionDiagnosis"),
-			Async = brackets.getModule("utils/Async"),
-			Menu = require("modules/Menu"),
-			Panel = require("modules/Panel"),
-			CryptoManager = require("modules/CryptoManager"),
-			SettingManager = require("modules/SettingManager"),
-			FileTreeView = require("modules/FileTreeView"),
-			RemoteManager = require("modules/RemoteManager"),
-			FileManager = require("modules/FileManager"),
-			PreferenceManager = require("modules/PreferenceManager"),
-			Notify = require("modules/Notify"),
-			Log = require("modules/Log"),
-			Shared = require("modules/Shared");
+	var ExtensionUtils			= brackets.getModule("utils/ExtensionUtils"),
+			AppInit							= brackets.getModule("utils/AppInit"),
+			NodeDomain					= brackets.getModule("utils/NodeDomain"),
+			FileSystem					= brackets.getModule("filesystem/FileSystem"),
+			FileUtils						= brackets.getModule("file/FileUtils"),
+			CommandManager			= brackets.getModule("command/CommandManager"),
+			Async								= brackets.getModule("utils/Async"),
+			PathManager					= require("modules/PathManager"),
+			ExtensionDiagnosis	= require("modules/ExtensionDiagnosis"),
+			Menu								= require("modules/Menu"),
+			Panel								= require("modules/Panel"),
+			CryptoManager				= require("modules/CryptoManager"),
+			SettingManager			= require("modules/SettingManager"),
+			FileTreeView				= require("modules/FileTreeView"),
+			RemoteManager				= require("modules/RemoteManager"),
+			FileManager					= require("modules/FileManager"),
+			PreferenceManager		= require("modules/PreferenceManager"),
+			Notify							= require("modules/Notify"),
+			Log									= require("modules/Log"),
+			Utils								= require("modules/Utils"),
+			Shared							= require("modules/Shared");
 	// <<
 	
 	var COMMAND_ID = "kohei.synapse.mainPanel";
@@ -98,6 +99,5 @@ define(function (require, exports, module) {
 		}, function (err) {
 			console.error("Initialize PreferenceManager module failed.");
 		});
-		
 	});
 });
