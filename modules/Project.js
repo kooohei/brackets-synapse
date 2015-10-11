@@ -4,20 +4,20 @@ define(function (require, exports, module) {
 	"use strict";
 
 	// HEADER >>
-	var PathManager = require("modules/PathManager"),
-			FileSystem = brackets.getModule("filesystem/FileSystem"),
-			ProjectManager = brackets.getModule("project/ProjectManager"),
-			Async = brackets.getModule("utils/Async"),
-			FileUtils = brackets.getModule("file/FileUtils"),
-			PreferencesManager = brackets.getModule("preferences/PreferencesManager"),
-			ExtentionUtils = brackets.getModule("utils/ExtensionUtils"),
-			FileTreeView = require("modules/FileTreeView"),
-			MainViewManager = brackets.getModule("view/MainViewManager"),
-			EventDispatcher = brackets.getModule("utils/EventDispatcher"),
-			moment = require("node_modules/moment/moment"),
-			_ = brackets.getModule("thirdparty/lodash"),
-			DocumentManager = brackets.getModule("document/DocumentManager"),
-			Log = require("modules/Log");
+	var FileSystem					= brackets.getModule("filesystem/FileSystem"),
+			ProjectManager			= brackets.getModule("project/ProjectManager"),
+			Async								= brackets.getModule("utils/Async"),
+			FileUtils						= brackets.getModule("file/FileUtils"),
+			PreferencesManager	= brackets.getModule("preferences/PreferencesManager"),
+			ExtentionUtils			= brackets.getModule("utils/ExtensionUtils"),
+			MainViewManager			= brackets.getModule("view/MainViewManager"),
+			EventDispatcher			= brackets.getModule("utils/EventDispatcher"),
+			DocumentManager			= brackets.getModule("document/DocumentManager"),
+			PathManager					= require("modules/PathManager"),
+			Log									= require("modules/Log"),
+			FileTreeView				= require("modules/FileTreeView"),
+			_										= require("node/node_modules/lodash/index"),
+			moment							= require("node/node_modules/moment/moment");
 
 	var open,
 			close,

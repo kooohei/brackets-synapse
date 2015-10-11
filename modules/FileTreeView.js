@@ -4,16 +4,16 @@ define(function (require, exports, module) {
 	"use strict";
 
 	// HEADER >>
-	var FileUtils = brackets.getModule("file/FileUtils");
-	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
-	var EventDispatcher = brackets.getModule("utils/EventDispatcher");
-	var DocumentManager = brackets.getModule("document/DocumentManager");
-	var Async = brackets.getModule("utils/Async");
-	var EditorManager = brackets.getModule("editor/EditorManager");
-	var FileSystem = brackets.getModule("filesystem/FileSystem");
-	var MainViewManager = brackets.getModule("view/MainViewManager");
-	var _ = brackets.getModule("thirdparty/lodash");
-	var Log = require("modules/Log");
+	var FileUtils				= brackets.getModule("file/FileUtils"),
+			ExtensionUtils	= brackets.getModule("utils/ExtensionUtils"),
+			EventDispatcher	= brackets.getModule("utils/EventDispatcher"),
+			DocumentManager	= brackets.getModule("document/DocumentManager"),
+			Async						= brackets.getModule("utils/Async"),
+			EditorManager		= brackets.getModule("editor/EditorManager"),
+			FileSystem			= brackets.getModule("filesystem/FileSystem"),
+			MainViewManager	= brackets.getModule("view/MainViewManager"),
+			_								= require("node/node_modules/lodash/index"),
+			Log							= require("modules/Log");
 
 	var DialogCollection = require("modules/DialogCollection");
 	var PathManager = require("modules/PathManager");

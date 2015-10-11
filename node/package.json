@@ -1,0 +1,21 @@
+{
+  "name": "SynapseDomain",
+  "version": "0.0.0",
+  "description": "",
+  "main": "SynapseDomain.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "KoheiHayashi",
+  "license": "MIT",
+	"dependencies": {
+    "crypto-js": "^3.1.5",
+    "font-awesome": "^4.4.0",
+    "lodash": "^3.10.1",
+    "moment": "^2.10.6",
+		"ftp": "0.3.10",
+    "q": "^1.4.1",
+		"homedir": "0.6.0",
+    "ssh2": "^0.4.11"
+  }
+}

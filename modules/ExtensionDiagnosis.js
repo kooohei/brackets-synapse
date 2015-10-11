@@ -7,7 +7,6 @@ define(function (require, exports, module) {
 	// Modules >>
 	var FileSystem 				= brackets.getModule("filesystem/FileSystem"),
 			FileUtils 				= brackets.getModule("file/FileUtils"),
-			_ 								= brackets.getModule("thirdparty/lodash"),
 			Directory 				= brackets.getModule("filesystem/Directory"),
 			ExtensionUtils 		= brackets.getModule("utils/ExtensionUtils"),
 			Async 						= brackets.getModule("utils/Async");
@@ -15,6 +14,7 @@ define(function (require, exports, module) {
 	var DialogCollection 	= require("modules/DialogCollection"),
 			PreferenceManager = require("modules/PreferenceManager"),
 			Utils 						= require("modules/Utils"),
+			_									= require("node/node_modules/lodash/index"),
 			Log 							= require("modules/Log");
 	
 	var PATH_TO_PACKAGE_JSON = FileUtils.getParentPath(ExtensionUtils.getModulePath(module)) + "package.json";

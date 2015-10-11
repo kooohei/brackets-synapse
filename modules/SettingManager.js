@@ -4,20 +4,20 @@ define(function (require, exports, module) {
 	"use strict";
 
 	// HEADER >>
-	var PreferencesManager = brackets.getModule("preferences/PreferencesManager");
-	var EventDispatcher = brackets.getModule("utils/EventDispatcher");
-	var _ = brackets.getModule("thirdparty/lodash");
-	var PathManager = require("modules/PathManager");
-	var FileManager = require("modules/FileManager");
-	var Panel = require("modules/Panel");
-	var Strings = require("strings");
-	var Utils = require("modules/Utils");
-	var CryptoManager = require("modules/CryptoManager");
-	var PreferenceManager = require("modules/PreferenceManager");
-	var Notify = require("modules/Notify");
-	var l = require("modules/Utils").l;
-	var Log = require("modules/Log");
-	var Shared = require("modules/Shared");
+	var PreferencesManager	= brackets.getModule("preferences/PreferencesManager"),
+			EventDispatcher			= brackets.getModule("utils/EventDispatcher"),
+			PathManager					= require("modules/PathManager"),
+			FileManager					= require("modules/FileManager"),
+			Panel								= require("modules/Panel"),
+			Strings							= require("strings"),
+			Utils								= require("modules/Utils"),
+			CryptoManager				= require("modules/CryptoManager"),
+			PreferenceManager		= require("modules/PreferenceManager"),
+			Notify							= require("modules/Notify"),
+			l										= require("modules/Utils").l,
+			Log									= require("modules/Log"),
+			_										= require("node/node_modules/lodash/index"),
+			Shared							= require("modules/Shared");
 
 	var init,
 			edit,

@@ -4,13 +4,13 @@
 	"use strict";
 	
 	// HEADER >>
-	var fs = require("fs");
-	var path = require("path");
-	var FTP = require("../node_modules/ftp");
-	var SFTP = require("../node_modules/ssh2").Client;
-	var Q = require("../node_modules/q");
-	var _ = require("../node_modules/lodash/index");
-	var _domainManager = null;
+	var fs							= require("fs"),
+			path						= require("path"),
+			FTP							= require("ftp"),
+			SFTP						= require("ssh2").Client,
+			Q								= require("q"),
+			_								= require("lodash"),
+			_domainManager	= null;
 	
 	var init;
 	

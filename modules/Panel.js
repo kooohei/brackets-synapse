@@ -4,31 +4,30 @@ define(function (require, exports, module) {
 	"use strict";
 
 	// External Modules >>
-	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
-	var Resizer = brackets.getModule("utils/Resizer");
-	var MainViewManager = brackets.getModule("view/MainViewManager");
-	var DocumentManager = brackets.getModule("document/DocumentManager");
-	var CommandManager = brackets.getModule("command/CommandManager");
-	var FileSystem = brackets.getModule("filesystem/FileSystem");
-	var FileUtils = brackets.getModule("file/FileUtils");
-	var Commands = brackets.getModule("command/Commands");
-	var _ = brackets.getModule("thirdparty/lodash");
-	var Async = brackets.getModule("utils/Async");
-	var Shared = require("modules/Shared");
-
-	var Utils = require("modules/Utils");
-	var Project = require("modules/Project");
-	var DialogCollection = require("modules/DialogCollection");
-	var FileTreeView = require("modules/FileTreeView");
-	var FileManager = require("modules/FileManager");
-	var SettingManager = require("modules/SettingManager");
-	var RemoteManager = require("modules/RemoteManager");
-	var Strings = require("strings");
-	var Notify = require("modules/Notify");
-	var Log = require("modules/Log");
-	var CryptoManager = require("modules/CryptoManager");
-	var PreferenceManager = require("modules/PreferenceManager");
-	var l = require("modules/Utils").l;
+	var ExtensionUtils		= brackets.getModule("utils/ExtensionUtils"),
+			Resizer						= brackets.getModule("utils/Resizer"),
+			MainViewManager		= brackets.getModule("view/MainViewManager"),
+			DocumentManager		= brackets.getModule("document/DocumentManager"),
+			CommandManager		= brackets.getModule("command/CommandManager"),
+			FileSystem				= brackets.getModule("filesystem/FileSystem"),
+			FileUtils					= brackets.getModule("file/FileUtils"),
+			Commands					= brackets.getModule("command/Commands"),
+			Async							= brackets.getModule("utils/Async"),
+			Shared						= require("modules/Shared"),
+			Utils							= require("modules/Utils"),
+			Project						= require("modules/Project"),
+			DialogCollection	= require("modules/DialogCollection"),
+			FileTreeView			= require("modules/FileTreeView"),
+			FileManager				= require("modules/FileManager"),
+			SettingManager		= require("modules/SettingManager"),
+			RemoteManager			= require("modules/RemoteManager"),
+			Strings						= require("strings"),
+			Notify						= require("modules/Notify"),
+			Log								= require("modules/Log"),
+			CryptoManager			= require("modules/CryptoManager"),
+			PreferenceManager	= require("modules/PreferenceManager"),
+			_									= require("node/node_modules/lodash/index"),
+			l									= require("modules/Utils").l;
 	
 	// <<
 	
@@ -119,7 +118,7 @@ define(function (require, exports, module) {
 	// <<
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/style.css");
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/treeview.css");
-	ExtensionUtils.loadStyleSheet(module, "../node_modules/font-awesome/css/font-awesome.min.css");
+	ExtensionUtils.loadStyleSheet(module, "../node/node_modules/font-awesome/css/font-awesome.min.css");
 
 
 	/**

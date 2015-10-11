@@ -4,15 +4,15 @@ define(function (require, exports, module) {
 	"use strict";
 	
 	// HEADER >>
-	var _ = brackets.getModule("thirdparty/lodash"),
-			EventDispatcher = brackets.getModule("utils/EventDispatcher"),
-			FileUtils = brackets.getModule("file/FileUtils"),
-			FileTreeView = require("modules/FileTreeView"),
-			Panel = require("modules/Panel"),
-			PathManager = require("modules/PathManager"),
-			Project = require("modules/Project"),
-			Shared = require("modules/Shared"),
-			Log = require("modules/Log");
+	var	EventDispatcher	= brackets.getModule("utils/EventDispatcher"),
+			FileUtils				= brackets.getModule("file/FileUtils"),
+			FileTreeView		= require("modules/FileTreeView"),
+			Panel						= require("modules/Panel"),
+			PathManager			= require("modules/PathManager"),
+			Project					= require("modules/Project"),
+			Shared					= require("modules/Shared"),
+			_								= require("node/node_modules/lodash/index"),
+			Log							= require("modules/Log");
 
 	var _currentServerSetting;
 

@@ -4,16 +4,16 @@ define(function (require, exports, module) {
 	"use strict";
 	
 	// HEADER >>
-	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
-	var EventDispatcher = brackets.getModule("utils/EventDispatcher");
-	var FileSystem = brackets.getModule("filesystem/FileSystem");
-	var _ = brackets.getModule("thirdparty/lodash");
-	var Strings = require("Strings");
-	var PreferenceManager = require("modules/PreferenceManager");
-	var CryptoManager = require("modules/CryptoManager");
-	var SettingManager = require("modules/SettingManager");
-	var Log = require("modules/Log");
-	var Utils = require("modules/Utils");
+	var ExtensionUtils 		= brackets.getModule("utils/ExtensionUtils"),
+			EventDispatcher 	= brackets.getModule("utils/EventDispatcher"),
+			FileSystem 				= brackets.getModule("filesystem/FileSystem"),
+			Strings 					= require("Strings"),
+			_									= require("node/node_modules/lodash/index"),
+			PreferenceManager = require("modules/PreferenceManager"),
+			CryptoManager 		= require("modules/CryptoManager"),
+			SettingManager 		= require("modules/SettingManager"),
+			Log 							= require("modules/Log"),
+			Utils 						= require("modules/Utils");
 	
 	var _base = require("text!../ui/notify/base.html"),
 			_secureWarning = require("text!../ui/notify/secureWarning.html"),

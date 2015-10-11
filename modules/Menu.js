@@ -10,13 +10,13 @@ define(function (require, exports, module) {
 			CommandManager 			= brackets.getModule("command/CommandManager"),
 			Commands 						= brackets.getModule("command/Commands"),
 			PreferencesManager 	= brackets.getModule("preferences/PreferencesManager"),
-			KeyBindingManager 	= brackets.getModule("command/KeyBindingManager"),
-			_ 									= brackets.getModule("thirdparty/lodash");
+			KeyBindingManager 	= brackets.getModule("command/KeyBindingManager");
 	
 	var ExtensionDiagnosis 	= require("modules/ExtensionDiagnosis"),
 			Log 								= require("modules/Log"),
 			Panel 							= require("modules/Panel"),
 			FileTreeView 				= require("modules/FileTreeView"),
+			_										= require("node/node_modules/lodash/index"),
 			Strings 						= require("strings");
 	
 	var treeViewContextMenu = null;

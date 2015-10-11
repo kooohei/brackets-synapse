@@ -3,16 +3,16 @@
 define(function (require, exports, module) {
 	"use strict";
 
-	var _ = brackets.getModule("thirdparty/lodash");
-	var CryptoJS = require("../node_modules/crypto-js/crypto-js");
+	var _ 				= require("node/node_modules/lodash/index"),
+			CryptoJS	= require("node/node_modules/crypto-js/crypto-js");
 
-	var	_currentSessionPassword = false;
-	var getSessionPassword,
+	var	_currentSessionPassword = false,
+			getSessionPassword,
 			setSessionPassword,
-			_getKey,
 			_getIV,
-			encrypt,
-			decrypt;
+			decrypt,
+			_getKey,
+			encrypt;
 	
 	encrypt = function (password, settings) {
 		var	salt = CryptoJS.lib.WordArray.random(128/8),

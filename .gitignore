@@ -42,7 +42,6 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
-node_modules
 node/node_modules
 __PROJ__/*
 .jsbeautifyrc

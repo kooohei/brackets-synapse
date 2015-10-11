@@ -3,7 +3,7 @@
 define(function (require, exports, module) {
 	"use strict";
 
-	var _ = brackets.getModule("thirdparty/lodash");
+	var _		= require("node/node_modules/lodash/index");
 
 	var sleep,
 			l;

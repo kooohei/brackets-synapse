@@ -4,9 +4,9 @@ define(function (require, exports, module) {
 	"use strict";
 
 	/* region Modules */
-	var FileUtils = brackets.getModule("file/FileUtils");
-	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
-	var Project = require("modules/Project");
+	var FileUtils = brackets.getModule("file/FileUtils"),
+			ExtensionUtils = brackets.getModule("utils/ExtensionUtils"),
+			Project = require("modules/Project");
 	/* endregion */
 
 	/* region Public vars */

@@ -4,19 +4,19 @@ define(function (require, exports, module) {
 	"use strict";
 
 	// Modules >>
-	var EditorManager = brackets.getModule("editor/EditorManager");
-	var CommandManager = brackets.getModule("command/CommandManager");
-	var Commands = brackets.getModule("command/Commands");
-	var ProjectManager = brackets.getModule("project/ProjectManager");
-	var DocumentManager = brackets.getModule("document/DocumentManager");
-	var FileUtils = brackets.getModule("file/FileUtils");
-	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils");
-	var FileSystem = brackets.getModule("filesystem/FileSystem");
-	var PathManager = require("modules/PathManager");
-	var FileTreeView = require("modules/FileTreeView");
-	var Project = require("modules/Project");
-	var RemoteManager = require("modules/RemoteManager");
-	var Log = require("modules/Log");
+	var EditorManager 	= brackets.getModule("editor/EditorManager"),
+			CommandManager 	= brackets.getModule("command/CommandManager"),
+			Commands 				= brackets.getModule("command/Commands"),
+			ProjectManager 	= brackets.getModule("project/ProjectManager"),
+			DocumentManager = brackets.getModule("document/DocumentManager"),
+			FileUtils 			= brackets.getModule("file/FileUtils"),
+			ExtensionUtils 	= brackets.getModule("utils/ExtensionUtils"),
+			FileSystem 			= brackets.getModule("filesystem/FileSystem"),
+			PathManager 		= require("modules/PathManager"),
+			FileTreeView 		= require("modules/FileTreeView"),
+			Project 				= require("modules/Project"),
+			RemoteManager 	= require("modules/RemoteManager"),
+			Log 						= require("modules/Log");
 	// <<
 	
 	// Vars & Functions >>

@@ -3,12 +3,12 @@
 define(function (require, exports, module) {
 	"use strict";
 	// HEADER >>
-	var ExtensionUtils = brackets.getModule("utils/ExtensionUtils"),
-			FileSystem = brackets.getModule("filesystem/FileSystem"),
-			_ = brackets.getModule("thirdparty/lodash"),
-			FileUtils = brackets.getModule("file/FileUtils"),
-			moment = require("../node_modules/moment/moment"),
-			Shared = require("modules/Shared");
+	var ExtensionUtils	= brackets.getModule("utils/ExtensionUtils"),
+			FileSystem			= brackets.getModule("filesystem/FileSystem"),
+			FileUtils				= brackets.getModule("file/FileUtils"),
+			moment					= require("node/node_modules/moment/moment"),
+			_								= require("node/node_modules/lodash/index"),
+			Shared					= require("modules/Shared");
 
 	var fadeTimer = null,
 			noticeCount = 0;
