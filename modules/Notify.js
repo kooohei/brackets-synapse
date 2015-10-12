@@ -8,7 +8,7 @@ define(function (require, exports, module) {
 			EventDispatcher 	= brackets.getModule("utils/EventDispatcher"),
 			FileSystem 				= brackets.getModule("filesystem/FileSystem"),
 			_									= brackets.getModule("thirdparty/lodash"),
-			Strings 					= require("Strings"),
+			Strings 					= require("strings"),
 			PreferenceManager = require("modules/PreferenceManager"),
 			CryptoManager 		= require("modules/CryptoManager"),
 			SettingManager 		= require("modules/SettingManager"),
