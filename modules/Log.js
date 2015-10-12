@@ -50,20 +50,7 @@ define(function (require, exports, module) {
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/log.css");
 	// <<
 
-	Array.observe(queue, function (changes) {
-		_.forEach(changes, function (change) {
-			if ((change.type === "splice" || change.type === "remove") && change.object.length > 0) {
-				_add(queue.shift());
-			}
-		});
-	});
-	Array.observe(fileQueue, function (changes) {
-		_.forEach(changes, function (change) {
-			if ((change.type === "splice" || change.type === "remove") && change.object.length > 0) {
-				_prependFile(fileQueue.shift());
-			}
-		});
-	});
+	
 
 	/**
 	 * Initialize module.
@@ -130,6 +117,7 @@ define(function (require, exports, module) {
 			_onLeave();
 		}
 		queue.push(obj);
+		_add(queue.shift());
 		if (toFile) {
 			var param = {
 				message: message,
@@ -158,6 +146,7 @@ define(function (require, exports, module) {
 		
 		if (str) {
 			fileQueue.push("[" + now + "]:" + str);
+			_prependFile(fileQueue.shift());
 		}
 		throw new Error(param);
 	};
