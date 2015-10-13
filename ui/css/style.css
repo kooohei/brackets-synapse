@@ -71,6 +71,12 @@
 	font-size: 15px;
 	letter-spacing: 2px;
 }
+#synapse-header > div.left > span.synapse-current-version {
+	font-size: 0.7em;
+	line-height: 0.7em;
+	opacity: 0.35;
+	padding-left: 5px;
+}
 #synapse-header > div.right {
 	margin: 0;
 	z-index: 1;

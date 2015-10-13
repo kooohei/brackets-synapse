@@ -215,10 +215,10 @@ define(function (require, exports, module) {
 		Shared.domain.exec(method, setting, localPath, remotePath)
 		.then(function () {
 			Panel.hideSpinner();
-			Log.q(filename + " have been uploaded successfully.");
+			Log.q(remotePath + " have been uploaded successfully.");
 			deferred.resolve();
 		}, function (err) {
-			var mes = filename + " upload to the server failed.";
+			var mes = remotePath + " upload to the server failed.";
 			if (err.hasOwnProperty("code")) {
 				mes += "<br>[Response Code:" + err.code + "]";
 			}

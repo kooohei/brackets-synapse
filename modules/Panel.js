@@ -429,6 +429,7 @@ define(function (require, exports, module) {
 		var $main = $(source);
 		var $pc = j.pc;
 
+		
 		if ($pc.length) {
 			$pc.after($main);
 		} else {
@@ -442,6 +443,9 @@ define(function (require, exports, module) {
 				_showServerSetting(e, "insert", null);
 			}
 		});
+		
+		var version = PreferenceManager.getVersion();
+		$(".synapse-current-version").html("version&nbsp;" + version);
 		
 		_attachWorkingSetStateChanged();
 
