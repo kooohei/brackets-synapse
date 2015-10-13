@@ -905,7 +905,7 @@ define(function (require, exports, module) {
 					FileManager.openFile(localPath);
 					deferred.resolve();
 				}, function (err) {
-					Log.writeToFile(err);
+					Log.q("Failed to download the file (" + remotePath + ")");
 				});
 			}, function(err) {
 				throw new Error(err);

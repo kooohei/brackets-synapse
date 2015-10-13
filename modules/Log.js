@@ -43,7 +43,7 @@ define(function (require, exports, module) {
 			_threeSecondsAfter,
 			_fadeAttach,
 			_fadeDetach,
-			writeToFile;
+			writeToErrorLog;
 
 
 
@@ -63,7 +63,8 @@ define(function (require, exports, module) {
 		.then(function (text, time) {
 			errorFileBuffer = text.split(/\n/);
 		}, function (err) {
-			throw new Error({message: "Failed to read from error log", err: err.toString()});
+			console.error("Failed to read to buffer from error log text");
+			throw new Error(err);
 		});
 		
 		var html = Mustache.render(viewSrc,{});
@@ -96,19 +97,19 @@ define(function (require, exports, module) {
 	 * @param {object} 	error
 	 * @param {mix} 		toFile It will be write to error log, after that change to string if the value is object.
 	 */
-	q = function (message, error, toFile) {
+	q = function (message, error, orgErrorObj) {
 		
 		var mess = message;
-		error = error | false;
-		toFile = toFile | null;
+		error = error || false;
+		orgErrorObj = orgErrorObj || null;
 		
-		var now = Utils.now();
+		var datetime = Utils.now();
 		if (error) {
 			mess = "<span class='synapse-log-error'>ERROR</span><p style='display: inline-block'>" +  message + "</p>";
 		}
 		var obj = {
 			message: mess,
-			now: now,
+			datetime: datetime,
 			error: error
 		};
 		if ($("#synapse-log-container").hasClass("log-collapse")) {
@@ -118,15 +119,16 @@ define(function (require, exports, module) {
 			_onLeave();
 		}
 		queue.push(obj);
-		_add(queue.shift());
-		if (toFile) {
+		while (queue.length) {
+			_add(queue.shift());
+		}
+		if (error && orgErrorObj) {
 			var param = {
 				message: message,
-				now: now,
-				error: toFile
-				
+				datetime: datetime,
+				error: orgErrorObj
 			};
-			writeToFile(param, now);
+			writeToErrorLog(param, datetime);
 		}
 	};
 	
@@ -135,21 +137,22 @@ define(function (require, exports, module) {
 	 * this function invoked by above the function "q"
 	 * actual write to file by the queue's array observer.
 	 */
-	writeToFile = function (param, now) {
-		now = now | Utils.now();
-		param = param | "no message.";
+	writeToErrorLog = function (param, datetime) {
+		datetime = datetime || Utils.now();
+		param = param || "no message.";
 		var str = "";
 		if (typeof (obj) === "string") {
 			str = param;
 		} else {
-			str = param.toString();
+			str = JSON.stringify(param);
 		}
 		
 		if (str) {
-			fileQueue.push("[" + now + "]:" + str);
-			_prependFile(fileQueue.shift());
+			fileQueue.push("[" + datetime + "]:" + str);
+			while (fileQueue.length) {
+				_prependFile(fileQueue.shift());
+			}
 		}
-		throw new Error(param);
 	};
 
 	/**
@@ -245,7 +248,7 @@ define(function (require, exports, module) {
 
 		$("<p>")
 			.addClass("datetime")
-			.html(item.now)
+			.html(item.datetime)
 			.appendTo($row);
 		
 		if (item.error && $("#synapse-log-container").hasClass("log-collapse")) {
@@ -313,10 +316,10 @@ define(function (require, exports, module) {
 	 */
 	_prependFile = function (line) {
 		errorFileBuffer.unshift(line);
-		FileUtils.writeText(Shared.errorFile, errorFileBuffer.join("\n"));
+		FileUtils.writeText(Shared.errorFile, errorFileBuffer.join("\r\n"));
 	};
 
 	exports.q = q;
 	exports.init = init;
-	exports.writeToFile = writeToFile;
+	exports.writeToErrorLog = writeToErrorLog;
 });

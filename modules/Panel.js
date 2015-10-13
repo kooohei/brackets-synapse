@@ -883,8 +883,7 @@ define(function (require, exports, module) {
 			_currentServerIndex = index;
 			_toggleConnectBtn();
 		}, function (err) {
-			err = new Error({message: "Failed to connection established.", err: err.toString()});
-			console.error(err);
+			console.log(err);
 		});
 	};
 

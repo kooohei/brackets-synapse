@@ -3,41 +3,9 @@
 define(function (require, exports, module) {
 	"use strict";
 
-	var _			= brackets.getModule("thirdparty/lodash");
+	var now;
 
-	var sleep,
-			l,
-			now;
-	var debug = true;
-
-	sleep = function (countBy100ms) {
-		var d = new $.Deferred(),
-				count = 0;
-		if (countBy100ms === 0)
-			return $.Deferred().resolve().promise();
-
-		var timer = setInterval(function () {
-			count++;
-			if (count === countBy100ms) {
-				clearInterval(timer);
-				d.resolve();
-			}
-		}, 100);
-		return d.promise();
-	};
-
-	l = function () {
-		var argLength = arguments.length;
-		if (argLength > 1) {
-			var args = {};
-			_.forEach(arguments, function (arg) {
-				args.push(arg);
-			});
-			console.log(args);
-		} else {
-			console.log(arguments[0]);
-		}
-	};
+	
 	now = function (format) {
 		var date = new Date();
 		if (!format) format = 'YYYY/MM/DD hh:mm:ss';
@@ -56,7 +24,5 @@ define(function (require, exports, module) {
 	};
 	
 	
-	exports.l = l;
-	exports.sleep = sleep;
 	exports.now = now;
 });
