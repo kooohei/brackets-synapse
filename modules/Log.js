@@ -97,13 +97,14 @@ define(function (require, exports, module) {
 	 * @param {mix} 		toFile It will be write to error log, after that change to string if the value is object.
 	 */
 	q = function (message, error, toFile) {
+		
 		var mess = message;
 		error = error | false;
 		toFile = toFile | null;
 		
 		var now = Utils.now();
 		if (error) {
-			mess = "<span class='synapse-log-error'>ERROR</span>" + message;
+			mess = "<span class='synapse-log-error'>ERROR</span><p style='display: inline-block'>" +  message + "</p>";
 		}
 		var obj = {
 			message: mess,

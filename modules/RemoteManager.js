@@ -214,14 +214,17 @@ define(function (require, exports, module) {
 		Panel.showSpinner();
 		Shared.domain.exec(method, setting, localPath, remotePath)
 		.then(function () {
+			Panel.hideSpinner();
 			Log.q(filename + " have been uploaded successfully.");
 			deferred.resolve();
 		}, function (err) {
-			Log.q(filename + " upload to the server failed.", true, err);
-			deferred.reject(err);
-		})
-		.always(function () {
+			var mes = filename + " upload to the server failed.";
+			if (err.hasOwnProperty("code")) {
+				mes += "<br>[Response Code:" + err.code + "]";
+			}
+			Log.q(mes, true, err);
 			Panel.hideSpinner();
+			deferred.reject(err);
 		});
 		return deferred.promise();
 	};

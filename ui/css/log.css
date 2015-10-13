@@ -139,6 +139,7 @@ div#synapse-log-rows .synapse-log-row p.item span.synapse-log-error {
 	padding: 3px;
 	color: #fff;
 	border-radius: 2px;
+	vertical-align: top;
 }
 div#synapse-log-rows .synapse-log-row p.datetime {
 	text-align:right;
