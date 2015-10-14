@@ -63,7 +63,8 @@ define(function (require, exports, module) {
 		.then(function (text, time) {
 			errorFileBuffer = text.split(/\n/);
 		}, function (err) {
-			console.error("Failed to read to buffer from error log text");
+			err = new Error({message: "Failed to read to buffer from error log text", err: err});
+			console.log("SYNAPSE ERROR", err);
 			throw new Error(err);
 		});
 		
@@ -104,9 +105,11 @@ define(function (require, exports, module) {
 		orgErrorObj = orgErrorObj || null;
 		
 		var datetime = Utils.now();
+		mess = "<p style='display: inline-block'>" +  message + "</p>";
 		if (error) {
-			mess = "<span class='synapse-log-error'>ERROR</span><p style='display: inline-block'>" +  message + "</p>";
+			mess = "<span class='synapse-log-error'>ERROR</span>" + mess;
 		}
+		
 		var obj = {
 			message: mess,
 			datetime: datetime,
@@ -122,6 +125,7 @@ define(function (require, exports, module) {
 		while (queue.length) {
 			_add(queue.shift());
 		}
+		
 		if (error && orgErrorObj) {
 			var param = {
 				message: message,

@@ -43,10 +43,10 @@ define(function (require, exports, module) {
 	openFile = function (localPath) {
 		var deferred = new $.Deferred();
 		if (!EditorManager.canOpenPath(localPath)) {
-			console.error("error");
+			Log.q("Could not open the path (" + localPath + ")", true);
 			return;
 		}
-		CommandManager.execute(Commands.CMD_ADD_TO_WORKINGSET_AND_OPEN, {fullPath: localPath})
+		CommandManager.execute(Commands.CMD_ADD_TO_WORKINGSET_AND_OPEN, {fullPath: localPath, silent: true})
 		.then(deferred.resolve, deferred.reject);
 		return deferred.promise();
 	};
@@ -78,6 +78,7 @@ define(function (require, exports, module) {
 		if (_projectState === Project.OPEN) {
 			if (document.isDirty && document.file.isFile) {
 				var path = PathManager.getLocalRelativePath(document.file.fullPath);
+				// Do nothing yet, todo: append change to ui function.
 			}
 		}
 	};
@@ -94,7 +95,7 @@ define(function (require, exports, module) {
 			// TODO onsaved complete.
 		},
 		function (err) {
-			var ent = FileTreeView.getEntityWithPath(remotePath);
+			var ent = FileTreeView.getEntityWithPath(localPath);
 			ent.downloaded = false;
 		});
 	};

@@ -7,7 +7,6 @@ define(function (require, exports, module) {
 	var PreferencesManager	= brackets.getModule("preferences/PreferencesManager"),
 			EventDispatcher			= brackets.getModule("utils/EventDispatcher"),
 			_										= brackets.getModule("thirdparty/lodash"),
-			PathManager					= require("modules/PathManager"),
 			FileManager					= require("modules/FileManager"),
 			Panel								= require("modules/Panel"),
 			Strings							= require("strings"),
@@ -15,7 +14,7 @@ define(function (require, exports, module) {
 			CryptoManager				= require("modules/CryptoManager"),
 			PreferenceManager		= require("modules/PreferenceManager"),
 			Notify							= require("modules/Notify"),
-			l										= require("modules/Utils").l,
+			PathManager					= require("modules/PathManager"),
 			Log									= require("modules/Log"),
 			Shared							= require("modules/Shared");
 
@@ -34,10 +33,6 @@ define(function (require, exports, module) {
 			_setServerBtnState
 			;
 	
-	var SERVER_SETTING_REMOVED = "SERVER_SETTING_REMOVED";
-	var COULD_NOT_REMOVE_SERVER_SETTING = "COULD_NOT_REMOVE_SERVER_SETTING";
-	var SERVER_SETTING_ADDED = "SERVER_SETTING_ADDED";
-	var COULD_NOT_INSERT_NEW_SERVER_SETTING= "COULD_NOT_INSERT_NEW_SERVER_SETTING";
 	
 	var _serverSettings = [];
 	
@@ -62,11 +57,14 @@ define(function (require, exports, module) {
 	var regexp = {
 		host: null,
 		port: null,
-		path: null,
-		unix_path: null,
-		win_path: null
+		path: null
 	};
 
+	// Validate Object
+	var ftp = null,
+			sftpKey = null,
+			sftpPassword = null;
+	
 	// <<
 	
 	/**
@@ -80,9 +78,7 @@ define(function (require, exports, module) {
 		$serverSetting = $("#synapse-server-setting");
 		regexp.host = new RegExp("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])$");
 		regexp.port = new RegExp("[1-65535]");
-		regexp.unix_path = new RegExp("^$|^\\.\\/.*?|^\\/.*?");
-		regexp.win_path = new RegExp("^[a-zA-Z]\\:\\\.*?");
-
+		//regexp.unix_path = new RegExp("^$|^\\.\\/.*?|^\\/.*?|^(?!\\/).+?|(?!\.\.)");
 		$("input[type='text'], input[type='password']", $serverSetting).val("").removeClass("invalid");
 		$("th > i", $serverSetting).removeClass("done");
 		$("th > i.fa-plug", $serverSetting).addClass("done");
@@ -113,9 +109,17 @@ define(function (require, exports, module) {
 			_setServerBtnState("disabled");
 			
 			_connectTest(setting)
-			.then(function () {
-				Log.q("Authentication was successful with your new setting");
-				return _editServerSetting(state, setting);
+			.then(function (list) {
+				if (list.length === 0) {
+					Log.q("CURRENT DIRECTORY is not exists.", true);
+					ftp.dir.invalid = true;
+					ftp.dir.form.addClass("invalid");
+					ftp.dir.icon.removeClass("done");
+					return new $.Deferred().reject().promise();
+				} else {
+					Log.q("Authentication was successful with your new setting");
+					return _editServerSetting(state, setting);
+				}
 			}, function (err) {
 				Log.q("Failed to authentication please confirm your account setting.", true, err);
 				deferred.reject(err);
@@ -140,7 +144,7 @@ define(function (require, exports, module) {
 		var deferred = new $.Deferred();
 		var invalid = [];
 
-		var ftp = {
+		ftp = {
 			host 				: {form: $("#synapse-server-host", $serverSetting), icon: $("i.fa-desktop"), invalid: false},
 			port 				: {form: $("#synapse-server-port", $serverSetting), icon: $("i.fa-plug"), invalid: false},
 			user 				: {form: $("#synapse-server-user", $serverSetting), icon: $("i.fa-user"), invalid: false},
@@ -149,7 +153,7 @@ define(function (require, exports, module) {
 			dir	 				: {form: $("#synapse-server-dir", $serverSetting), icon: $("i.fa-sitemap"), invalid: false},
 			exclude			: {form: $("#synapse-server-exclude", $serverSetting), icon: $("i.fa-ban"), invalid: false}
 		};
-		var sftpKey = {
+		sftpKey = {
 			host 				: {form: $("#synapse-server-host", $serverSetting), icon: $("i.fa-desktop"), invalid: false},
 			port 				: {form: $("#synapse-server-port", $serverSetting), icon: $("i.fa-plug"), invalid: false},
 			user 				: {form: $("#synapse-server-user", $serverSetting), icon: $("i.fa-user"), invalid: false},
@@ -159,7 +163,7 @@ define(function (require, exports, module) {
 			dir	 				: {form: $("#synapse-server-dir", $serverSetting), icon: $("i.fa-sitemap"), invalid: false},
 			exclude			: {form: $("#synapse-server-exclude", $serverSetting), icon: $("i.fa-ban"), invalid: false}
 		};
-		var sftpPassword = {
+		sftpPassword = {
 			host 				: {form: $("#synapse-server-host", $serverSetting), icon: $("i.fa-desktop"), invalid: false},
 			port 				: {form: $("#synapse-server-port", $serverSetting), icon: $("i.fa-plug"), invalid: false},
 			user 				: {form: $("#synapse-server-user", $serverSetting), icon: $("i.fa-user"), invalid: false},
@@ -253,7 +257,7 @@ define(function (require, exports, module) {
 			return true;
 		}
 		if (prop === "dir") {
-			return value === "" || (value.match(regexp.unix_path) || value.match(regexp.win_path));
+			return !(value.match(/\.{2,}/)) && !(value.match(/\/\//)) || (value === "");
 		}
 		if (prop === "exclude") {
 			if (value !== "") {
@@ -280,7 +284,7 @@ define(function (require, exports, module) {
 
 	
 	reset = function () {
-		return init(domain);
+		return init();
 	};
 	
 	/**
@@ -367,11 +371,9 @@ define(function (require, exports, module) {
 				deferred = new $.Deferred(),
 				temp = [];
 
-		if (setting.dir.length > 1 && setting.dir !== "./") {
-			if (setting.dir.slice(-1) === "/") {
-				setting.dir = setting.dir.slice(0, -1);
-			}
-		}
+		setting.dir = PathManager.removeTrailingSlash(setting.dir);
+		
+		
 		if (setting.protocol === "sftp") {
 			setting.dir = setting.dir === "" ? "./" : setting.dir;
 			if (setting.auth === "key") {
@@ -413,6 +415,7 @@ define(function (require, exports, module) {
 				msg = "Append the server setting was successful.";
 			}
 			Log.q(msg);
+			setServerSettings(list);
 			deferred.resolve();
 		}, function (err) {
 			Log.q("Failed to save the server settings", true, err);
@@ -440,10 +443,10 @@ define(function (require, exports, module) {
 		Panel.showSpinner();
 		Shared.domain.exec(method, setting)
 		.then(function (res) {
-			deferred.resolve();
+			deferred.resolve(res);
 		}, function (err) {
-			err = new Error({message: "Failed to authentication, please confirm your server setting.", err:err.toString()});
-			console.error(err);
+			Log.q("Failed to authentication, please confirm your server setting.", true, err);
+			console.log(err);
 			deferred.reject(err);
 		})
 		.always(function () {
@@ -464,8 +467,6 @@ define(function (require, exports, module) {
 	exports.setServerSettings = setServerSettings;
 	exports.getServerSettingsCache = getServerSettingsCache;
 	exports.deleteServerSetting = deleteServerSetting;
-	exports.SERVER_SETTING_REMOVED = SERVER_SETTING_REMOVED;
-	exports.COULD_NOT_REMOVE_SERVER_SETTING = COULD_NOT_REMOVE_SERVER_SETTING;
 	exports.getModuleName = function () {
 		return module.id;
 	};

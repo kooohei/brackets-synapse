@@ -148,7 +148,7 @@ define(function (require, exports, module) {
 			_nodeConnection.domains.base.restartNode();
 			CommandManager.execute(Commands.APP_RELOAD);
 		} catch (e) {
-			console.error("Failed trying to restart Node: " + e.message);
+			console.log("SYNAPSE ERROR - Failed trying to restart Node", e);
 		}
 	};
 	
@@ -207,7 +207,7 @@ define(function (require, exports, module) {
 	exports.initTreeViewContextMenu 	= initTreeViewContextMenu;
 	exports.ContextMenuCommandIds 		= ContextMenuCommandIds;
 	exports.ContextMenuIds 						= ContextMenuIds;
-	exports.treeViewContextMenuState 	= treeViewContextMenuState;
+	exports.treeViewContextMenuState	= treeViewContextMenuState;
 	exports.getModuleName 						= function () {
 		return module.id;
 	};

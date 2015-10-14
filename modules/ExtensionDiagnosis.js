@@ -42,8 +42,8 @@ define(function (require, exports, module) {
 			var version = JSON.parse(text).version;
 			d.resolve(version);
 		}, function (err) {
-			err =  new Error({message: "SYNAPSE: The version number failed to read from extension's package.json.", err: err.toString()});
-			console.error(err);
+			err =  new Error({message: "Failed to read version number from package.json.", err: err});
+			console.log("SYNAPSE ERROR", err);
 			d.reject(err);
 		});
 		return d.promise();
@@ -73,8 +73,8 @@ define(function (require, exports, module) {
 		var d = $.Deferred();
 		dir.getContents(function (err, contents, stats, statsErrors) {
 			if (err) {
-				err =new Error({message: "SYNAPSE: Failed to load contents", err: err.toString()});
-				console.error(err);
+				err = new Error({message: "SYNAPSE Error: Failed to load contents", err: err});
+				console.log(err);
 				d.reject(err);
 			} else {
 				d.resolve(contents);
@@ -94,39 +94,47 @@ define(function (require, exports, module) {
 		var keysdir = FileSystem.getDirectoryForPath(path);
 		var message = "Please Re-set to the following account settings<hr>";
 		keysdir.exists(function (err, exists) {
-			if (exists) {
-				_getDirectoryContents(keysdir)
-				.then(function (contents) {
-					if (contents.length) {
-						
-						contents.forEach(function (entry) {
-							var tmp = entry.name.split("@"),
-									host = tmp[0],
-									user = tmp[1];
-							message += "Host @ User : " + host + " @ " + user + "<br>";
-						});
-						
-						keysdir.moveToTrash(function (err) {
-							if (err) {
-								err = new Error({message: "SYNAPSE: Failed to remove file for deprecated environment", err: err.toString()});
-								console.error(err);
-								d.reject(err);
-							}
-						});
-						DialogCollection.showAlert("Alert", message);
-					} else {
-						keysdir.moveToTrash(function (err) {
-							err = new Error({message: "SYNAPSE: Failed to remove file for deprecated environment", err: err.toString()});
-							console.error(err);
-							d.reject(err);
-						});
-					}
-					d.resolve();
-				}, function (err) {
-					d.reject(err);
-				});
+			if (err) {
+				err = new Error({message: "SYNAPSE Error: Failed to execute FileEntity.exists.", err: err});
+				console.log(err);
+				d.reject(err);
 			} else {
-				d.resolve();
+				if (exists) {
+					_getDirectoryContents(keysdir)
+					.then(function (contents) {
+						if (contents.length) {
+
+							contents.forEach(function (entry) {
+								var tmp = entry.name.split("@"),
+										host = tmp[0],
+										user = tmp[1];
+								message += "Host @ User : " + host + " @ " + user + "<br>";
+							});
+
+							keysdir.moveToTrash(function (err) {
+								if (err) {
+									err = new Error({message: "SYNAPSE: Failed to remove file for deprecated environment", err: err});
+									console.log(err);
+									d.reject(err);
+								}
+							});
+							DialogCollection.showAlert("Alert", message);
+						} else {
+							keysdir.moveToTrash(function (err) {
+								err = new Error({message: "SYNAPSE: Failed to remove file for deprecated environment", err: err});
+								console.log(err);
+								d.reject(err);
+							});
+						}
+						d.resolve();
+					}, function (err) {
+						err = new Error({message: "Failed to get contents from __KEYS__ directory.", err: err});
+						console.log(err);
+						d.reject(err);
+					});
+				} else {
+					d.resolve();
+				}
 			}
 		});
 		return d.promise();
@@ -142,17 +150,23 @@ define(function (require, exports, module) {
 		var d = new $.Deferred();
 		var file = FileSystem.getFileForPath(FileUtils.getParentPath(ExtensionUtils.getModulePath(module)) + "error.log");
 		file.exists(function (err, isExists) {
-			if (!isExists) {
-				FileUtils.writeText(file, "", true)
-				.then(function () {
-					d.resolve();
-				}, function (err) {
-					err = new Error({message: "SYNAPSE: ailed to create file for error log.", err: err.toString()});
-					console.error(err);
-					d.reject(err);
-				});
+			if (err) {
+				err = new Error({message: "Failed to execute FileEntity.exists for error.log", err: err});
+				console.log(err);
+				d.reject(err);
 			} else {
-				d.resolve();
+				if (!isExists) {
+					FileUtils.writeText(file, "", true)
+					.then(function () {
+						d.resolve();
+					}, function (err) {
+						err = new Error({message: "SYNAPSE: Failed to create file for error log.", err: err});
+						console.log(err);
+						d.reject(err);
+					});
+				} else {
+					d.resolve();
+				}
 			}
 		});
 		

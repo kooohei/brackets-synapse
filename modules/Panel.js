@@ -8,6 +8,7 @@ define(function (require, exports, module) {
 			Resizer						= brackets.getModule("utils/Resizer"),
 			MainViewManager		= brackets.getModule("view/MainViewManager"),
 			DocumentManager		= brackets.getModule("document/DocumentManager"),
+			ProjectManager		= brackets.getModule("project/ProjectManager"),
 			CommandManager		= brackets.getModule("command/CommandManager"),
 			FileSystem				= brackets.getModule("filesystem/FileSystem"),
 			_									= brackets.getModule("thirdparty/lodash"),
@@ -38,7 +39,6 @@ define(function (require, exports, module) {
 
 	var
 			init,
-			closeProject,
 			reloadServerSettingList,
 			hideMain,
 			showSpinner,
@@ -58,7 +58,7 @@ define(function (require, exports, module) {
 			_fadeOutMain,
 			_toggleConnectBtn,
 			_removeServerSettingListRow,
-			_removeTreeviewRow,
+			_slideTreeviewRow,
 
 			onProtocolGroup,
 			onAuthGroup,
@@ -319,38 +319,17 @@ define(function (require, exports, module) {
 	 */
 	hideMain = function () {
 		if (_projectState === Project.OPEN) {
-			closeProject()
-				.then(function () {
-					_fadeOutMain();
-					return;
-				});
+			Project.openFallbackProject()
+			.then(function () {
+				_fadeOutMain();
+				return;
+			}, function (err) {
+				// user canceled unsaved document.
+				return;
+			});
 		} else {
 			_fadeOutMain();
 		}
-	};
-	/**
-	 * check unsaved files and project closed then fadeout panel.
-	 *
-	 * @returns {$.Promise}
-	 */
-	closeProject = function () {
-		var tvcHeight = j.tvc.outerHeight() + "px";
-		var deferred = new $.Deferred();
-		CommandManager.execute(Commands.FILE_CLOSE_ALL)
-			.then(Project.closeProject)
-			.then(Project.close, function (err) {
-				Log.q("Failed to open the fallback project.", true, err);
-				deferred.reject(err);
-			})
-			.then(function () {
-				deferred.resolve();
-			})
-			.fail(function (err) {
-				err = new Error({message: "Failed to close the project", err: err.toString()});
-				console.error(err);
-				deferred.reject(err);
-			});
-		return deferred.promise();
 	};
 	/**
 	 * Reload server setting list in the server list panel from preference file.
@@ -478,6 +457,7 @@ define(function (require, exports, module) {
 		$("#currentProtocol").val("ftp");
 		$("button.toggle-ftp").addClass("active");
 		$("button.toggle-sftp").removeClass("active");
+		$("#synapse-server-port").val("21");
 		// show row for ftp
 		$(".sftp-row").hide();
 
@@ -548,86 +528,90 @@ define(function (require, exports, module) {
 
 		function _open() {
 			SettingManager.reset()
-				.then(function () {
-					var d = new $.Deferred();
-					if (state === "update") {
-						j.s.data("index", setting.index);
-						j.s.data("state", "update");
-						if (setting.protocol === "sftp") {
-							$("#currentProtocol").val("sftp");
-							$("#currentAuth").val(setting.auth);
-							$("button.toggle-ftp").removeClass("active");
-							$("button.toggle-sftp").addClass("active");
-							$(".sftp-row").show();
+			.then(function () {
+				var d = new $.Deferred();
+				if (state === "update") {
+					j.s.data("index", setting.index);
+					j.s.data("state", "update");
+					if (setting.protocol === "sftp") {
+						$("#currentProtocol").val("sftp");
+						$("#currentAuth").val(setting.auth);
+						$("button.toggle-ftp").removeClass("active");
+						$("button.toggle-sftp").addClass("active");
+						$(".sftp-row").show();
 
-							if (setting.auth === "key") {
-								$("#synapse-server-privateKey-path").val(setting.privateKeyPath);
-								$("#synapse-server-passphrase").val(setting.passphrase);
-								$("tr.password-row").hide();
-								$("tr.passphrase-row").show();
-								$("button.toggle-password").removeClass("active");
-								$("button.toggle-key").addClass("active");
-								$("#synapse-server-privateKey-path");
-							}
-							if (setting.auth === "password") {
-								$("tr.password-row").show();
-								$("tr.passphrase-row").hide();
-								$("#synapse-server-password").val(setting.password);
-							}
+						if (setting.auth === "key") {
+							$("#synapse-server-privateKey-path").val(setting.privateKeyPath);
+							$("#synapse-server-passphrase").val(setting.passphrase);
+							$("tr.password-row").hide();
+							$("tr.passphrase-row").show();
+							$("tr.key-row").show();
+							$("button.toggle-password").removeClass("active");
+							$("button.toggle-key").addClass("active");
+							$("#synapse-server-privateKey-path");
 						}
-						if (setting.protocol === "ftp") {
-							$("tr.sftp-row").hide();
+						if (setting.auth === "password") {
 							$("tr.password-row").show();
-							$("button.toggle-ftp").addClass("active");
-							$("button.toggle-sftp").removeClass("active");
+							$("tr.passphrase-row").hide();
+							$("tr.key-row").hide();
 							$("#synapse-server-password").val(setting.password);
 						}
-						$("#synapse-server-host").val(setting.host);
-						$("#synapse-server-port").val(setting.port);
-						$("#synapse-server-user").val(setting.user);
-						$("#synapse-server-setting-name").val(setting.name);
-						$("#synapse-server-dir").val(setting.dir);
-						$("#synapse-server-exclude").val(setting.exclude);
-						$("button.btn-add", j.s)
-							.html(Strings.SYNAPSE_SETTING_UPDATE)
-							.css({
-								"background-color": "#5cb85c"
-							})
-							.removeClass("disabled")
-							.prop("disabled", false);
-						SettingManager.validateAll();
-						d.resolve();
-					} else {
-						j.s.data("state", "insert");
-						$("button.btn-add", j.s)
-							.html(Strings.SYNAPSE_SETTING_APPEND)
-							.css({
-								"background-color": "#016dc4"
-							});
-						$("#synapse-server-port").val("21");
-						// berow code when debug only
-						$("#synapse-server-host").val("");
-						$("#synapse-server-user").val("");
-						$("#synapse-server-password").val("");
-						resetExcludeFile();
-						d.resolve();
 					}
-					return d.promise();
-				})
-				.then(function () {
-					j.s.removeClass("hide");
-					j.tvc.css({
-						"border-top": "1px solid rgba(255, 255, 255, 0.05)"
-					});
-					j.tvc.animate({
-							"top": (j.s.outerHeight() + 10) + j.h.outerHeight() + "px",
-							"bottom": 0
-						}, "fast").promise()
-						.done(function () {
-							deferred.resolve();
-							SettingManager.validateAll();
+					if (setting.protocol === "ftp") {
+						$("tr.sftp-row").hide();
+						$("tr.password-row").show();
+						$("button.toggle-ftp").addClass("active");
+						$("button.toggle-sftp").removeClass("active");
+						$("#synapse-server-password").val(setting.password);
+					}
+					$("#synapse-server-host").val(setting.host);
+					$("#synapse-server-port").val(setting.port);
+					$("#synapse-server-user").val(setting.user);
+					$("#synapse-server-setting-name").val(setting.name);
+					$("#synapse-server-dir").val(setting.dir);
+					$("#synapse-server-exclude").val(setting.exclude);
+					$("button.btn-add", j.s)
+						.html(Strings.SYNAPSE_SETTING_UPDATE)
+						.css({
+							"background-color": "#5cb85c"
+						})
+						.removeClass("disabled")
+						.prop("disabled", false);
+					SettingManager.validateAll();
+					d.resolve();
+				} else {
+					j.s.data("state", "insert");
+					
+					var port = "21";
+					if ($(".btn-group.protocol-group button.active").html() === "SFTP") {
+						port = "22";
+					}
+					$("#synapse-server-port").val(port);
+
+					$("button.btn-add", j.s)
+						.html(Strings.SYNAPSE_SETTING_APPEND)
+						.css({
+							"background-color": "#016dc4"
 						});
+					resetExcludeFile();
+					d.resolve();
+				}
+				return d.promise();
+			})
+			.then(function () {
+				j.s.removeClass("hide");
+				j.tvc.css({
+					"border-top": "1px solid rgba(255, 255, 255, 0.05)"
 				});
+				j.tvc.animate({
+						"top": (j.s.outerHeight() + 10) + j.h.outerHeight() + "px",
+						"bottom": 0
+					}, "fast").promise()
+					.done(function () {
+						deferred.resolve();
+						SettingManager.validateAll();
+					});
+			});
 			return deferred.promise();
 		}
 
@@ -751,7 +735,6 @@ define(function (require, exports, module) {
 				$currentBtn.connect = $(".connection-btn", $grp);
 				$currentBtn.edit = $(".btn-edit", $grp);
 				$currentBtn.delete = $(".btn-delete", $grp);
-
 				$grp.animate({"opacity": 1}, 200);
 			}
 		});
@@ -857,41 +840,60 @@ define(function (require, exports, module) {
 	};
 
 	onClickConnectBtn = function (e) {
-
+		
 		var $btn = $(e.currentTarget);
 		var index = $btn.data("index");
 		var server = SettingManager.getServerSetting(index);
-
+		
 		if (_projectState === Project.OPEN) {
 			if ($(this).data("index") === _currentServerIndex) {
-				_removeTreeviewRow()
-				.then(function () {
-					return closeProject();
+				_slideTreeviewRow(false)
+				.then(Project.openFallbackProject)
+				.then(Project.close, function () {
+					// cancel unsaved document.
+					return _slideTreeviewRow(true);
 				})
 				.then(function () {
 					_toggleConnectBtn();
 					Log.q("Project closed");
 				});
-				return;
 			}
-			Log.q("Project is already opened");
-			return;
+		} else {
+			RemoteManager.connect(server)
+			.then(function () {
+				_currentServerIndex = index;
+				_toggleConnectBtn();
+			}, function (err) {
+				console.log(err);
+			});
 		}
-
-		RemoteManager.connect(server)
-		.then(function () {
-			_currentServerIndex = index;
-			_toggleConnectBtn();
-		}, function (err) {
-			console.log(err);
-		});
 	};
-
+	
+		
+	_slideTreeviewRow = function (reverse) {
+		var	list 			= $("#synapse-tree li"),
+				d 				= new $.Deferred(),
+				offset 		= (reverse ? 0 : j.m.outerWidth()) + "px",
+				promises	= [];
+		_.forEach(list, function (li) {
+			var $li = $(li);
+			if (typeof $li !== "undefined") {
+				var p = $li.animate({"margin-left": offset}, 450).promise();
+				promises.push(p);
+			}
+		});
+		Async.waitForAll(promises, false, 2000)
+		.then(function () {
+			d.resolve();
+		}, d.reject);
+		return d.promise();
+	};
+	
 	onClickEditBtn = function (e) {
 		var idx = $(this).data("index");
 		var setting = SettingManager.getServerSetting(idx);
 		if (setting === null) {
-			console.error("could not read server setting for index: " + idx);
+			console.error("Faild to retrieve to the setting via the index: " + idx);
 			return;
 		}
 		_showServerSetting(null, "update", setting);
@@ -976,8 +978,9 @@ define(function (require, exports, module) {
 					d.reject("cancel");
 				}
 			} else {
-				console.error(err);
-				Log.q("Some error has occurred.", true, err);
+				Log.q("Unexpected error", true, err);
+				console.log(err);
+				throw err;
 			}
 		});
 		return d.promise();
@@ -999,26 +1002,6 @@ define(function (require, exports, module) {
 		MainViewManager.on("workingSetAdd workingSetAddList workingSetRemove workingSetRemoveList workingSetUpdate", function () {
 			FileTreeView.updateTreeviewContainerSize();
 		});
-	};
-
-	_removeTreeviewRow = function () {
-		var list = $("#synapse-tree li");
-		var d = new $.Deferred();
-		var offset = j.m.outerWidth() + "px";
-
-		var promises = [];
-		_.forEach(list, function (li) {
-			var $li = $(li);
-			if (typeof $li !== "undefined") {
-				var p = $li.animate({"margin-left": offset}, 600).promise();
-				promises.push(p);
-			}
-		});
-
-		Async.waitForAll(promises, false)
-		.then(d.resolve, d.reject);
-
-		return d.promise();
 	};
 
 	exports.init = init;

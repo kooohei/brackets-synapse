@@ -94,10 +94,14 @@ define(function (require, exports, module) {
 			.then(function () {
 				Log.q("Initialized completed successfully.");
 			}, function (err) {
-				throw new Error({message: "Initialized failed", error: err.toString()});
+				err = new Error({message: "Initialized failed", err: err});
+				console.log(err);
+				throw err;
 			});
 		}, function (err) {
-			console.error("Initialize PreferenceManager module failed.");
+			err = new Error({messsage: "Initialize PreferenceManager module failed.", err: err});
+			console.log(err);
+			throw err;
 		});
 	});
 });

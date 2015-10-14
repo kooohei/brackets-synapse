@@ -132,8 +132,8 @@ define(function (require, exports, module) {
 				try {
 					settings = PreferenceManager.loadServerSettings();
 				} catch(e) {
-					console.error(e);
 					Log.q("The server settings could not load from Preference files", true, e);
+					console.log("SYNAPSE ERROR", e);
 				}
 				CryptoManager.setSessionPassword($password.val());
 				PreferenceManager.setUseCrypt(true);

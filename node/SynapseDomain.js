@@ -257,7 +257,7 @@
 					cb(err);
 					ftpClose(con);
 				} else {
-					cb(null, true);
+					cb(null, list);
 					ftpClose(con);
 				}
 			});
@@ -339,6 +339,7 @@
 			}
 			ftpClose(con);
 		});
+		
 		con.once("ready", function () {
 			con.rename(oldPath, newPath, function (err) {
 				if (err) {
@@ -671,8 +672,8 @@
 				name: "err",
 				type: "object"
 			}, {
-				name: "res", 
-				type: "boolean"
+				name: "list", 
+				type: "object"
 			}]
 		);
 		

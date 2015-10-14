@@ -122,13 +122,15 @@ div#synapse-log-rows .synapse-log-row:first-child {
 div#synapse-log-rows .synapse-log-row:last-child {
 	border-bottom: none;
 }
-
 div#synapse-log-rows .synapse-log-row p.item {
 	padding-bottom: 3px;
-	line-height: 10px;
+}
+div#synapse-log-rows .synapse-log-row p.item p {
+	line-height: 14px;
 	font-size: 10px;
 	letter-spacing: 0.05em;
 	color: rgba(118, 149, 177, 0.98);
+	vertical-align:top;
 }
 div#synapse-log-rows .synapse-log-row p.item span.synapse-log-error {
 	display: inline-block;

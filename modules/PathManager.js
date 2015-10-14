@@ -21,9 +21,9 @@ define(function (require, exports, module) {
 	/* region Public Methods */
 	var	init,
 			setRemoteRoot,
+			removeTrailingSlash,
 			completionRemotePath,
 			completionLocalPath,
-			getRemoteRoot,
 			getBaseDirectory,
 			getProjectDirectoryPath,
 			getLocalRelativePath,
@@ -60,28 +60,16 @@ define(function (require, exports, module) {
 		}
 	};
 
-	getRemoteRoot = function () {
-		if (remoteRoot.length === 0) {
-			return "./";
-		} else {
-			return ((isRelative) ? "" : "/") + remoteRoot.join("/");
-		}
-	};
+	
 
-	completionRemotePath = function (pathAry) {
-		var remotePath = getRemoteRoot();
-		if (pathAry === false || pathAry.length === 0) {
-			return remotePath;
+	completionRemotePath = function (setting, pathAry) {
+//		var dirAry = setting.dir.split("/"); // for remove trailing slash.
+//		var res = dirAry.join("/") + "/" + pathAry.join("/");
+		var res = removeTrailingSlash(setting.dir);
+		if (res !== "./") {
+			res += "/";
 		}
-		if (remotePath === "") {
-			return pathAry.join("/");
-		} else if (remotePath === "/") {
-			return "/" + pathAry.join("/");
-		} else if (remotePath === "./") {
-			return remotePath + pathAry.join("/");
-		} else {
-			return remotePath + "/" + pathAry.join("/");
-		}
+		return res + pathAry.join("/");
 	};
 
 	completionLocalPath = function (pathAry) {
@@ -92,15 +80,24 @@ define(function (require, exports, module) {
 		if (!path || path.substr(0, _projectDir.fullPath.length) !== _projectDir.fullPath) {
 			return;
 		}
-
 		var result = path.substr(_projectDir.fullPath.length);
-		if (result && result[result.length -1 ] === "/") {
-			return result.slice(0, -1);
-		} else {
-			return result;
-		}
+		return removeTrailingSlash(result);
 	};
-
+	
+	removeTrailingSlash = function (path) {
+		if (path === "") {
+			path = "./";
+		}
+		var tmp = path.split("/");
+		if (tmp.length > 1 && path !== "./" && path !== "/") {
+			if (tmp[tmp.length-1] === "") {
+				tmp.pop();
+			}
+			path = tmp.join("/");
+			
+		}
+		return path;
+	};
 
 	
 	getProjectDirectoryPath = function (_path) {
@@ -123,11 +120,11 @@ define(function (require, exports, module) {
 
 	exports.init = init;
 	exports.setRemoteRoot = setRemoteRoot;
-	exports.getRemoteRoot = getRemoteRoot;
 	exports.completionRemotePath = completionRemotePath;
 	exports.completionLocalPath = completionLocalPath;
 	exports.getProjectDirectoryPath = getProjectDirectoryPath;
 	exports.getLocalRelativePath = getLocalRelativePath;
+	exports.removeTrailingSlash = removeTrailingSlash;
 	exports.getModuleName = function () {
 		return module.id;
 	};

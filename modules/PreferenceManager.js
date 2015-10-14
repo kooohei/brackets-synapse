@@ -203,7 +203,8 @@ define(function (require, exports, module) {
 			SettingManager.setServerSettings(settings);
 			d.resolve();
 		}, function (err) {
-			err = new Error({message: "Faild to save the server settings", err: err.toString()});
+			err = new Error({message: "Faild to save the server settings", err: err});
+			console.log(err);
 			d.reject(err);
 		});
 		return d.promise();

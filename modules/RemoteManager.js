@@ -111,7 +111,7 @@ define(function (require, exports, module) {
 		
 		Panel.showSpinner();
 		
-		var remoteRoot = PathManager.getRemoteRoot();
+		var remoteRoot = setting.dir;
 		
 		if (setting.protocol === "ftp") {
 			method = "connect";
@@ -188,11 +188,13 @@ define(function (require, exports, module) {
 			if (setting.protocol === "sftp") {
 				list = _convObjectLikeFTP(list);
 			}
+			entity.downloaded = true;
 			list = getListIgnoreExclude(setting, list);
 			Log.q("Found " + list.length + " files in the directory (" + remotePath + ")");
 			deferred.resolve(list);
 		}, function (err) {
-			err = new Error({err: err.toString(), protocol: setting.protocol});
+			err = new Error({err: err, protocol: setting.protocol});
+			console.log(err);
 			Log.q("Faild to read the list from the server.", true, err);
 			deferred.reject(err);
 		}).always(function () {
@@ -285,7 +287,7 @@ define(function (require, exports, module) {
 		}
 		Shared.domain.exec(method, setting, remotePath)
 		.then(function () {
-			Log.q("The remote file successfully deleted.");
+			Log.q("The remote file was deleted successfully");
 			deferred.resolve(true);
 		}, function (err) {
 			Log.q("Failed to delete the remote file.", true, err);
@@ -294,11 +296,18 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 
-	rename = function (serverSetting, oldPath, newPath) {
+	rename = function (setting, oldPath, newPath) {
 		var deferred = new $.Deferred();
-		Shared.domain.exec("Rename", serverSetting, oldPath, newPath)
+		var method = "";
+		if (setting.protocol === "ftp") {
+			method = "rename";
+		} else
+		if (setting.protocol === "sftp") {
+			method = "sftpRename";
+		}
+		Shared.domain.exec(method, setting, oldPath, newPath)
 			.then(function () {
-				Log.q("The remote file successfully renamed");
+				Log.q("The remote file was renamed successfully");
 				deferred.resolve(true);
 			}, function (err) {
 				Log.q("Failed to rename the remote file", true, err);
@@ -318,10 +327,14 @@ define(function (require, exports, module) {
 		}
 		Shared.domain.exec(method, setting, localPath, remotePath)
 			.then(function () {
-				Log.q("The file successfully downloaded");
+				Log.q("The file download was successfully (" + remotePath + ")");
 				deferred.resolve(true);
 			}, function (err){
-				Log.q("Failed to download the remote file", true, err);
+				var mes = "Failed to download the file (" + remotePath + ")";
+				if (err.hasOwnProperty("code")) {
+					mes += "<br>[Response Code:" + err.code + "]";
+				}
+				Log.q(mes, true, err);
 				deferred.reject(err);
 			});
 		return deferred.promise();
