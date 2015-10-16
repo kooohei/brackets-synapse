@@ -4,13 +4,13 @@
 	"use strict";
 	
 	// HEADER >>
-	var fs							= require("fs"),
-			path						= require("path"),
-			FTP							= require("ftp"),
-			SFTP						= require("ssh2").Client,
-			Q								= require("q");
+	var fs			= require("fs"),
+			path		= require("path"),
+			FTP			= require("ftp"),
+			SFTP		= require("ssh2").Client,
+			Q				= require("q");
 			
-	
+	var modules = {};
 	var init;
 	
 	var	resolveSetting,
@@ -50,6 +50,8 @@
 		CommandTimeout: 5000
 	};
 	// <<
+	
+	
 	resolveSetting = function (setting) {
 		if (setting.protocol === "ftp") {
 			setting.conTimeout = ENV.ConnectionTimeout;
@@ -157,7 +159,10 @@
 				if (stats.isSymbolicLink()) {
 					ent.type = "l";
 					//------------------------------------------------
-					sftp.readlink(path.join(remotePath, ent.filename), function (err, target) {
+					var p = path.join(remotePath, ent.filename);
+					var pAry = p.split("\\");
+					p = pAry.join("/");
+					sftp.readlink(p, function (err, target) {
 						if (err) {
 							//console.log({ERROR_1: err});
 							ent.destType = "block";
@@ -186,7 +191,6 @@
 							//------------------------------------------------
 						}
 					});
-					
 					//------------------------------------------------
 				}
 				return q.promise;
@@ -648,7 +652,7 @@
 	/**
 	 * Initialize DomainManager.
 	 */
-	init = function (domainManager, _domainPath) {
+	init = function (domainManager, _domainPath, LogModule) {
 		if (!domainManager.hasDomain("synapse")) {
 			domainManager.registerDomain("synapse", {
 				major: 0,

@@ -34,13 +34,10 @@ define(function (require, exports, module) {
 	var PROJECT_DIR = "__PROJ__";
 	/* endregion */
 
-
 	/* Public Methods */
-
 	init = function () {
 		var deferred = new $.Deferred();
 		Project.on(Project.PROJECT_STATE_CHANGED, _onProjectStateChanged);
-
 		return deferred.resolve().promise();
 	};
 
@@ -60,11 +57,7 @@ define(function (require, exports, module) {
 		}
 	};
 
-	
-
 	completionRemotePath = function (setting, pathAry) {
-//		var dirAry = setting.dir.split("/"); // for remove trailing slash.
-//		var res = dirAry.join("/") + "/" + pathAry.join("/");
 		var res = removeTrailingSlash(setting.dir);
 		if (res !== "./") {
 			res += "/";
@@ -99,7 +92,6 @@ define(function (require, exports, module) {
 		return path;
 	};
 
-	
 	getProjectDirectoryPath = function (_path) {
 		var path = _path || "";
 		var modulePath = FileUtils.getParentPath(ExtensionUtils.getModulePath(module));
@@ -110,10 +102,7 @@ define(function (require, exports, module) {
 		}
 		return path;
 	};
-
-
 	/* Private Methods */
-
 	_onProjectStateChanged = function (e, obj) {
 		_projectDir = obj.directory;
 	};

@@ -52,11 +52,11 @@ define(function (require, exports, module) {
 			_attachEvent,
 			_detachEvent,
 			_getEntityWithId,
-			_getPathArray,
 			_getElementWithEntity,
 			_toggleDir,
 			_newFile,
 
+			getPathArray,
 			refresh,
 			rename,
 			deleteFile,
@@ -284,8 +284,8 @@ define(function (require, exports, module) {
 			return deferred.reject().promise();
 		}
 
-		var oldLocalPath = PathManager.completionLocalPath(_getPathArray(_ctxMenuCurrentEntity));
-		var oldRemotePath = PathManager.completionRemotePath(_currentServerSetting, _getPathArray(_ctxMenuCurrentEntity));
+		var oldLocalPath = PathManager.completionLocalPath(getPathArray(_ctxMenuCurrentEntity));
+		var oldRemotePath = PathManager.completionRemotePath(_currentServerSetting, getPathArray(_ctxMenuCurrentEntity));
 		
 		var entry = null;
 		if (_ctxMenuCurrentEntity.type === "file") {
@@ -296,8 +296,8 @@ define(function (require, exports, module) {
 
 		_rename(_ctxMenuCurrentEntity, function (entity) {
 
-			var newLocalPath = PathManager.completionLocalPath(_getPathArray(entity));
-			var newRemotePath = PathManager.completionRemotePath(_currentServerSetting, _getPathArray(entity));
+			var newLocalPath = PathManager.completionLocalPath(getPathArray(entity));
+			var newRemotePath = PathManager.completionRemotePath(_currentServerSetting, getPathArray(entity));
 			if (entity.type === "directory") {
 				oldLocalPath += "/";
 				newLocalPath += "/";
@@ -343,7 +343,7 @@ define(function (require, exports, module) {
 		if (_ctxMenuCurrentEntity === null) {
 			return deferred.reject().promise();
 		}
-		var remotePath = PathManager.completionRemotePath(_currentServerSetting, _getPathArray(_ctxMenuCurrentEntity));
+		var remotePath = PathManager.completionRemotePath(_currentServerSetting, getPathArray(_ctxMenuCurrentEntity));
 
 		DialogCollection.showYesNoModal(
 				"removeDirectoryDialog",
@@ -430,7 +430,7 @@ define(function (require, exports, module) {
 
 	deleteFile = function () {
 		var deferred = new $.Deferred();
-		var remotePath = PathManager.completionRemotePath(_currentServerSetting, _getPathArray(_ctxMenuCurrentEntity));
+		var remotePath = PathManager.completionRemotePath(_currentServerSetting, getPathArray(_ctxMenuCurrentEntity));
 		if (_ctxMenuCurrentEntity === null) {
 			return deferred.reject().promise();
 		}
@@ -464,7 +464,7 @@ define(function (require, exports, module) {
 		var d = new $.Deferred();
 		
 		if (_currentServerSetting) {
-			var absPath = PathManager.completionLocalPath(_getPathArray(entity)),
+			var absPath = PathManager.completionLocalPath(getPathArray(entity)),
 					file = entity.type !== "directory" ? FileSystem.getFileForPath(absPath) : FileSystem.getDirectoryForPath(absPath),
 					fullPath = file.fullPath,
 					type = file.type;
@@ -484,9 +484,9 @@ define(function (require, exports, module) {
 	};
 
 	getEntityWithPath = function (localPath) {
-		var split = localPath.split("/");
-		var children = rootEntity.children;
-		var entity = null;
+		var split			= localPath.split("/"),
+				children	= rootEntity.children,
+				entity		= null;
 		split.forEach(function (f) {
 			_.forEach(children, function (ent) {
 				if (ent.text === f) {
@@ -580,7 +580,7 @@ define(function (require, exports, module) {
 		return _modulePath + PROJECT_DIR;
 	};
 
-	_getPathArray = function (entity) {
+	getPathArray = function (entity) {
 		var target = entity;
 		var entities = [];
 		while (target.parent !== null) {
@@ -701,7 +701,7 @@ define(function (require, exports, module) {
 		if (entity.type === "ldirectory") {
 			path = entity.target;
 		} else {
-			path = PathManager.completionRemotePath(_currentServerSetting, _getPathArray(entity));
+			path = PathManager.completionRemotePath(_currentServerSetting, getPathArray(entity));
 		}
 		RemoteManager.getList(entity, _currentServerSetting, path)
 		.then(function (list) {
@@ -825,8 +825,7 @@ define(function (require, exports, module) {
 			if (type === "file") {
 				_rename(newEntity, function (ent) {
 					var localPath = _modulePath + "empty.txt";
-					var remotePath = PathManager.completionRemotePath(_currentServerSetting, _getPathArray(ent));
-
+					var remotePath = PathManager.completionRemotePath(_currentServerSetting, getPathArray(ent));
 					RemoteManager.uploadFile(_currentServerSetting, localPath, remotePath)
 					.then(function () {
 						deferred.resolve();
@@ -838,10 +837,10 @@ define(function (require, exports, module) {
 			} else
 			if (type === "directory") {
 				_rename(newEntity, function (ent) {
-					var remotePath = PathManager.completionRemotePath(_currentServerSetting, _getPathArray(ent));
+					var remotePath = PathManager.completionRemotePath(_currentServerSetting, getPathArray(ent));
 					RemoteManager.mkdir(_currentServerSetting, remotePath)
 					.then(function () {
-						return Project.createDirectoryIfExists(PathManager.completionLocalPath(_getPathArray(ent)));
+						return Project.createDirectoryIfExists(PathManager.completionLocalPath(getPathArray(ent)));
 					}, function (err) {
 						_deleteEntity(ent);
 						deferred.reject();
@@ -915,12 +914,12 @@ define(function (require, exports, module) {
 		var remotePath = "";
 		var localPath = "";
 		if (entity.type === "file") {
-			remotePath = PathManager.completionRemotePath(_currentServerSetting, _getPathArray(entity));
+			remotePath = PathManager.completionRemotePath(_currentServerSetting, getPathArray(entity));
 		} else
 		if (entity.type === "lfile") {
 			remotePath = entity.target;
 		}
-		localPath = PathManager.completionLocalPath(_getPathArray(entity));
+		localPath = PathManager.completionLocalPath(getPathArray(entity));
 		deferred.resolve();
 		
 		if (!entity.downloaded) {
@@ -1043,6 +1042,7 @@ define(function (require, exports, module) {
 	exports.refresh = refresh;
 	exports.rename = rename;
 	exports.removeFile = removeFile;
+	exports.getPathArray = getPathArray;
 	exports.newFile = newFile;
 	exports.getEntityWithPath = getEntityWithPath;
 	exports.deleteFile = deleteFile;

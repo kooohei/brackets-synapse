@@ -108,11 +108,8 @@ define(function (require, exports, module) {
 	connect = function (setting) {
 		var method 			= "",
 				deferred 		=  new $.Deferred();
-		
 		Panel.showSpinner();
-		
 		var remoteRoot = setting.dir;
-		
 		if (setting.protocol === "ftp") {
 			method = "connect";
 		} else {
@@ -225,7 +222,13 @@ define(function (require, exports, module) {
 				mes += "<br>[Response Code:" + err.code + "]";
 			}
 			err.opt = {localPath: localPath, remotePath: remotePath};
-			Log.q(mes, true, err);
+			
+			// For debug to stable.
+			var forDebug = "<br>[" + setting.protocol.toUpperCase() + " Upload file source path]<br>" + localPath + "<br>" +
+					"[" + setting.protocol.toUpperCase() + " Upload file destination path]<br>" + remotePath;
+			
+			Log.q(mes + forDebug, true, err);
+			
 			Panel.hideSpinner();
 			deferred.reject(err);
 		});

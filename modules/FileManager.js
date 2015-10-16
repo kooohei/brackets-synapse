@@ -39,7 +39,6 @@ define(function (require, exports, module) {
 		_attachEvent();
 		return d.resolve().promise();
 	};
-
 	openFile = function (localPath) {
 		var deferred = new $.Deferred();
 		if (!EditorManager.canOpenPath(localPath)) {
@@ -50,7 +49,6 @@ define(function (require, exports, module) {
 		.then(deferred.resolve, deferred.reject);
 		return deferred.promise();
 	};
-
 	/* Private Methods */
 	_attachEvent = function attachEvent() {
 		Project.on(Project.PROJECT_STATE_CHANGED, function (evt, obj) {
@@ -66,14 +64,12 @@ define(function (require, exports, module) {
 		DocumentManager.off("dirtyFlagChange", onDirtyFlagChange);
 		DocumentManager.off("documentSaved", onSaved);
 	};
-
 	/* Handlers */
 	onBeforeAppClose = function () {
 		if (_projectState === Project.OPEN) {
 			return Project.close();
 		}
 	};
-
 	onDirtyFlagChange = function (evt, document) {
 		if (_projectState === Project.OPEN) {
 			if (document.isDirty && document.file.isFile) {
@@ -82,13 +78,18 @@ define(function (require, exports, module) {
 			}
 		}
 	};
-
 	onSaved = function (e, document) {
 		if (_projectState === Project.CLOSE) {
 			return;
 		}
-		var localPath = document.file.fullPath;
-		var remotePath = PathManager.getLocalRelativePath(localPath);
+		
+		var	projectRootDir 	= ProjectManager.getProjectRoot(),
+				localPath 			= FileUtils.getRelativeFilename(projectRootDir.fullPath, document.file.fullPath),
+				entity 					= FileTreeView.getEntityWithPath(localPath),
+				pathAry 				= FileTreeView.getPathArray(entity);
+		
+		localPath = PathManager.completionLocalPath(pathAry);
+		var remotePath = PathManager.completionRemotePath(Project.getServerSetting(), pathAry);
 		
 		RemoteManager.uploadFile(Project.getServerSetting(), localPath, remotePath)
 		.then(function () {
@@ -99,8 +100,6 @@ define(function (require, exports, module) {
 			ent.downloaded = false;
 		});
 	};
-
-	
 	
 	exports.init = init;
 	exports.openFile = openFile;
