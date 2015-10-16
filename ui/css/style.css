@@ -8,7 +8,7 @@
 	width: 100%;
 	overflow: hidden;
 	background-color: rgb(22, 22, 22);
-	min-height: 200px;
+	
 }
 #synapse .btn {
 	background-color: #3f3f3f;
@@ -184,8 +184,6 @@
 	position: absolute;
 	top: 37px;
 	box-sizing: border-box;
-	overflow-y: auto;
-	overflow-x: hidden;
 	height: auto;
 	width: 100%;
 	background-color: #222222;
@@ -215,7 +213,9 @@
 	display: inline-block;
 }
 #synapse-server-list div.list {
-	height: 100%;
+	min-height: 10px;
+	overflow: hidden;
+	overflow-y: auto;
 }
 #synapse-server-list div.list div.wrapper {
 	padding: 14px 7px 5px 7px;

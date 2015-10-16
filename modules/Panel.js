@@ -1,4 +1,3 @@
-/*jslint node: true, vars: true, plusplus: true, devel: true, nomen: true, regexp: true, indent: 2, maxerr: 50, browser: true */
 /*global define, $, brackets, Mustache, window, console */
 define(function (require, exports, module) {
 	"use strict";
@@ -49,6 +48,7 @@ define(function (require, exports, module) {
 
 			_initServerSettingUI,
 			_initMainUI,
+			_initServerListUI,
 			_reloadServerSettingListWhenDelete,
 			_hideServerSetting,
 			_hideServerList,
@@ -57,6 +57,7 @@ define(function (require, exports, module) {
 			_disableToolbarIcon,
 			_fadeOutMain,
 			_toggleConnectBtn,
+			_refreshView,
 			_removeServerSettingListRow,
 			_slideTreeviewRow,
 
@@ -104,6 +105,12 @@ define(function (require, exports, module) {
 			get l() {
 				return $("#synapse-server-list");
 			},
+			get lh() {
+				return $("div.synapse-server-list-header");
+			},
+			get ll() {
+				return $("div.list", this.l);
+			},
 			get tvc() {
 				return $("#synapse-treeview-container");
 			},
@@ -133,6 +140,7 @@ define(function (require, exports, module) {
 
 		_initMainUI()
 		.then(_initServerSettingUI)
+		.then(_initServerListUI)
 		.then(Log.init)
 		.then(function () {
 			Project.on(Project.PROJECT_STATE_CHANGED, onProjectStateChanged);
@@ -296,6 +304,7 @@ define(function (require, exports, module) {
 						"top": top + "px",
 						"bottom": 0
 					}, "fast").promise().then(function () {
+						_refreshView();
 						deferred.resolve();
 					});
 				});
@@ -330,6 +339,46 @@ define(function (require, exports, module) {
 		} else {
 			_fadeOutMain();
 		}
+	};
+	
+	_refreshView = function () {
+		function oh($obj) {
+			return $obj.outerHeight() + "px";
+		}
+		
+		
+		var obj = {
+			sidebar			: oh($("#sidebar")),
+			main				: oh(j.m),
+			serverlist	: oh(j.l),
+			list				: oh(j.ll),
+			header			: oh(j.h),
+			innerHeader	: oh(j.lh)
+		};
+		var keys = Object.keys(obj);
+		keys.forEach(function (key) {
+			console.log(key + "\t" + obj[key]);
+		});
+		console.log("--------------------------------------------------------------");
+		if ((j.m.outerHeight() - (j.h.outerHeight() + j.lh.outerHeight())) < j.ll.outerHeight()) {
+			j.ll.css({"height": (j.m.outerHeight() - j.h.outerHeight() - j.lh.outerHeight()) + "px"});
+			$("div.item:last-child", j.ll).css({"padding-bottom": "25px"});
+		} else {
+			j.ll.css({"height": ""});
+			$("div.item:last-child", j.ll).css({"padding-bottom": ""});
+		}
+	};
+	
+	_initServerListUI = function () {
+		var d = new $.Deferred();
+		reloadServerSettingList()
+		.then(function () {
+			$(window).on("resize", function () {
+				_refreshView();
+			});
+			d.resolve();
+		}, d.reject);
+		return d.promise();
 	};
 	/**
 	 * Reload server setting list in the server list panel from preference file.
@@ -869,7 +918,6 @@ define(function (require, exports, module) {
 		}
 	};
 	
-		
 	_slideTreeviewRow = function (reverse) {
 		var	list 			= $("#synapse-tree li"),
 				d 				= new $.Deferred(),
