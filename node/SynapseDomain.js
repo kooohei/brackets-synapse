@@ -42,6 +42,7 @@
 			download,
 			sftpDownload;
 	
+	
 	var _domainManager	= null;
 	
 	var ENV = {
@@ -648,7 +649,6 @@
 		}).connect(setting);
 	};
 	
-	
 	/**
 	 * Initialize DomainManager.
 	 */
@@ -992,8 +992,6 @@
 				type: "boolean"
 			}]
 		);
-		
-		
 	};
 	exports.init = init;
 }());

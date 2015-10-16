@@ -7,6 +7,7 @@ define(function (require, exports, module) {
 			Resizer						= brackets.getModule("utils/Resizer"),
 			MainViewManager		= brackets.getModule("view/MainViewManager"),
 			DocumentManager		= brackets.getModule("document/DocumentManager"),
+			WorkspaceManager	= brackets.getModule("view/WorkspaceManager"),
 			ProjectManager		= brackets.getModule("project/ProjectManager"),
 			CommandManager		= brackets.getModule("command/CommandManager"),
 			FileSystem				= brackets.getModule("filesystem/FileSystem"),
@@ -38,7 +39,6 @@ define(function (require, exports, module) {
 
 	var
 			init,
-			reloadServerSettingList,
 			hideMain,
 			showSpinner,
 			hideSpinner,
@@ -59,6 +59,7 @@ define(function (require, exports, module) {
 			_toggleConnectBtn,
 			_refreshView,
 			_removeServerSettingListRow,
+			_reloadServerSettingList,
 			_slideTreeviewRow,
 
 			onProtocolGroup,
@@ -71,8 +72,8 @@ define(function (require, exports, module) {
 			onClickEditBtn,
 			onProjectStateChanged,
 
-			_attachWorkingSetStateChanged,
-			_detachWorkingSetStateChanged,
+			_attachEvents,
+			_detachMainViewManagerEvents,
 
 			resetExcludeFile,
 			openFileSelect,
@@ -127,7 +128,7 @@ define(function (require, exports, module) {
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/treeview.css");
 	ExtensionUtils.loadStyleSheet(module, "../node/node_modules/font-awesome/css/font-awesome.min.css");
 
-
+	/* PUBLIC METHODS */
 	/**
 	 * Initialize module.
 	 *
@@ -143,7 +144,7 @@ define(function (require, exports, module) {
 		.then(_initServerListUI)
 		.then(Log.init)
 		.then(function () {
-			Project.on(Project.PROJECT_STATE_CHANGED, onProjectStateChanged);
+			_attachEvents();
 			//for Devel
 			//showMain();
 			//brackets.app.showDeveloperTools();
@@ -155,13 +156,11 @@ define(function (require, exports, module) {
 	 * Show Main Panel to side view.
 	 */
 	showMain = function () {
-		
 		if ($("#synapse-icon").hasClass("enabled")) {
 			return;
 		}
-
-		var d = new $.Deferred();
 		
+		var d = new $.Deferred();
 		/**
 		 * if setting is encrypted then show dialog for the entered password
 		 * 
@@ -291,23 +290,19 @@ define(function (require, exports, module) {
 		if (j.l.is(":visible")) {
 			return deferred.resolve().promise();
 		}
-
 		function open(state) {
-			reloadServerSettingList()
+			var deferred = new $.Deferred();
+			_reloadServerSettingList()
+			.then(function () {
+				j.l.removeClass("hide");
+				_refreshView(true)
 				.then(function () {
-					var top = j.h.outerHeight() + j.l.outerHeight() + 9;
-					j.l.removeClass("hide");
 					j.tvc.css({
 						"border-top": "1px solid rgba(255, 255, 255, 0.05)"
 					});
-					j.tvc.animate({
-						"top": top + "px",
-						"bottom": 0
-					}, "fast").promise().then(function () {
-						_refreshView();
-						deferred.resolve();
-					});
+					deferred.resolve();
 				});
+			});
 			return deferred.promise();
 		}
 		
@@ -319,7 +314,9 @@ define(function (require, exports, module) {
 				.then(deferred.resolve, deferred.reject);
 		} else {
 			open(_projectState)
-				.then(deferred.resolve, deferred.reject);
+			.then(function () {
+				deferred.resolve();
+			}, deferred.reject);
 		}
 		return deferred.promise();
 	};
@@ -340,52 +337,80 @@ define(function (require, exports, module) {
 			_fadeOutMain();
 		}
 	};
+
 	
-	_refreshView = function () {
-		function oh($obj) {
-			return $obj.outerHeight() + "px";
-		}
-		
-		
-		var obj = {
-			sidebar			: oh($("#sidebar")),
-			main				: oh(j.m),
-			serverlist	: oh(j.l),
-			list				: oh(j.ll),
-			header			: oh(j.h),
-			innerHeader	: oh(j.lh)
-		};
-		var keys = Object.keys(obj);
-		keys.forEach(function (key) {
-			console.log(key + "\t" + obj[key]);
-		});
-		console.log("--------------------------------------------------------------");
-		if ((j.m.outerHeight() - (j.h.outerHeight() + j.lh.outerHeight())) < j.ll.outerHeight()) {
-			j.ll.css({"height": (j.m.outerHeight() - j.h.outerHeight() - j.lh.outerHeight()) + "px"});
-			$("div.item:last-child", j.ll).css({"padding-bottom": "25px"});
+	/* PRIVATE METHODS */
+	_refreshView = function (isAnim) {
+		var targetHeight = j.m.outerHeight() - j.h.outerHeight() - j.lh.outerHeight();
+		isAnim = isAnim || false;
+		if (j.ll[0].scrollHeight > 390) {
+			j.ll.css({"height": (targetHeight - 40) + "px"});
 		} else {
 			j.ll.css({"height": ""});
-			$("div.item:last-child", j.ll).css({"padding-bottom": ""});
 		}
-	};
-	
-	_initServerListUI = function () {
-		var d = new $.Deferred();
-		reloadServerSettingList()
-		.then(function () {
-			$(window).on("resize", function () {
-				_refreshView();
-			});
-			d.resolve();
-		}, d.reject);
-		return d.promise();
+		return FileTreeView.updateTreeviewContainerSize(isAnim);
 	};
 	/**
 	 * Reload server setting list in the server list panel from preference file.
 	 *
 	 * @returns {$.Promise}
 	 */
-	reloadServerSettingList = function () {
+	_reloadServerSettingList = function (isAfterDelete) {
+		isAfterDelete = isAfterDelete || false;
+		var d = new $.Deferred();
+
+		if (isAfterDelete && !j.l.length) {
+			return d.reject().promise();
+		}
+		
+		if (j.l.length) {
+			$("button.btn-connect", j.l).off("click", onClickConnectBtn);
+			$("button.btn-edit", j.l).off("click", onClickEditBtn);
+			$("button.btn-delete", j.l).off("click", onClickDeleteBtn);
+			$(".close-btn", j.l).off("click", _hideServerList);
+			$("div.item .synapse-server-list-info", j.l).off({
+				"mouseenter": onEnterListBtns,
+				"mouseleave": onLeaveListBtns
+			});
+			j.l.remove();
+		}
+		
+		var list = SettingManager.getServerSettingsCache();
+		var html = Mustache.render(server_list_html, {
+			serverList: list,
+			Strings: Strings
+		});
+		
+		var $html = $(html);
+		if (isAfterDelete) {
+			j.l.addClass("hide").remove();
+		}
+		j.s.after($html);
+		if (isAfterDelete) {
+			j.l.removeClass("hide");
+		}
+		
+		$("button.btn-connect", j.l).on("click", onClickConnectBtn);
+		$("button.btn-edit", j.l).on("click", onClickEditBtn);
+		$("button.btn-delete", j.l).on("click", onClickDeleteBtn);
+		$(".close-btn", j.l).on("click", _hideServerList);
+		$("div.item .synapse-server-list-info", j.l).on({
+			"mouseenter": onEnterListBtns,
+			"mouseleave": onLeaveListBtns
+		});
+		
+		if (isAfterDelete) {
+			FileTreeView.updateTreeviewContainerSize(true)
+			.done(d.resolve);
+		} else {
+			$("#synapse-server-list div.list").addClass("quiet-scrollbars");
+			d.resolve();
+		}
+			
+		return new d.promise();
+	};
+	/*
+	_reloadServerSettingList = function () {
 		if (!Project.isOpen()) {
 			if (j.l.length) {
 				$("button.btn-connect", j.l).off("click", onClickConnectBtn);
@@ -417,11 +442,9 @@ define(function (require, exports, module) {
 		}
 		return new $.Deferred().resolve().promise();
 	};
+	*/
 	
-	/**
-	 * PrivateMethods
-	 */
-
+	
 	/**
 	 * the panel will fadeout when close main panel then the project files container will shown.
 	 */
@@ -456,14 +479,11 @@ define(function (require, exports, module) {
 		});
 		var $main = $(source);
 		var $pc = j.pc;
-
-		
 		if ($pc.length) {
 			$pc.after($main);
 		} else {
 			j.sb.append($main);
 		}
-
 		$("span.list-btn", $main).on("click", showServerList);
 		$("span.close-btn", $main).on("click", hideMain);
 		$("span.add-btn", $main).on("click", function (e) {
@@ -471,12 +491,8 @@ define(function (require, exports, module) {
 				_showServerSetting(e, "insert", null);
 			}
 		});
-		
 		var version = PreferenceManager.getVersion();
 		$(".synapse-current-version").html("version&nbsp;" + version);
-		
-		_attachWorkingSetStateChanged();
-
 		return new $.Deferred().resolve().promise();
 	};
 	/**
@@ -511,6 +527,10 @@ define(function (require, exports, module) {
 		$(".sftp-row").hide();
 
 		return new $.Deferred().resolve().promise();
+	};
+	
+	_initServerListUI = function () {
+		return _reloadServerSettingList();
 	};
 	/**
 	 * Initialize server list panel and some events.
@@ -711,9 +731,7 @@ define(function (require, exports, module) {
 		if (j.l.hasClass("hide")) {
 			return deferred.reject("unexpected error").promise();
 		}
-
 		hideSpinner();
-
 		j.tvc.animate({
 				"top": j.h.outerHeight() + "px",
 				"bottom": 0
@@ -734,26 +752,24 @@ define(function (require, exports, module) {
 	 * @returns {$.Promise}
 	 */
 	_removeServerSettingListRow = function (index) {
-		var deferred = new $.Deferred();
-		var list = $("div.list > div.item", j.l);
-		var temp = _.filter(list, function (item, idx, ary) {
-			var i = $(item).data("index");
-			return i === index;
+		var deferred = new $.Deferred(),
+				list = $("div.list > div.item", j.l),
+				temp = null;
+
+		_.forEach(list, function (item, idx, ary) {
+			if (index === $(item).data("index")) {
+				temp = item;
+				return false;
+			}
 		});
-		if (temp.length === 0) {
-			return deferred.resolve().promise();
-		}
-		var elem = temp[0];
-		var $elem = $(elem);
-		$elem.css({
-			"position": "relative"
-		});
-		$elem.animate({
+		var $elem = $(temp);
+		$elem.css({"position": "relative"})
+		.animate({
 				"left": $elem.outerWidth() + "px",
 				"opacity": 0
 			}, 400).promise()
 			.done(function () {
-				$(this).remove();
+				$elem.remove();
 				deferred.resolve();
 			});
 		return deferred.promise();
@@ -777,7 +793,7 @@ define(function (require, exports, module) {
 		var $currentBtn = {};
 		var $btnGrp = $(".synapse-server-list-info .btn-group button");
 		var $btnGrps = $(".synapse-server-list-info .btn-group");
-
+		
 		_.forEach($btnGrps, function (grp) {
 			var $grp = $(grp);
 			if ($grp.data("index") === _currentServerIndex) {
@@ -808,6 +824,28 @@ define(function (require, exports, module) {
 		}
 	};
 
+	_slideTreeviewRow = function (reverse) {
+		var	list 			= $("#synapse-tree li"),
+				d 				= new $.Deferred(),
+				offset 		= (reverse ? 0 : j.m.outerWidth()) + "px",
+				promises	= [];
+		_.forEach(list, function (li) {
+			var $li = $(li);
+			if (typeof $li !== "undefined") {
+				var p = $li.animate({"margin-left": offset}, 450).promise();
+				promises.push(p);
+			}
+		});
+		Async.waitForAll(promises, false, 2000)
+		.then(function () {
+			d.resolve();
+		}, d.reject);
+		return d.promise();
+	};
+	
+	
+	
+	/* LISTENERS */
 	onProtocolGroup = function (e) {
 		var $btn = $(e.target);
 		if (!$btn.hasClass("toggle-ftp") && !$btn.hasClass("toggle-sftp")) {
@@ -911,30 +949,14 @@ define(function (require, exports, module) {
 			RemoteManager.connect(server)
 			.then(function () {
 				_currentServerIndex = index;
+				window.setTimeout(function () {
+					_toggleConnectBtn();
+				}, 1500);
 				_toggleConnectBtn();
 			}, function (err) {
 				console.log(err);
 			});
 		}
-	};
-	
-	_slideTreeviewRow = function (reverse) {
-		var	list 			= $("#synapse-tree li"),
-				d 				= new $.Deferred(),
-				offset 		= (reverse ? 0 : j.m.outerWidth()) + "px",
-				promises	= [];
-		_.forEach(list, function (li) {
-			var $li = $(li);
-			if (typeof $li !== "undefined") {
-				var p = $li.animate({"margin-left": offset}, 450).promise();
-				promises.push(p);
-			}
-		});
-		Async.waitForAll(promises, false, 2000)
-		.then(function () {
-			d.resolve();
-		}, d.reject);
-		return d.promise();
 	};
 	
 	onClickEditBtn = function (e) {
@@ -967,21 +989,21 @@ define(function (require, exports, module) {
 			.then(function (res) {
 				if (res === "OK") {
 					SettingManager.deleteServerSetting(idx)
-						.then(function () {
-							_removeServerSettingListRow(idx)
-								.then(_reloadServerSettingListWhenDelete)
-								.then(function () {
-									var list = SettingManager.getServerSettingsCache();
-									if (list.length === 0) {
-										return _hideServerList();
-									} else {
-										return new $.Deferred().resolve().promise();
-									}
-								})
-								.then(deferred.resolve, deferred.reject);
-						}, function (err) {
-							deferred.reject(err);
-						});
+					.then(function () {
+						return _removeServerSettingListRow(idx);
+					})
+					.then(function () {
+						return _reloadServerSettingList(true);
+					})
+					.then(function () {
+						var list = SettingManager.getServerSettingsCache();
+						if (list.length === 0) {
+							return _hideServerList();
+						} else {
+							return new $.Deferred().resolve().promise();
+						}
+					})
+					.then(deferred.resolve, deferred.reject);
 
 				} else {
 					deferred.resolve();
@@ -1045,10 +1067,14 @@ define(function (require, exports, module) {
 
 	
 	
-	
-	_attachWorkingSetStateChanged = function () {
-		MainViewManager.on("workingSetAdd workingSetAddList workingSetRemove workingSetRemoveList workingSetUpdate", function () {
-			FileTreeView.updateTreeviewContainerSize();
+	_attachEvents = function () {
+		Project.on(Project.PROJECT_STATE_CHANGED, onProjectStateChanged);
+		WorkspaceManager.on("workspaceUpdateLayout", function (e, height, hint) {
+			_refreshView();
+		});
+		MainViewManager.on("workingSetAdd workingSetAddList workingSetRemove workingSetRemoveList workingSetUpdate paneCreate PaneDestroy", function (e) {
+			//FileTreeView.updateTreeviewContainerSize();
+			_refreshView();
 		});
 	};
 
@@ -1056,7 +1082,6 @@ define(function (require, exports, module) {
 	exports.showMain = showMain;
 	exports.showSpinner = showSpinner;
 	exports.hideSpinner = hideSpinner;
-	exports.reloadServerSettingList = reloadServerSettingList;
 	exports.showServerList = showServerList;
 	exports.getModuleName = function () {
 		return module.id;

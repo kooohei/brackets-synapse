@@ -1023,7 +1023,8 @@ define(function (require, exports, module) {
 		}
 	};
 
-	updateTreeviewContainerSize = function () {
+	updateTreeviewContainerSize = function (isAnim) {
+		isAnim = isAnim || false;
 		var top = j.tvc.css("top");
 		if (j.l.is(":visible")) {
 			top = j.h.outerHeight() + j.l.outerHeight() + 10;
@@ -1031,7 +1032,12 @@ define(function (require, exports, module) {
 		if (j.s.is(":visible")) {
 			top = j.h.outerHeight() + j.s.outerHeight() + 10;
 		}
-		j.tvc.css({"top": top + "px", bottom: 0});
+		if (isAnim) {
+			return j.tvc.animate({"top": top + "px", bottom: 0}, "fast").promise();
+		} else {
+			j.tvc.css({"top": top + "px", bottom: 0});
+			return new $.Deferred().resolve().promise();
+		}
 	};
 
 	exports.init = init;

@@ -184,15 +184,17 @@
 	position: absolute;
 	top: 37px;
 	box-sizing: border-box;
-	height: auto;
+	min-height: 100px;
+	/*height: auto;*/
 	width: 100%;
 	background-color: #222222;
 	border-top: 1px solid #111111;
 	border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-	box-shadow: 0 3px 6px -3px rgba(0, 0, 0, 0.8) inset,
-							0 -3px 6px -3px rgba(0, 0, 0.7) inset;
-	box-shadow: 0 3px 6px -3px rgba(0, 0, 0, 0.8) inset;
+	box-shadow: 0 4px 6px -2px rgba(0, 0, 0, 0.7) inset, 0 -3px 6px -2px rgba(0, 0, 0, 0.8) inset;
 	text-shadow: none;
+}
+#synapse-server-list.list-shadow {
+	
 }
 #synapse-server-list button:focus {
 	border: 1px solid #222222;
@@ -214,6 +216,7 @@
 }
 #synapse-server-list div.list {
 	min-height: 10px;
+	max-height: 350px;
 	overflow: hidden;
 	overflow-y: auto;
 }
@@ -236,8 +239,19 @@
 #synapse-server-list div.list div.item {
 	border-top: 1px solid rgb(50, 50, 50);
 	border-bottom: 1px solid rgb(20, 20, 20);
+	
+	
 }
-
+#synapse-server-list div.list div.item.expand {
+	-webkit-transition: transform 0.5s ease-in-out;
+	-webkit-transform-origin: 50% 0%;
+	-webkit-transform: matrix(1, 0, 0, 1, 0, 0);
+}
+#synapse-server-list div.list div.item.collapse {
+	-webkit-transition: transform 0.5s ease-in-out;
+	-webkit-transform-origin: 50% 0%;
+	-webkit-transform: matrix(1, 0, 0, 0, 0, 0);
+}
 
 #synapse-server-list div.list div.item div i {
 	padding: 0 5px;
@@ -314,11 +328,6 @@ div#synapse-tree {
 	left: 0;*/
 	background-color: rgb(25, 25, 25);
 	height: 100%;
-}
-div#synapse-tree-back {
-	background-color: rgb(22, 22, 22);
-	-webkit-transform: rotateY(180deg);
-	min-height: 100%;
 }
 
 #synapse .synapse-server-setting-alert * {

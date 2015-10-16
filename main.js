@@ -93,6 +93,7 @@ define(function (require, exports, module) {
 			Async.waitForAll(promises, true)
 			.then(function () {
 				Log.q("Initialized completed successfully.");
+				
 			}, function (err) {
 				err = new Error({message: "Initialized failed", err: err});
 				console.log(err);

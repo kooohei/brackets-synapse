@@ -297,8 +297,8 @@ define(function (require, exports, module) {
 				slist = getServerSettingsCache(),
 				result = getServerSetting(index),
 				list = _.filter(slist, function (item, idx, ary) {
-			return item.index !== index;
-		});
+					return item.index !== index;
+				});
 		setServerSettings(list);
 		PreferenceManager.saveServerSettings(list)
 		.then(function () {

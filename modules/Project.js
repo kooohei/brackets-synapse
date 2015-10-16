@@ -157,7 +157,6 @@ define(function (require, exports, module) {
 
 		return deferred.promise();
 	};
-
 	/**
 	 * Erase files in the tree view then remove recent project (backup temporary directory) from preference.
 	 *
@@ -177,7 +176,6 @@ define(function (require, exports, module) {
 		}
 		return deferred.promise();
 	};
-
 	/**
 	 * Open stored project, that is stored at before connection established
 	 *
@@ -197,7 +195,6 @@ define(function (require, exports, module) {
 		});
 		return d.promise();
 	};
-
 	/**
 	 * it will back boolean to caller, if it is true when opened Synapse project
 	 *
@@ -206,9 +203,6 @@ define(function (require, exports, module) {
 	isOpen = function () {
 		return STATE.isOpen();
 	};
-
-
-
 	/**
 	 * It will be back current server setting object.
 	 *
@@ -221,7 +215,6 @@ define(function (require, exports, module) {
 			return false;
 		}
 	};
-
 
 	createDirectoryIfExists = function (path) {
 		var d = new $.Deferred();
@@ -242,7 +235,6 @@ define(function (require, exports, module) {
 		});
 		return d.promise();
 	};
-
 
 	renameLocalEntry = function (oldPath, newPath, type) {
 		var d = new $.Deferred();
@@ -269,8 +261,6 @@ define(function (require, exports, module) {
 		});
 		return d.promise();
 	};
-
-
 	/**
 	 * This function will be confirm whether the individual server setting directory is exists of not,
 	 * create that if is not exists.
@@ -317,7 +307,6 @@ define(function (require, exports, module) {
 		.then(deferred.resolve, deferred.reject);
 		return deferred.promise();
 	};
-
 	/**
 	 * This function will be confirm whether the directory for the remote project (__PROJ__ directory) for project is exists or not.
 	 *
@@ -359,8 +348,6 @@ define(function (require, exports, module) {
 		return deferred.promise();
 	};
 
-
-
 	_getDirectoryContents = function (directory) {
 		var deferred = new $.Deferred();
 		directory.getContents(function (err, contents, stats, obj) {
@@ -399,23 +386,38 @@ define(function (require, exports, module) {
 	};
 
 	_removeProjectDirectoryFromRecent = function () {
-		function getRecentProject() {
-			var recents = PreferencesManager.getViewState("recentProjects") || [],
-				i;
-			for (i = 0; i < recents.length; i++) {
-				recents[i] = FileUtils.stripTrailingSlash(ProjectManager.updateWelcomeProjectPath(recents[i] + "/"));
+		function getRecentProjectPath(path, projectDirPath) {
+			var d = new $.Deferred(),
+					item = FileUtils.stripTrailingSlash(ProjectManager.updateWelcomeProjectPath(path + "/"));
+			if (item !== projectDirPath) {
+				d.resolve(item);
+			} else {
+				d.resolve(null);
 			}
-			return recents;
+			return d.promise();
 		}
-		var recentProjects = getRecentProject(),
-				newAry = [];
-		recentProjects.forEach(function (item, idx) {
-			if (item !== FileUtils.stripTrailingSlash(_projectDir.fullPath)) {
-				newAry.push(item);
-			}
+		var masterD = new $.Deferred(),
+				projectDirPath = FileUtils.stripTrailingSlash(_projectDir.fullPath),
+				recentProjectPaths = PreferencesManager.getViewState("recentProjects") || [],
+				promises = [];
+		
+		if (recentProjectPaths.length === 0 ) {
+			return masterD.resolve().promise();
+		}
+		_.forEach(recentProjectPaths, function (path) {
+			promises.push(getRecentProjectPath(path, projectDirPath));
 		});
-		PreferencesManager.setViewState("recentProjects", newAry);
-		return new $.Deferred().resolve().promise();
+		Async.waitForAll(promises, false, 3000)
+		.then(function (res) {
+			var resAry = res.filter(function (item) { return item !== null; });
+			if (resAry.length > 0) {
+				PreferencesManager.setViewState("recentProjects", resAry);
+			}
+			masterD.resolve();
+		}, function (err) {
+			masterD.reject(err);
+		});
+		return masterD.promise();
 	};
 
 
