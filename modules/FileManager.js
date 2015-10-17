@@ -24,7 +24,8 @@ define(function (require, exports, module) {
 			_detachEvent;
 	var init,
 			openFile;
-	var onSaved,
+	var onProjectStateChanged,
+			onSaved,
 			onDirtyFlagChange,
 			onBeforeProjectClose,
 			onBeforeAppClose,
@@ -32,11 +33,18 @@ define(function (require, exports, module) {
 			_modulePath = FileUtils.getParentPath(ExtensionUtils.getModulePath(module));
 	//<<
 	
-	
+	onProjectStateChanged = function (e) {
+		_projectState = e.state;
+		if (e.state === Project.OPEN) {
+			_attachEvent();
+		} else {
+			_detachEvent();
+		}
+	};
 	
 	init = function () {
 		var d = new $.Deferred();
-		_attachEvent();
+		Project.on(Project.PROJECT_STATE_CHANGED, onProjectStateChanged);
 		return d.resolve().promise();
 	};
 	openFile = function (localPath) {
@@ -51,13 +59,9 @@ define(function (require, exports, module) {
 	};
 	/* Private Methods */
 	_attachEvent = function attachEvent() {
-		Project.on(Project.PROJECT_STATE_CHANGED, function (evt, obj) {
-			_projectState = obj.state;
-			_detachEvent();
-			ProjectManager.on("beforeAppClose", onBeforeAppClose);
-			DocumentManager.on("dirtyFlagChange", onDirtyFlagChange);
-			DocumentManager.on("documentSaved", onSaved);
-		});
+		ProjectManager.on("beforeAppClose", onBeforeAppClose);
+		DocumentManager.on("dirtyFlagChange", onDirtyFlagChange);
+		DocumentManager.on("documentSaved", onSaved);
 	};
 	_detachEvent = function () {
 		ProjectManager.off("beforeAppClose", onBeforeAppClose);

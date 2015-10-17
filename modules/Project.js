@@ -183,16 +183,8 @@ define(function (require, exports, module) {
 	 */
 	openFallbackProject = function () {
 		var d = new $.Deferred();
-		var open = function () {
-			ProjectManager.off("projectOpen", open);
-			d.resolve();
-		};
-		ProjectManager.on("projectOpen", open);
 		ProjectManager.openProject(_fallbackProjectRoot)
-		.fail(function (err) {
-			// choose user unsave document.
-			d.reject();
-		});
+		.then(d.resolve, d.reject);
 		return d.promise();
 	};
 	/**

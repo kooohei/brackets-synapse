@@ -159,7 +159,6 @@ define(function (require, exports, module) {
 		if ($("#synapse-icon").hasClass("enabled")) {
 			return;
 		}
-		
 		var d = new $.Deferred();
 		/**
 		 * if setting is encrypted then show dialog for the entered password
@@ -195,49 +194,49 @@ define(function (require, exports, module) {
 			}
 			return d.promise();
 		})
-		.then(function (obj) {
-			/**
-			 * this section is looking for a property that have been deprecated
-			 * and delete if that is exists.
-			 */
-			// TODO: deprecated to 1.2.5
-			var d = new $.Deferred(),
-					settings = SettingManager.getServerSettingsCache();
-			if (settings.length === 0) {
-				return d.resolve().promise();
-			}
-			var settingList = [];
-			var match = 0;
-			settings.forEach(function (setting) {
-				var keys = Object.keys(setting);
-				_.forEach(keys, function (key) {
-					if (key === "privateKey") {
-						if (setting.privateKey  !== "") {
-							delete setting.privateKey;
-							setting.privateKeyPath = "";
-							match++;
-							return false;
-						}
-					}
-				});
-				settingList.push(setting);
-			});
-			
-			if (match > 0) {
-				PreferenceManager.saveServerSettings(settingList)
-				.then(function () {
-					SettingManager.setServerSettings(settingList);
-					DialogCollection.showAlert(Strings.SYNAPSE_RESET_KEYFILE_TILTE, Strings.SYNAPSE_RESET_KEYFILE_MESSAGE);
-					d.resolve();
-				}, function (err) {
-					Log.q("Failed to encrypted the server settings", true, err);
-					d.reject(err);
-				});
-			} else {
-				d.resolve();
-			}
-			return d.promise();
-		})
+//		.then(function (obj) {
+//			/**
+//			 * this section is looking for a property that have been deprecated
+//			 * and delete if that is exists.
+//			 */
+//			// TODO: deprecated to 1.2.5
+//			var d = new $.Deferred(),
+//					settings = SettingManager.getServerSettingsCache();
+//			if (settings.length === 0) {
+//				return d.resolve().promise();
+//			}
+//			var settingList = [];
+//			var match = 0;
+//			settings.forEach(function (setting) {
+//				var keys = Object.keys(setting);
+//				_.forEach(keys, function (key) {
+//					if (key === "privateKey") {
+//						if (setting.privateKey  !== "") {
+//							delete setting.privateKey;
+//							setting.privateKeyPath = "";
+//							match++;
+//							return false;
+//						}
+//					}
+//				});
+//				settingList.push(setting);
+//			});
+//			
+//			if (match > 0) {
+//				PreferenceManager.saveServerSettings(settingList)
+//				.then(function () {
+//					SettingManager.setServerSettings(settingList);
+//					DialogCollection.showAlert(Strings.SYNAPSE_RESET_KEYFILE_TILTE, Strings.SYNAPSE_RESET_KEYFILE_MESSAGE);
+//					d.resolve();
+//				}, function (err) {
+//					Log.q("Failed to encrypted the server settings", true, err);
+//					d.reject(err);
+//				});
+//			} else {
+//				d.resolve();
+//			}
+//			return d.promise();
+//		})
 		.then(function () {
 
 			var def = new $.Deferred();
@@ -324,14 +323,23 @@ define(function (require, exports, module) {
 	 * Close main panel
 	 */
 	hideMain = function () {
+		
 		if (_projectState === Project.OPEN) {
-			Project.openFallbackProject()
+			_slideTreeviewRow(false)
+			.then(Project.openFallbackProject)
 			.then(function () {
+				var promises = [];
+				promises.push(Project.close());
+				promises.push(_hideServerList());
+				promises.push(_hideServerSetting());
+				return Async.waitForAll(promises, false, 3000);
+			}, function () {
+				// cancel unsaved document.
+				return _slideTreeviewRow(true);
+			})
+			.then(function () {
+				_toggleConnectBtn();
 				_fadeOutMain();
-				return;
-			}, function (err) {
-				// user canceled unsaved document.
-				return;
 			});
 		} else {
 			_fadeOutMain();
@@ -341,16 +349,19 @@ define(function (require, exports, module) {
 	
 	/* PRIVATE METHODS */
 	_refreshView = function (isAnim) {
-		var targetHeight = j.m.outerHeight() - j.h.outerHeight() - j.lh.outerHeight(),
-				scrollHeight = j.ll[0].scrollHeight;
-		isAnim = isAnim || false;
 		
-		if (targetHeight > 350) {
-			j.ll.css({"height": ""});
-		} else {
-			j.ll.css({"height": (targetHeight - 40) + "px"});
+		if (j.l.is(":visible")) {
+			var targetHeight = j.m.outerHeight() - j.h.outerHeight() - j.lh.outerHeight(),
+					scrollHeight = j.ll[0].scrollHeight;
+			isAnim = isAnim || false;
+
+			if (targetHeight > 350) {
+				j.ll.css({"height": ""});
+			} else {
+				j.ll.css({"height": (targetHeight - 40) + "px"});
+			}
+			return FileTreeView.updateTreeviewContainerSize(isAnim);
 		}
-		return FileTreeView.updateTreeviewContainerSize(isAnim);
 	};
 	/**
 	 * Reload server setting list in the server list panel from preference file.
@@ -749,6 +760,7 @@ define(function (require, exports, module) {
 
 	_toggleConnectBtn = function () {
 		var $currentBtn = {},
+				$currentGrp = null,
 				$btnGrp = $(".synapse-server-list-info .btn-group button"),
 				$btnGrps = $(".synapse-server-list-info .btn-group");
 		
@@ -758,7 +770,7 @@ define(function (require, exports, module) {
 				$currentBtn.connect = $(".connection-btn", $grp);
 				$currentBtn.edit = $(".btn-edit", $grp);
 				$currentBtn.delete = $(".btn-delete", $grp);
-				$grp.animate({"opacity": 1}, 200);
+				$currentGrp = $grp;
 			}
 		});
 
@@ -772,6 +784,7 @@ define(function (require, exports, module) {
 			$currentBtn.connect.html(Strings.SYNAPSE_LIST_CONNECT);
 			$currentBtn.edit.prop("disabled", false);
 			$currentBtn.delete.prop("disabled", false);
+			$currentGrp.animate({"opacity": 0}, 500);
 			_currentServerIndex = null;
 		} else {
 			$currentBtn.connect.removeClass("btn-connect");
@@ -779,6 +792,7 @@ define(function (require, exports, module) {
 			$currentBtn.edit.prop("disabled", true);
 			$currentBtn.delete.prop("disabled", true);
 			$currentBtn.connect.html(Strings.SYNAPSE_LIST_DISCONNECT);
+			$currentGrp.animate({"opacity": 1}, 200);
 		}
 	};
 
@@ -891,7 +905,7 @@ define(function (require, exports, module) {
 				server = SettingManager.getServerSetting(index);
 		
 		if (_projectState === Project.OPEN) {
-			if ($(this).data("index") === _currentServerIndex) {
+			if ($btn.data("index") === _currentServerIndex) {
 				_slideTreeviewRow(false)
 				.then(Project.openFallbackProject)
 				.then(Project.close, function () {
