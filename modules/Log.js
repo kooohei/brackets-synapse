@@ -64,7 +64,7 @@ define(function (require, exports, module) {
 			errorFileBuffer = text.split(/\n/);
 		}, function (err) {
 			err = new Error({message: "Failed to read to buffer from error log text", err: err});
-			console.log("SYNAPSE ERROR", err);
+			console.log({message: "SYNAPSE ERROR", err: err});
 			throw new Error(err);
 		});
 		

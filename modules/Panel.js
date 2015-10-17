@@ -341,12 +341,14 @@ define(function (require, exports, module) {
 	
 	/* PRIVATE METHODS */
 	_refreshView = function (isAnim) {
-		var targetHeight = j.m.outerHeight() - j.h.outerHeight() - j.lh.outerHeight();
+		var targetHeight = j.m.outerHeight() - j.h.outerHeight() - j.lh.outerHeight(),
+				scrollHeight = j.ll[0].scrollHeight;
 		isAnim = isAnim || false;
-		if (j.ll[0].scrollHeight > 390) {
-			j.ll.css({"height": (targetHeight - 40) + "px"});
-		} else {
+		
+		if (targetHeight > 350) {
 			j.ll.css({"height": ""});
+		} else {
+			j.ll.css({"height": (targetHeight - 40) + "px"});
 		}
 		return FileTreeView.updateTreeviewContainerSize(isAnim);
 	};
@@ -359,6 +361,9 @@ define(function (require, exports, module) {
 		isAfterDelete = isAfterDelete || false;
 		var d = new $.Deferred();
 
+		if (_projectState === Project.OPEN) {
+			return d.resolve().promise();
+		}
 		if (isAfterDelete && !j.l.length) {
 			return d.reject().promise();
 		}
@@ -532,54 +537,7 @@ define(function (require, exports, module) {
 	_initServerListUI = function () {
 		return _reloadServerSettingList();
 	};
-	/**
-	 * Initialize server list panel and some events.
-	 *
-	 * @returns {$.Promise}
-	 */
-	_reloadServerSettingListWhenDelete = function () {
-		var deferred = new $.Deferred();
-		if (!j.l.length) {
-			return deferred.reject().promise();
-		} else {
-			$("button.btn-connect", j.l).off("click", onClickConnectBtn);
-			$("button.btn-edit", j.l).off("click", onClickEditBtn);
-			$("button.btn-delete", j.l).off("click", onClickDeleteBtn);
-			$(".close-btn", j.l).off("click", _hideServerList);
-			$("div.item", j.l).off({
-				"mouseenter": onEnterListBtns,
-				"mouseleave": onLeaveListBtns
-			});
-		}
-		var list = PreferenceManager.loadServerSettings();
-
-		var source = Mustache.render(server_list_html, {
-			serverList: list,
-			Strings: Strings
-		});
-		var $html = $(source);
-		j.l.addClass("hide").remove();
-		j.s.after($html);
-		j.l.removeClass("hide");
-		$("button.btn-connect", j.l).on("click", onClickConnectBtn);
-		$("button.btn-edit", j.l).on("click", onClickEditBtn);
-		$("button.btn-delete", j.l).on("click", onClickDeleteBtn);
-		$(".close-btn", j.l).on("click", _hideServerList);
-		$("div.item", j.l).on({
-			"mouseenter": onEnterListBtns,
-			"mouseleave": onLeaveListBtns
-		});
-		j.tvc.animate({
-			"top": j.h.outerHeight() + (j.l.outerHeight() + 10) + "px",
-			"bottom": 0
-		}, 400).promise().then(function () {
-			$("#synapse-server-list div.list").addClass("quiet-scrollbars");
-			deferred.resolve();
-		});
-
-		return deferred.promise();
-
-	};
+	
 	/**
 	 * Show the server setting form panel
 	 *
@@ -790,9 +748,9 @@ define(function (require, exports, module) {
 	};
 
 	_toggleConnectBtn = function () {
-		var $currentBtn = {};
-		var $btnGrp = $(".synapse-server-list-info .btn-group button");
-		var $btnGrps = $(".synapse-server-list-info .btn-group");
+		var $currentBtn = {},
+				$btnGrp = $(".synapse-server-list-info .btn-group button"),
+				$btnGrps = $(".synapse-server-list-info .btn-group");
 		
 		_.forEach($btnGrps, function (grp) {
 			var $grp = $(grp);
@@ -928,9 +886,9 @@ define(function (require, exports, module) {
 
 	onClickConnectBtn = function (e) {
 		
-		var $btn = $(e.currentTarget);
-		var index = $btn.data("index");
-		var server = SettingManager.getServerSetting(index);
+		var $btn = $(e.currentTarget),
+				index = $btn.data("index"),
+				server = SettingManager.getServerSetting(index);
 		
 		if (_projectState === Project.OPEN) {
 			if ($(this).data("index") === _currentServerIndex) {
