@@ -652,7 +652,7 @@
 	/**
 	 * Initialize DomainManager.
 	 */
-	init = function (domainManager, _domainPath, LogModule) {
+	init = function (domainManager, _domainPath) {
 		if (!domainManager.hasDomain("synapse")) {
 			domainManager.registerDomain("synapse", {
 				major: 0,

@@ -17,6 +17,10 @@ div#synapse-notify-container * {
 	box-sizing: border-box;
 	line-height: 1em;
 }
+div#synapse-notify-container .input-append button {
+	margin: 0;
+	border-left: 0;
+}
 
 div.synapse-notify {
 	width: 100%;

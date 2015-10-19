@@ -33,9 +33,10 @@ define(function (require, exports, module) {
 			_modulePath = FileUtils.getParentPath(ExtensionUtils.getModulePath(module));
 	//<<
 	
-	onProjectStateChanged = function (e) {
-		_projectState = e.state;
-		if (e.state === Project.OPEN) {
+	onProjectStateChanged = function (e, obj) {
+		
+		_projectState = obj.state;
+		if (obj.state === Project.OPEN) {
 			_attachEvent();
 		} else {
 			_detachEvent();
