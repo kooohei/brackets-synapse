@@ -33,7 +33,9 @@ define(function (require, exports, module) {
 	// <<
 	
 	// Vars Functions >>
-	var _projectState = Project.CLOSE,
+	var 
+		_firstLaunch = true,
+		_projectState = Project.CLOSE,
 		_currentServerIndex = null,
 		_projectDir = null;
 
@@ -256,6 +258,14 @@ define(function (require, exports, module) {
 				.then(_enableToolbarIcon)
 				.then(function () {
 					FileTreeView.updateTreeviewContainerSize();
+					
+					// add v1.2.85
+					if (_firstLaunch) {
+						_firstLaunch = false;
+						showServerList();
+					}
+					
+					
 					d.resolve();
 				}, function (err) {
 					d.reject(err);
