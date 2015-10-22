@@ -160,7 +160,7 @@ define(function (require, exports, module) {
 		return d.promise();
 	};
 
-	toggleWorkingfiles = function () {
+				toggleWorkingfiles = function () {
 		var wfToggleBtn = $("span.wf-toggle-btn");
 		j.wf.animate({"height": "toggle"}, 300).promise()
 		.then(function () {
@@ -325,10 +325,20 @@ define(function (require, exports, module) {
 			})
 			.then(function () {
 				_toggleConnectBtn();
-				_fadeOutMain();
+				_fadeOutMain()
+				.then(function () {
+					if (j.w.css("display") === "none") {
+						toggleWorkingfiles();
+					}
+				});
 			});
 		} else {
-			_fadeOutMain();
+			_fadeOutMain()
+			.then(function () {
+				if (j.w.css("display") === "none") {
+					toggleWorkingfiles();
+				}
+			});
 		}
 	};
 
@@ -418,24 +428,29 @@ define(function (require, exports, module) {
 	 * the panel will fadeout when close main panel then the project files container will shown.
 	 */
 	_fadeOutMain = function () {
+		var d = new $.Deferred();
 		var $main = j.m;
 		var $ph_pcChild = $("#project-files-header, #project-files-container > *");
 		var $ph_pc = $("#project-files-header, #project-files-container");
 
 		$main.animate({
-				"opacity": 0,
+			"opacity": 0,
+		}, "slow").promise()
+		.done(function () {
+			_toggleConnectBtn();
+			$(this).addClass("hide");
+			$ph_pc.css({
+				"display": "block"
+			});
+			$ph_pcChild.animate({
+				"opacity": 1
 			}, "slow").promise()
 			.done(function () {
-				_toggleConnectBtn();
-				$(this).addClass("hide");
-				$ph_pc.css({
-					"display": "block"
-				});
-				$ph_pcChild.animate({
-						"opacity": 1
-					}, "slow").promise()
-					.done(_disableToolbarIcon);
+				_disableToolbarIcon();
+				d.resolve();
 			});
+		});
+		return d.promise();
 	};
 	/**
 	 * Initialize Synapse main UI.
@@ -1004,8 +1019,6 @@ define(function (require, exports, module) {
 			console.log("WorkingFiles update");
 			
 			_refreshView();
-			
-			
 			
 			var wfToggleBtn = $("span.wf-toggle-btn");
 			if (j.wf.css("display") === "none") {
