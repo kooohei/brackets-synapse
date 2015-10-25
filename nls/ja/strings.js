@@ -63,6 +63,7 @@ define({
 	"SYNAPSE_DECRYPT_PASSWORD_TITLE": "パスワードを入力してください",
 	"SYNAPSE_DECRYPT_PASSWORD_MESSAGE": "<p>Synapseは起動前に設定ファイルをロードするためのパスワードを求めています。</p>",
 	
+	"TWIPSY_SYNAPSE_SETTING": "SYNAPSEの設定",
 	"TWIPSY_EXPAND_WORKINGFILES": "Working Filesを表示する",
 	"TWIPSY_COLLAPSE_WORKINGFILES": "Working Filesを非表示にする",
 	"TWIPSY_TOGGLE_SERVERLIST": "サーバ一蘭の表示・非表示",

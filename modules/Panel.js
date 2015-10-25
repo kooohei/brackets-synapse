@@ -52,6 +52,7 @@ define(function (require, exports, module) {
 
 			_initServerSettingUI,
 			_initMainUI,
+			_initSettingPanel,
 			_initServerListUI,
 			_reloadServerSettingListWhenDelete,
 			_hideServerSetting,
@@ -65,7 +66,8 @@ define(function (require, exports, module) {
 			_removeServerSettingListRow,
 			_reloadServerSettingList,
 			_slideTreeviewRow,
-
+			_toggleSetting,
+	
 			onProtocolGroup,
 			onAuthGroup,
 			onClickConnectBtn,
@@ -78,7 +80,10 @@ define(function (require, exports, module) {
 
 			_attachEvents,
 			_detachMainViewManagerEvents,
-
+			_attachDnDCancel,
+			_detachDnDCancel,
+			
+			
 			resetExcludeFile,
 			openFileSelect,
 			resetPrivateKey;
@@ -124,16 +129,36 @@ define(function (require, exports, module) {
 			},
 			get wf() {
 				return $("#working-set-list-container");
+			},
+			get sp() {
+				return $("#synapse-setting");
 			}
 		},
-		main_html = require("text!../ui/main.html"),
+		main_html 					= require("text!../ui/main.html"),
+		setting_panel_html	= require("text!../ui/main.html"),
 		server_setting_html = require("text!../ui/serverSetting.html"),
-		server_list_html = require("text!../ui/serverList.html"),
-		$sidebar = $("#sidebar");
+		server_list_html		= require("text!../ui/serverList.html"),
+		$sidebar						= $("#sidebar");
 	// <<
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/style.css");
 	ExtensionUtils.loadStyleSheet(module, "../ui/css/treeview.css");
 	ExtensionUtils.loadStyleSheet(module, "../node/node_modules/font-awesome/css/font-awesome.min.css");
+	
+	_attachDnDCancel = function () {
+		j.m[0].addEventListener("dragover", function (e) {
+			e.stopPropagation();
+			e.preventDefault();
+			e.dataTransfer.dropEffect = "none";
+		});
+		j.m[0].addEventListener("drop", function (e) {
+			e.stopPropagation();
+			e.preventDefault();
+		});
+	};
+	_detachDnDCancel = function () {
+		j.m[0].removeEventListener("dragover");
+		j.m[0].removeEventListener("drop");
+	};
 
 	/* PUBLIC METHODS */
 	/**
@@ -147,6 +172,7 @@ define(function (require, exports, module) {
 		_projectState = Project.CLOSE;
 
 		_initMainUI()
+		.then(_initSettingPanel)
 		.then(_initServerSettingUI)
 		.then(_initServerListUI)
 		.then(Log.init)
@@ -160,7 +186,7 @@ define(function (require, exports, module) {
 		return d.promise();
 	};
 
-				toggleWorkingfiles = function () {
+	toggleWorkingfiles = function () {
 		var wfToggleBtn = $("span.wf-toggle-btn");
 		j.wf.animate({"height": "toggle"}, 300).promise()
 		.then(function () {
@@ -241,7 +267,7 @@ define(function (require, exports, module) {
 						showServerList();
 					}
 
-
+					_attachDnDCancel();
 					d.resolve();
 				}, function (err) {
 					d.reject(err);
@@ -329,6 +355,7 @@ define(function (require, exports, module) {
 				.then(function () {
 					if (j.w.css("display") === "none") {
 						toggleWorkingfiles();
+						_detachDnDCancel();
 					}
 				});
 			});
@@ -337,6 +364,7 @@ define(function (require, exports, module) {
 			.then(function () {
 				if (j.w.css("display") === "none") {
 					toggleWorkingfiles();
+					_detachDnDCancel();
 				}
 			});
 		}
@@ -469,10 +497,10 @@ define(function (require, exports, module) {
 			j.sb.append($main);
 		}
 
+		$("span.synapse-setting-btn", $main).on("click", _toggleSetting);
 		if (j.wf.length) {
 			$("span.wf-toggle-btn", $main).show().on("click", toggleWorkingfiles);
 		}
-
 		$("span.list-btn", $main).on("click", showServerList);
 		$("span.close-btn", $main).on("click", hideMain);
 		$("span.add-btn", $main).on("click", function (e) {
@@ -483,6 +511,19 @@ define(function (require, exports, module) {
 		var version = PreferenceManager.getVersion();
 		$(".synapse-current-version").html("version&nbsp;" + version);
 		return new $.Deferred().resolve().promise();
+	};
+	/**
+	 * Initiarize the panel of the synapse setting.
+	 */
+	_initSettingPanel = function () {
+		var panelHTML = Mustache.render(setting_panel_html, {
+			tools: "",
+			Strings: Strings
+		});
+		WorkspaceManager.createBottomPanel("kohei.synapse.settingPanel", $(setting_panel_html), 80);
+		j.sp.on("click", ".close", function () {
+			
+		});
 	};
 	/**
 	 * Initialize server setting panel and some events;
@@ -787,7 +828,6 @@ define(function (require, exports, module) {
 		}, d.reject);
 		return d.promise();
 	};
-
 
 
 	/* LISTENERS */

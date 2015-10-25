@@ -65,7 +65,7 @@ define({
 	"SYNAPSE_DECRYPT_PASSWORD_TITLE": "PASSWORD FOR THE DECRYPT",
 	"SYNAPSE_DECRYPT_PASSWORD_MESSAGE": "<p>Settings must have been crypto before the synapse is activated.</p>",
 
-	
+	"TWIPSY_SYNAPSE_SETTING": "SYNAPSE Setting",
 	"TWIPSY_EXPAND_WORKINGFILES": "Expand Working Files",
 	"TWIPSY_COLLAPSE_WORKINGFILES": "Collapse Working Files",
 	"TWIPSY_TOGGLE_SERVERLIST": "Toggle Server List Panel",

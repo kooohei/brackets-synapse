@@ -1,6 +1,6 @@
 
 /*jslint node: true, vars: true, plusplus: true, devel: true, nomen: true, white: true, regexp: true, indent: 2, maxerr: 50 */
-/*global define, $, brackets, Mustache, window, console */
+/*global define, $, brackets, Mustache, window, console, FileReader */
 define(function (require, exports, module) {
 	"use strict";
 
@@ -8,11 +8,11 @@ define(function (require, exports, module) {
 	var FileUtils				= brackets.getModule("file/FileUtils"),
 			ExtensionUtils	= brackets.getModule("utils/ExtensionUtils"),
 			EventDispatcher	= brackets.getModule("utils/EventDispatcher"),
+			FileSystem			= brackets.getModule("filesystem/FileSystem"),
 			ProjectManager	= brackets.getModule("project/ProjectManager"),
 			DocumentManager	= brackets.getModule("document/DocumentManager"),
 			Async						= brackets.getModule("utils/Async"),
 			EditorManager		= brackets.getModule("editor/EditorManager"),
-			FileSystem			= brackets.getModule("filesystem/FileSystem"),
 			MainViewManager	= brackets.getModule("view/MainViewManager"),
 			_								= brackets.getModule("thirdparty/lodash"),
 			Log							= require("modules/Log");
@@ -56,6 +56,8 @@ define(function (require, exports, module) {
 			_getElementWithEntity,
 			_toggleDir,
 			_newFile,
+			_attachDragDrop,
+			
 
 			getPathArray,
 			refresh,
@@ -149,7 +151,7 @@ define(function (require, exports, module) {
 	/**
 	 * Load entity to the file tree view with root entity,
 	 * root entity created by parameter.
-	 * 
+	 *
 	 * @param {object} server setting object.
 	 * @return {$.Promise} 	a promise that will be resolved with root entity, that never rejected.
 	 */
@@ -176,6 +178,7 @@ define(function (require, exports, module) {
 			return _setElement(null);
 		})
 		.then(function () {
+			_attachDragDrop();
 			d.resolve(rootEntity);
 		});
 		return d.promise();
@@ -192,21 +195,21 @@ define(function (require, exports, module) {
 		if (parent.type !== "directory" && parent.type !== "ldirectory") {
 			throw new Error("the type property of the parent object must set directory");
 		}
-		
+
 		//list = _.pluck(_.sortBy(list, "name"), "name");
-		
+
 		var deferred = new $.Deferred(),
 				promises = [],
 				params = [];
 
 		var dirs = _.where(list, {type: "d"});
 		var files = _.where(list, {type: "-"});
-		
+
 		var links = _.where(list, {type: "l"}),
 				blocks = _.where(links, {destType: "block"}),
 				ldirs = _.where(links, {destType: "ldirectory"}),
 				lfiles = _.where(links, {destType: "lfile"});
-		
+
 		list = [];
 		list = list
 						.concat(dirs)
@@ -227,7 +230,7 @@ define(function (require, exports, module) {
 					break;
 				case "l":
 					type = item.destType;
-					
+
 					break;
 				default:
 					type = "block";
@@ -287,7 +290,7 @@ define(function (require, exports, module) {
 
 		var oldLocalPath = PathManager.completionLocalPath(getPathArray(_ctxMenuCurrentEntity));
 		var oldRemotePath = PathManager.completionRemotePath(_currentServerSetting, getPathArray(_ctxMenuCurrentEntity));
-		
+
 		var entry = null;
 		if (_ctxMenuCurrentEntity.type === "file") {
 			entry = FileSystem.getFileForPath(oldLocalPath);
@@ -303,12 +306,12 @@ define(function (require, exports, module) {
 				oldLocalPath += "/";
 				newLocalPath += "/";
 			}
-			
+
 			if (entity) {
 				if (newLocalPath === oldLocalPath) {
 					return deferred.resolve().promise();
 				} else {
-					
+
 					RemoteManager.rename(_currentServerSetting, oldRemotePath, newRemotePath)
 					.then(function (res) {
 						return Project.renameLocalEntry(oldLocalPath, newLocalPath, entity.type);
@@ -460,10 +463,10 @@ define(function (require, exports, module) {
 			});
 		return deferred.promise();
 	};
-	
+
 	_localEntryActualDelete = function (entity) {
 		var d = new $.Deferred();
-		
+
 		if (_currentServerSetting) {
 			var absPath = PathManager.completionLocalPath(getPathArray(entity)),
 					file = entity.type !== "directory" ? FileSystem.getFileForPath(absPath) : FileSystem.getDirectoryForPath(absPath),
@@ -504,14 +507,14 @@ define(function (require, exports, module) {
 
 	/**
 	 * Create UI element from Entity.
-	 * 
+	 *
 	 * @param {object} the entity object.
 	 * @return {$.Promise} a promise will be resolved when create element, that never rejected.
 	 */
 	_setElement = function (entity) {
 		var d = new $.Deferred(),
 				$parent = null;
-		
+
 		if (entity === null) {
 			$parent = $("#synapse-tree");
 		} else {
@@ -547,10 +550,10 @@ define(function (require, exports, module) {
 		}
 		return d.promise();
 	};
-	
+
 	/**
 	 * Create Entity object with parameter.
-	 * 
+	 *
 	 * @param {object} the entity object for the synapse.
 	 * @return {$.Promise} a promise that will be resolved if the entity created, that never rejected.
 	 */
@@ -603,6 +606,7 @@ define(function (require, exports, module) {
 			return null;
 		}
 		var index = id.split("-");
+
 		if (index[0] === "tv") {
 			index = index.slice(1);
 		}
@@ -633,10 +637,10 @@ define(function (require, exports, module) {
 		var $text = $("<span/>").addClass("filename").html(entity.text);
 		var $icon = $("<i/>");
 
-		if (entity.type === "directory") {	
+		if (entity.type === "directory") {
 			$li.addClass("treeview-close");
 			$icon.addClass(Icon.folder);
-		
+
 		} else
 		if (entity.type === "ldirectory") {
 			$li.addClass("treeview-close");
@@ -910,7 +914,7 @@ define(function (require, exports, module) {
 	};
 
 	_openFile = function (entity) {
-		
+
 		var deferred = new $.Deferred();
 		var remotePath = "";
 		var localPath = "";
@@ -922,7 +926,7 @@ define(function (require, exports, module) {
 		}
 		localPath = PathManager.completionLocalPath(getPathArray(entity));
 		deferred.resolve();
-		
+
 		if (!entity.downloaded) {
 			_makeBaseDirectoryIfIsNotExists(localPath)
 			.then(function (baseDir) {
@@ -979,13 +983,13 @@ define(function (require, exports, module) {
 
 	onClick = function (e) {
 		var $elem = $(e.target);
-		
+
 		if ($elem.hasClass("treeview-contents") || $elem.hasClass("filename") || $elem.hasClass("fa")) {
 			$elem = $elem.parent().parent();
 		} else if ($elem.hasClass("treeview-row")) {
 			$elem = $elem.parent();
 		}
-		
+
 		if ($elem.hasClass("treeview-directory") || $elem.hasClass("treeview-ldirectory") || $elem.hasClass("treeview-root")) {
 			onDirClicked($elem);
 		}
@@ -1002,7 +1006,7 @@ define(function (require, exports, module) {
 	onDirClicked = function ($elem) {
 		var id = $elem.attr("id");
 		var entity = _getEntityWithId(id);
-		
+
 		if ($elem.hasClass("loaded")) {
 			_toggleDir(entity);
 		} else {
@@ -1041,6 +1045,84 @@ define(function (require, exports, module) {
 		}
 	};
 
+	
+	_attachDragDrop = function () {
+		j.root_ul[0].addEventListener("dragover", _handleDragOver, false);
+		j.root_ul[0].addEventListener("drop", _handleFileSelect, false);
+	};
+	var _handleDragOver,
+			_handleFileSelect,
+			_$baseElement;
+	_handleDragOver = function (e) {
+		$("p.treeview-row").removeClass("dragover");
+		e.stopPropagation();
+		e.preventDefault();
+		var $icon,
+				$p = null,
+				name = $(e.toElement)[0].tagName;
+		if (name === "P" || name === "p") {
+			$p = $(e.toElement);
+		} else
+		if (name === "SPAN" || name === "span") {
+			$p = $(e.toElement).closest("p.treeview-row");
+		} else {
+			return;
+		}
+		if (!$("i", $p)) return;
+		
+		_$baseElement = $p.closest("li.treeview-entity");
+		
+		$("p.treeview-row").removeClass("dragover");
+		$p.addClass("dragover");
+		$icon = $("i", $p);
+		var dropable = ($icon.hasClass("fa-folder") ||
+										$icon.hasClass("fa-folder-o") ||
+										$icon.hasClass("fa-folder-open") ||
+										$icon.hasClass("fa-folder-o-open")) ? true
+								: false;
+		if (dropable) {
+			e.dataTransfer.dropEffect = "copy";
+		} else {
+			e.dataTransfer.dropEffect = "none";
+		}
+	};
+	
+	var _dropFilesUpload;
+	_dropFilesUpload = function (paths) {
+		var id = _$baseElement.attr("id"),
+				baseEntity = _getEntityWithId(id),
+				pathAry = getPathArray(baseEntity),
+				remoteBasePath = PathManager.completionRemotePath(_currentServerSetting, pathAry);
+		
+	};
+	
+	
+	var _uploadFilesViaDnD;
+	_handleFileSelect = function (e) {
+		e.stopPropagation();
+		e.preventDefault();
+		$("p.treeview-row").removeClass("dragover");
+		
+		
+		
+		var files = e.dataTransfer.files;
+		var paths = [];
+		if (files && files.length) {
+			brackets.app.getDroppedFiles(function (err, paths) {
+				if (err) {
+					Log.q("Unable to read the path from dropped file.");
+				} else {
+					paths.push(paths);
+					_dropFilesUpload(paths);
+				}
+			});
+		}
+		
+		//_uploadFilesViaDnD(files);
+	};
+	
+	
+	
 	exports.init = init;
 	exports.setEntities = setEntities;
 	exports.rootEntity = rootEntity;

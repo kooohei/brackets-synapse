@@ -27,6 +27,9 @@ div#synapse-tree ul.treeview-contents li.treeview-entity p.treeview-row {
 	padding-top:3px;
 	padding-bottom: 3px;
 }
+div#synapse-tree ul.treeview-contents li.treeview-entity p.treeview-row.dragover {
+	background-color: rgba(27, 39, 51, 0.5);
+}
 div#synapse-tree ul.treeview-contents li.treeview-block span {
 	text-decoration: line-through;
 	opacity: 0.7;
