@@ -135,7 +135,7 @@ define(function (require, exports, module) {
 			}
 		},
 		main_html 					= require("text!../ui/main.html"),
-		setting_panel_html	= require("text!../ui/main.html"),
+		setting_panel_html	= require("text!../ui/setting.html"),
 		server_setting_html = require("text!../ui/serverSetting.html"),
 		server_list_html		= require("text!../ui/serverList.html"),
 		$sidebar						= $("#sidebar");
@@ -512,18 +512,27 @@ define(function (require, exports, module) {
 		$(".synapse-current-version").html("version&nbsp;" + version);
 		return new $.Deferred().resolve().promise();
 	};
+	
+	_toggleSetting = function () {
+		console.log("toggling setting panel");
+		console.log(j.sp);
+		if (j.sp.hasClass("open")) {
+			Resizer.hide(j.sp);
+		} else {
+			Resizer.show(j.sp);
+		}
+	};
+	
 	/**
 	 * Initiarize the panel of the synapse setting.
 	 */
 	_initSettingPanel = function () {
+		console.log("Initialize setting panel");
 		var panelHTML = Mustache.render(setting_panel_html, {
 			tools: "",
 			Strings: Strings
 		});
 		WorkspaceManager.createBottomPanel("kohei.synapse.settingPanel", $(setting_panel_html), 80);
-		j.sp.on("click", ".close", function () {
-			
-		});
 	};
 	/**
 	 * Initialize server setting panel and some events;
