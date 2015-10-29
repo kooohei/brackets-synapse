@@ -121,7 +121,7 @@ define(function (require, exports, module) {
 					return _editServerSetting(state, setting);
 				}
 			}, function (err) {
-				Log.q("An error occurred in the authentication, or could not read file list from current directory", true, err);
+				Log.q("Failed to authentication please confirm your account setting.", true, err);
 				deferred.reject(err);
 			})
 			.then(function () {
