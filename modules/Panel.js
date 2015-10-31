@@ -160,7 +160,7 @@ define(function (require, exports, module) {
 		return d.promise();
 	};
 
-				toggleWorkingfiles = function () {
+	toggleWorkingfiles = function () {
 		var wfToggleBtn = $("span.wf-toggle-btn");
 		j.wf.animate({"height": "toggle"}, 300).promise()
 		.then(function () {
@@ -240,6 +240,9 @@ define(function (require, exports, module) {
 						_firstLaunch = false;
 						showServerList();
 					}
+					
+					var version = PreferenceManager.getVersion();
+					$(".synapse-current-version").html("version&nbsp;" + version);
 
 
 					d.resolve();
@@ -480,8 +483,7 @@ define(function (require, exports, module) {
 				_showServerSetting(e, "insert", null);
 			}
 		});
-		var version = PreferenceManager.getVersion();
-		$(".synapse-current-version").html("version&nbsp;" + version);
+		
 		return new $.Deferred().resolve().promise();
 	};
 	/**
