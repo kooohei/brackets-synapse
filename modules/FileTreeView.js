@@ -1002,9 +1002,9 @@ define(function (require, exports, module) {
 	onDirClicked = function ($elem) {
 		var id = $elem.attr("id");
 		var entity = _getEntityWithId(id);
-        
-        var localPath = PathManager.completionLocalPath(getPathArray(entity));
-         _makeBaseDirectoryIfIsNotExists(localPath)                   
+		
+		var localPath = PathManager.completionLocalPath(getPathArray(entity));
+		_makeBaseDirectoryIfIsNotExists(localPath)                   
 		
 		if ($elem.hasClass("loaded")) {
 			_toggleDir(entity);
