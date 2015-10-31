@@ -513,7 +513,7 @@ define(function (require, exports, module) {
 				$parent = null;
 		
 		if (entity === null) {
-			$parent = $("#synapse-tree");
+			$parent = $("#synapse-tree").addClass("quiet-scrollbars");
 		} else {
 			$parent = _getElementWithEntity(entity);
 		}
@@ -522,7 +522,7 @@ define(function (require, exports, module) {
 		}
 
 		$parent.find("ul.treeview-contents").remove();
-		var $ul = $("<ul/>").addClass("treeview-contents quiet-scrollbars");
+		var $ul = $("<ul/>").addClass("treeview-contents");
 		$parent.append($ul);
 
 		if (entity === null) {
