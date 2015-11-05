@@ -49,6 +49,7 @@ define(function (require, exports, module) {
 		this.password = null;
 		this.passphrase = null;
 		this.privateKeyPath = null;
+		this.secure = false;
 		this.dir = null;
 		this.exclude = null;
 	};
@@ -149,6 +150,7 @@ define(function (require, exports, module) {
 			port 				: {form: $("#synapse-server-port", $serverSetting), icon: $("i.fa-plug"), invalid: false},
 			user 				: {form: $("#synapse-server-user", $serverSetting), icon: $("i.fa-user"), invalid: false},
 			password		: {form: $("#synapse-server-password", $serverSetting),icon: $("i.fa-unlock"), invalid: false},
+			secure			: {form: $("#synapse-server-secure", $serverSetting), icon: $("i.fa-unlock-alt"), invalid: false},
 			name				: {form: $("#synapse-server-setting-name", $serverSetting), icon: $("i.fa-barcode"), invalid: false},
 			dir	 				: {form: $("#synapse-server-dir", $serverSetting), icon: $("i.fa-sitemap"), invalid: false},
 			exclude			: {form: $("#synapse-server-exclude", $serverSetting), icon: $("i.fa-ban"), invalid: false}
