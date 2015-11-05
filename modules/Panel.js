@@ -1018,8 +1018,6 @@ define(function (require, exports, module) {
 			_refreshView();
 		});
 		MainViewManager.on("workingSetAdd workingSetAddList workingSetRemove workingSetRemoveList workingSetUpdate paneCreate PaneDestroy", function (e) {
-			console.log("WorkingFiles update");
-			
 			_refreshView();
 			
 			var wfToggleBtn = $("span.wf-toggle-btn");
