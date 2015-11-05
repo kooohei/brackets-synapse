@@ -193,7 +193,7 @@ define(function (require, exports, module) {
 			throw new Error("the type property of the parent object must set directory");
 		}
 		
-		//list = _.pluck(_.sortBy(list, "name"), "name");
+//		list = _.pluck(_.sortBy(list, "name"), "name");
 		
 		var deferred = new $.Deferred(),
 				promises = [],
@@ -214,6 +214,23 @@ define(function (require, exports, module) {
 						.concat(files)
 						.concat(lfiles)
 						.concat(blocks);
+
+		list=list.sort(function(a,b){
+			var typesort = 0;
+			if(a['type'] === 'd' && a['type'] !== b['type']){
+				typesort = -1;
+			} else if(b['type'] === 'd' && a['type'] !== b['type']){
+				typesort = 1;
+			}
+			
+			if(typesort !== 0){ 
+				return typesort;
+			}
+			
+			if(a['name'].toLowerCase()<b['name'].toLowerCase()){ return -1; }
+			if(a['name'].toLowerCase()>b['name'].toLowerCase()){ return 1; }
+			return 0;
+		});
 
 		var depth = parent.depth + 1;
 		list.forEach(function (item, index) {
