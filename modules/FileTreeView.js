@@ -1,5 +1,5 @@
 
-/*jslint node: true, vars: true, plusplus: true, devel: true, nomen: true, white: true, regexp: true, indent: 2, maxerr: 50 */
+/*jslint node: true, expr: true, vars: true, plusplus: true, devel: true, nomen: true, white: true, regexp: true, indent: 2, maxerr: 50 */
 /*global define, $, brackets, Mustache, window, console */
 define(function (require, exports, module) {
 	"use strict";
@@ -216,13 +216,20 @@ define(function (require, exports, module) {
 						.concat(blocks);
 
 		list=list.sort(function(a,b){
-			var typesort = 0;
+			var typesort = 0,
+					res = 0;
+			typesort =  (a.type === 'd' && a.type !== b.type) ? -1
+								: (b.type === 'd' && a.type !== b.type) ? 1 : 0;
+			
+			return  (typesort !== 0) ? typesort
+						: (a.name.toLowerCase() < b.name.toLowerCase()) ? -1
+						: (a.name.toLowerCase() > b.name.toLowerCase())	? 1 : 0;
+			/*
 			if(a['type'] === 'd' && a['type'] !== b['type']){
 				typesort = -1;
 			} else if(b['type'] === 'd' && a['type'] !== b['type']){
 				typesort = 1;
 			}
-			
 			if(typesort !== 0){ 
 				return typesort;
 			}
@@ -230,6 +237,7 @@ define(function (require, exports, module) {
 			if(a['name'].toLowerCase()<b['name'].toLowerCase()){ return -1; }
 			if(a['name'].toLowerCase()>b['name'].toLowerCase()){ return 1; }
 			return 0;
+			*/
 		});
 
 		var depth = parent.depth + 1;
@@ -1021,7 +1029,7 @@ define(function (require, exports, module) {
 		var entity = _getEntityWithId(id);
 		
 		var localPath = PathManager.completionLocalPath(getPathArray(entity));
-		_makeBaseDirectoryIfIsNotExists(localPath)                   
+		_makeBaseDirectoryIfIsNotExists(localPath);             
 		
 		if ($elem.hasClass("loaded")) {
 			_toggleDir(entity);

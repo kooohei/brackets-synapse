@@ -45,6 +45,7 @@ define(function (require, exports, module) {
 		this.protocol = "ftp";
 		this.host = null;
 		this.port = 21;
+		this.secure = false;
 		this.user = null;
 		this.password = null;
 		this.passphrase = null;
@@ -218,6 +219,9 @@ define(function (require, exports, module) {
 			keys.forEach(function(key) {
 				result[key] = values[key].form.val();
 			});
+			if (currentProtocol === "ftp") {
+				result.secure = $("#synapse-server-is-ftps").prop("checked");
+			}
 			_setServerBtnState("enabled");
 			returnValue = result;
 		} else {
@@ -376,6 +380,7 @@ define(function (require, exports, module) {
 		
 		if (setting.protocol === "sftp") {
 			setting.dir = setting.dir === "" ? "./" : setting.dir;
+			delete setting.secure;
 			if (setting.auth === "key") {
 				delete setting.password;
 			} else

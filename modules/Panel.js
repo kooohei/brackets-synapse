@@ -30,7 +30,7 @@ define(function (require, exports, module) {
 			CryptoManager			= require("modules/CryptoManager"),
 			PreferenceManager	= require("modules/PreferenceManager"),
 			l									= require("modules/Utils").l;
-
+	
 	// <<
 
 	// Vars Functions >>
@@ -70,6 +70,7 @@ define(function (require, exports, module) {
 			onAuthGroup,
 			onClickConnectBtn,
 			onClickDeleteBtn,
+			onSecure,
 			onLeaveListBtns,
 			onEdit,
 			onEnterListBtns,
@@ -172,7 +173,6 @@ define(function (require, exports, module) {
 			}
 		});
 	};
-
 	/**
 	 * Show Main Panel to side view.
 	 */
@@ -255,7 +255,6 @@ define(function (require, exports, module) {
 		});
 		return d.promise();
 	};
-
 	/**
 	 * Show progress spinner on the header when connected to server.
 	 */
@@ -502,6 +501,7 @@ define(function (require, exports, module) {
 		$("button#resetPrivateKey").on("click", resetPrivateKey);
 		$("button#resetExcludeFile").on("click", resetExcludeFile);
 		$(".protocol-group", $serverSetting).on("click", onProtocolGroup);
+		$("#synapse-server-is-ftps").on("click", onSecure);
 		$(".auth-group", $serverSetting).on("click", onAuthGroup);
 		$(".btn-add", $serverSetting).on("click", onEdit);
 		$(".btn-cancel", $serverSetting).on("click", _hideServerSetting);
@@ -510,8 +510,9 @@ define(function (require, exports, module) {
 		$("input[type='password']", $serverSetting).on("blur", SettingManager.validateAll);
 
 		// reset protocol
+		$("#synapse-server-is-ftps").prop("checked", false);
 		$("#currentProtocol").val("ftp");
-		$("button.toggle-ftp").addClass("active");
+		$("button.toggle-ftp").html("FTP").addClass("active");
 		$("button.toggle-sftp").removeClass("active");
 		$("#synapse-server-port").val("21");
 		// show row for ftp
@@ -793,6 +794,14 @@ define(function (require, exports, module) {
 
 
 	/* LISTENERS */
+	onSecure = function (e) {
+		if ($("#synapse-server-is-ftps").prop("checked")) {
+			$(".btn.toggle-ftp").html("FTPS");
+		} else {
+			$(".btn.toggle-ftp").html("FTP");
+		}
+	};
+	
 	onProtocolGroup = function (e) {
 		var $btn = $(e.target);
 		if (!$btn.hasClass("toggle-ftp") && !$btn.hasClass("toggle-sftp")) {
@@ -806,11 +815,16 @@ define(function (require, exports, module) {
 		});
 
 		if ($btn.hasClass("toggle-ftp")) {
+			$("#synapse-server-is-ftps").show();
+			$("#synapse-server-ftps-label").show();
 			$("#currentProtocol").val("ftp");
 			$("tr.sftp-row").hide();
 			$("#synapse-server-port").val("21");
 			$("tr.password-row").show();
 		} else if ($btn.hasClass("toggle-sftp")) {
+			$("#synapse-server-is-ftps").prop("checked", false);
+			$("#synapse-server-is-ftps").hide();
+			$("#synapse-server-ftps-label").hide();
 			$("tr.password-row").hide();
 			$("#synapse-server-port").val("22");
 			$("#currentProtocol").val("sftp");
