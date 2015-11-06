@@ -240,7 +240,7 @@ define(function (require, exports, module) {
 						_firstLaunch = false;
 						showServerList();
 					}
-					
+
 					var version = PreferenceManager.getVersion();
 					$(".synapse-current-version").html("version&nbsp;" + version);
 
@@ -483,7 +483,7 @@ define(function (require, exports, module) {
 				_showServerSetting(e, "insert", null);
 			}
 		});
-		
+
 		return new $.Deferred().resolve().promise();
 	};
 	/**
@@ -810,11 +810,14 @@ define(function (require, exports, module) {
 			$("tr.sftp-row").hide();
 			$("#synapse-server-port").val("21");
 			$("tr.password-row").show();
+			$("tr.secure-row").show();
 		} else if ($btn.hasClass("toggle-sftp")) {
 			$("tr.password-row").hide();
 			$("#synapse-server-port").val("22");
 			$("#currentProtocol").val("sftp");
 			$("tr.sftp-row").show();
+			$("tr.secure-row").hide();
+			$("#synapse-server-secure").val("false");
 		}
 		j.s.removeClass("hide");
 		j.tvc.css({
@@ -1018,8 +1021,10 @@ define(function (require, exports, module) {
 			_refreshView();
 		});
 		MainViewManager.on("workingSetAdd workingSetAddList workingSetRemove workingSetRemoveList workingSetUpdate paneCreate PaneDestroy", function (e) {
+			console.log("WorkingFiles update");
+
 			_refreshView();
-			
+
 			var wfToggleBtn = $("span.wf-toggle-btn");
 			if (j.wf.css("display") === "none") {
 				wfToggleBtn.addClass("rotate");
@@ -1028,7 +1033,7 @@ define(function (require, exports, module) {
 				wfToggleBtn.removeClass("rotate");
 				wfToggleBtn.attr({"title": Strings.TWIPSY_COLLAPSE_WORKINGFILES});
 			}
-			
+
 			if (e.hasOwnProperty("type")) {
 				if (e.type === "workingSetAdd" && j.wf.css("display") === "none") {
 					wfToggleBtn.addClass("rotate");
