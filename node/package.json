@@ -11,7 +11,6 @@
   "dependencies": {
     "crypto-js": "^3.1.5",
     "font-awesome": "^4.4.0",
-    "ftp": "0.3.10",
     "homedir": "0.6.0",
     "q": "^1.4.1",
     "ssh2": "^0.4.11"
