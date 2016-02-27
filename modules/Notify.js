@@ -63,10 +63,11 @@ define(function (require, exports, module) {
 		
 		var $notify = $("#synapse-decrypt-password-notify"),
 				$password = $("#synapse-decrypt-password-input", $notify),
-				$btn1 = $("#synapse-decrypt-password-btn1", $notify),
+				$form = $("#synapse-decrypt-password-form", $notify),
 				$validMessage = $("p.validateMessage", $notify);
 		
-		$btn1.on("click", function (e) {
+		$form.on("submit", function (e) {
+            e.preventDefault();
 			var password = $password.val();
 			if (password === "") {
 				$password.addClass("invalid");
@@ -90,7 +91,7 @@ define(function (require, exports, module) {
 					$validMessage.html("");
 					close()
 					.then(function () {
-						$btn1.off("click");
+						$form.off("submit");
 						d.resolve();
 					});
 				}
