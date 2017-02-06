@@ -27,16 +27,16 @@ define(function (require, exports, module) {
 			getServerSettingsCache,
 			setServerSettings,
 			deleteServerSetting;
-	
+
 	var	_editServerSetting,
 			_connectTest,
 			_setServerBtnState
 			;
-	
-	
+
+
 	var _serverSettings = [];
-	
-	
+
+
 	var onSecureWarningDo,
 			onSecureWarningLater;
 
@@ -50,11 +50,12 @@ define(function (require, exports, module) {
 		this.password = null;
 		this.passphrase = null;
 		this.privateKeyPath = null;
+		this.secure = null;
 		this.dir = null;
 		this.exclude = null;
 	};
 	var $serverSetting = null;
-	
+
 	var regexp = {
 		host: null,
 		port: null,
@@ -65,17 +66,17 @@ define(function (require, exports, module) {
 	var ftp = null,
 			sftpKey = null,
 			sftpPassword = null;
-	
+
 	// <<
-	
+
 	/**
 	 * Initialize module.
-	 * 
+	 *
 	 * @Return {$.Promise} promise never rejected.
 	 */
 	init = function () {
 		var deferred = new $.Deferred();
-		
+
 		$serverSetting = $("#synapse-server-setting");
 		regexp.host = new RegExp("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])$");
 		regexp.port = new RegExp("[1-65535]");
@@ -84,7 +85,7 @@ define(function (require, exports, module) {
 		$("th > i", $serverSetting).removeClass("done");
 		$("th > i.fa-plug", $serverSetting).addClass("done");
 		$("button.btn-add").addClass("disabled");
-		
+
 		return deferred.resolve().promise();
 	};
 
@@ -93,14 +94,14 @@ define(function (require, exports, module) {
 	 * * this function execute some process for the save server setting preprocess.
 	 * * 1. validate string input values.
 	 * * 2. validate whether the account could established connection.
-	 * 
+	 *
 	 * @param {string} state value whether "update" or "insert"
-	 * 
+	 *
 	 */
 	edit = function (state) {
 		var deferred = new $.Deferred();
 		var setting = validateAll();
-		
+
 		setting.protocol = $("#currentProtocol").val();
 		if (setting.protocol === "sftp") {
 			setting.privateKeyPath = $("#synapse-server-privateKey-path").val();
@@ -108,7 +109,7 @@ define(function (require, exports, module) {
 		}
 		if (setting !== false) {
 			_setServerBtnState("disabled");
-			
+
 			_connectTest(setting)
 			.then(function (list) {
 				if (list.length === 0) {
@@ -135,10 +136,10 @@ define(function (require, exports, module) {
 		}
 		return deferred.promise();
 	};
-	
+
 	/**
 	 * Validate all values for server setting.
-	 * 
+	 *
 	 * @return {boolean} that will be true if all values passed validate, or false if some value is invalid.
 	 */
 	validateAll = function () {
@@ -149,8 +150,9 @@ define(function (require, exports, module) {
 			host 				: {form: $("#synapse-server-host", $serverSetting), icon: $("i.fa-desktop"), invalid: false},
 			port 				: {form: $("#synapse-server-port", $serverSetting), icon: $("i.fa-plug"), invalid: false},
 			user 				: {form: $("#synapse-server-user", $serverSetting), icon: $("i.fa-user"), invalid: false},
-			password		: {form: $("#synapse-server-password", $serverSetting),icon: $("i.fa-unlock"), invalid: false},
+			password		: {form: $("#synapse-server-password", $serverSetting),icon: $("i.fa-key"), invalid: false},
 			name				: {form: $("#synapse-server-setting-name", $serverSetting), icon: $("i.fa-barcode"), invalid: false},
+			secure			: {form: $("#synapse-server-secure", $serverSetting), icon: $("i.fa-sitemap"), invalid: false},
 			dir	 				: {form: $("#synapse-server-dir", $serverSetting), icon: $("i.fa-sitemap"), invalid: false},
 			exclude			: {form: $("#synapse-server-exclude", $serverSetting), icon: $("i.fa-ban"), invalid: false}
 		};
@@ -176,7 +178,7 @@ define(function (require, exports, module) {
 
 		var currentProtocol = $("#currentProtocol").val();
 		var auth = $("#currentAuth").val();
-		
+
 		var values = "";
 		if (currentProtocol === "ftp") {
 			values = ftp;
@@ -187,7 +189,7 @@ define(function (require, exports, module) {
 				values = sftpPassword;
 			}
 		}
-		
+
 		var keys = Object.keys(values);
 
 		keys.forEach(function (key) {
@@ -233,7 +235,7 @@ define(function (require, exports, module) {
 
 	/**
 	 * Validate each properties of server setting
-	 * 
+	 *
 	 * @param {string} target property name.
 	 * @param {value} entered value.
 	 * @return {boolean} that will be true if value passed validate, or false if value is invalid.
@@ -255,6 +257,9 @@ define(function (require, exports, module) {
 			return value !== "";
 		}
 		if (prop === "passphrase") {
+			return true;
+		}
+		if (prop === "secure") {
 			return true;
 		}
 		if (prop === "name") {
@@ -286,14 +291,14 @@ define(function (require, exports, module) {
 
 	};
 
-	
+
 	reset = function () {
 		return init();
 	};
-	
+
 	/**
 	 * Remove server setting at index
-	 * 
+	 *
 	 * @param {integer} the index of setting in the server list..
 	 */
 	deleteServerSetting = function (index) {
@@ -318,7 +323,7 @@ define(function (require, exports, module) {
 	setServerSettings = function (settings) {
 		_serverSettings = settings;
 	};
-	
+
 	getServerSetting = function (index) {
 		var list = getServerSettingsCache();
 		var res = null;
@@ -329,7 +334,7 @@ define(function (require, exports, module) {
 		});
 		return res;
 	};
-	
+
 	_setServerBtnState = function (state) {
 		var dev_null = null;
 		var _state = state;
@@ -362,10 +367,10 @@ define(function (require, exports, module) {
 	/**
 	 * The function is the save server setting main process.
 	 * * main process invoked by edit function,
-	 * * this function has some process, 
+	 * * this function has some process,
 	 * * first, fairing entered current directory value by protocol.
 	 * * next, create name value if that is not enterred.
-	 * 
+	 *
 	 * @param {string} state "update" or "insert"
 	 * @param {object} entered values of server setting
 	 * @return {$.Promise} passthrough from PreferenceManager.saveServerSettings
@@ -376,8 +381,8 @@ define(function (require, exports, module) {
 				temp = [];
 
 		setting.dir = PathManager.removeTrailingSlash(setting.dir);
-		
-		
+
+
 		if (setting.protocol === "sftp") {
 			setting.dir = setting.dir === "" ? "./" : setting.dir;
 			delete setting.secure;
@@ -397,7 +402,7 @@ define(function (require, exports, module) {
 		if (setting.name === "") {
 			setting.name = setting.host + "@" + setting.user;
 		}
-		
+
 		if (state === "update") {
 			setting.index = $("#synapse-server-setting").data("index");
 			temp = _.map(list, function (item, idx, ary) {
@@ -426,14 +431,14 @@ define(function (require, exports, module) {
 			Log.q("Failed to save the server settings", true, err);
 			deferred.reject(err);
 		});
-		
+
 		return deferred.promise();
 	};
-	
+
 
 	/**
 	 * Do connect to server for confirm whether authentication will be pass or not.
-	 * 
+	 *
 	 * @param {object} entered values.
 	 * @return {$.Promise} a promise that will be resolved, if account pass auth.
 	 */
@@ -459,9 +464,9 @@ define(function (require, exports, module) {
 		});
 		return deferred.promise();
 	};
-	
-	
-	
+
+
+
 	EventDispatcher.makeEventDispatcher(exports);
 
 	exports.init = init;

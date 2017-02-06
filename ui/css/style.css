@@ -168,7 +168,8 @@
 	background: #4ca263;
 }
 #synapse-server-setting table td input[type=text],
-#synapse-server-setting table td input[type=password] {
+#synapse-server-setting table td input[type=password],
+select {
 	border: 1px solid #202020;
 	color: #fff;
 	box-sizing: padding-box;
@@ -177,6 +178,9 @@
 	height: auto;
 	background: #333;
 	margin: 0;
+}
+select {
+	width: 214px;
 }
 #synapse-server-setting table td input.invalid {
 	box-shadow: 0 1px 1px #ad3737 inset, 0 -1px 1px #ad3737 inset;
@@ -213,7 +217,7 @@
 	text-shadow: none;
 }
 #synapse-server-list.list-shadow {
-	
+
 }
 #synapse-server-list button:focus {
 	border: 1px solid #222222;
@@ -258,8 +262,8 @@
 #synapse-server-list div.list div.item {
 	border-top: 1px solid rgb(50, 50, 50);
 	border-bottom: 1px solid rgb(20, 20, 20);
-	
-	
+
+
 }
 #synapse-server-list div.list div.item.expand {
 	-webkit-transition: transform 0.5s ease-in-out;

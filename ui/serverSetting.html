@@ -82,6 +82,19 @@
 				<input type="password" id="synapse-server-passphrase" placeholder="{{Strings.SYNAPSE_SETTING_PH_PASSPHRASE}}">
 			</td>
 		</tr>
+		<tr class="ftps-row secure-row">
+			<th>
+				<i class="fa fa-key"></i>
+			</th>
+			<td>
+				<select id="synapse-server-secure">
+					<option value="false" selected>{{Strings.SYNAPSE_SETTING_PH_FALSE}}</option>
+					<option value="true">{{Strings.SYNAPSE_SETTING_PH_TRUE}}</option>
+					<option value="control">{{Strings.SYNAPSE_SETTING_PH_CONTROL}}</option>
+					<option value="explicit">{{Strings.SYNAPSE_SETTING_PH_EXPLICIT}}</option>
+				</select>
+			</td>
+		</tr>
 		<tr>
 			<th>
 				<i class="fa fa-barcode"></i>
